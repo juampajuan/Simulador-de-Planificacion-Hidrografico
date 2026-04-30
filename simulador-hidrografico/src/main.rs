@@ -1,8 +1,15 @@
-use gdal::version::VersionInfo;
+mod processing;
+mod structs;
 
 fn main() {
-    println!("{}", gdal::version_info("VERSION_NUM"));
-    // 3060200
-    println!("{}", VersionInfo::release_name());
-    // 3.6.2
+
+    let path = "Darsena_20cm_v2.tif";
+
+    match processing::geotiff::processing_geotiff(path) {
+        Ok(matrix) => matrix,
+        Err(e) => {
+            println!("Error: {}", e);
+            return;
+        }
+    };
 }
