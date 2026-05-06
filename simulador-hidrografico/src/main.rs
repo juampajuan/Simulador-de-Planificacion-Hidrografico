@@ -13,11 +13,19 @@ fn main() {
         }
     };
 
-    // Metadatos
-    println!("Ancho: {} pixels", matrix.data[0].len());
-    println!("Alto: {} pixels", matrix.data.len());
-    println!("No data value: {:?}", matrix.no_data);
+    let recorrido = processing::routing::generate_route(300, &matrix);
 
-    // Primer valor de la matriz
-    println!("Primer pixel: {}", matrix.data[0][0]);
+    // Recorrido
+    // println!("Recorrido:");
+    for (x, y) in recorrido {
+        println!("({}, {})", x, y); // cargo run > res.txt para guardar el resultado ahi, despues copio y pego eso en el graficador
+    }
+
+    // // Metadatos
+    // println!("Ancho: {} pixels", matrix.data[0].len());
+    // println!("Alto: {} pixels", matrix.data.len());
+    // println!("No data value: {:?}", matrix.no_data);
+
+    // // Primer valor de la matriz
+    // println!("Primer pixel: {}", matrix.data[0][0]);
 }
