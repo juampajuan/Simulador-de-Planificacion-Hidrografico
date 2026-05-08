@@ -1,47 +1,110 @@
 use crate::structs::depth_matrix::DepthMatrix;
 
-// Genera la ruta dada por la separacion indicada por el usuario.
-pub fn generate_route(separation: usize, matrix: &DepthMatrix) -> Vec<(usize, usize)> {
-    let mut path_points = Vec::new();
-    let mut y = 0;
-    let mut left_to_right = true;
-    let width = matrix.width;
-    let height = matrix.height;
+// Genera un recorrido sobre la matriz de profundidad, con un azimut y separación dados. El resultado es un vector de coordenadas (x, y) que representan el recorrido.
+// El azimut se mide en grados, con 0° apuntando hacia el norte y aumentando en sentido horario. La separación se mide en metros y determina la distancia entre las piernas del zig-zag.
+// Devuelvo todo el recorrido mas que nada porque puede servir para el front
+pub fn generate_route(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters: f64) -> Vec<(usize, usize)> {
 
-    while y < height {
-        let mut last_useful_x: Option<usize> = None;
+    let mut path = Vec::new();
 
-        // Definimos el rango y la dirección del iterador según el sentido actual
-        let x_range: Box<dyn Iterator<Item = usize>> = if left_to_right {
-            Box::new(0..width)
-        } else {
-            Box::new((0..width).rev())
-        };
+    let w = matrix.width as f64;
+    let h = matrix.height as f64;
 
-        for x in x_range {
-            if Some(matrix.data[y][x]) != matrix.no_data {
-                // Punto válido en la fila actual
-                path_points.push((x, y));
+    let center_x = w / 2.0;
+    let center_y = h / 2.0;
 
-                // Verificamos si este punto sirve como "puente" para la siguiente fila
-                if y + separation < height && Some(matrix.data[y + separation][x]) != matrix.no_data {
-                    last_useful_x = Some(x);
-                }
-            } else if let Some(last_x) = last_useful_x {
-                // Encontramos el final de los datos en esta fila, subimos verticalmente acorde a la separacion que el usuario indicó.
-                for i in 1..separation {
-                    let next_y = y + i;
-                    if next_y < height && Some(matrix.data[next_y][last_x]) != matrix.no_data {
-                        path_points.push((last_x, next_y)); // Obviamente vamos a agregar los puntos del puente, porque el barco pasa por ahí tambien
-                    }
-                }
-                break; // Salimos del for x para pasar a la siguiente fila y
-            }
+    let diagonal = (w.powi(2) + h.powi(2)).sqrt();
+
+    // Aca obtengo el angulo
+    let angle = azimuth_deg.to_radians();
+    let (sin_a, cos_a) = angle.sin_cos();
+
+    // Cuanto mide un pixel en metros
+    let size_x = matrix.size_x;
+    let size_y = matrix.size_y;
+
+    // Dirección principal normalizada para poder usarla mas adelante como vector director. 
+    // La divido por el tamaño del pixel para que la dirección esté en unidades de píxeles, y luego la normalizo para que tenga magnitud 1.
+    let dir_x_px = sin_a / size_x;
+    let dir_y_px = -cos_a / size_y;
+
+    let mag_dir = (dir_x_px.powi(2) + dir_y_px.powi(2)).sqrt();
+
+    let dir_x = dir_x_px / mag_dir;
+    let dir_y = dir_y_px / mag_dir;
+
+    // Esta es la dicc perpendicular dividida por el tamaño del pixel.
+    let perpendicular_x_px = cos_a / size_x;
+    let perpendicular_y_px = sin_a / size_y;
+
+    let mag_perpendicular = (perpendicular_x_px.powi(2) + perpendicular_y_px.powi(2)).sqrt();
+
+    // Esta es la direccion perpendicular normalizada.
+    let perpendicular_x = perpendicular_x_px / mag_perpendicular;
+    let perpendicular_y = perpendicular_y_px / mag_perpendicular;
+
+    // Separación entre piernas en píxeles. Osea digamos la cantidad de píxeles que tengo que avanzar en la dirección perpendicular para lograr la separación deseada en metros.
+    let separation_px = separation_meters * mag_perpendicular;
+
+    let legs = (diagonal / separation_px).ceil() as i32;
+
+    for leg in -legs / 2..=legs / 2 {
+
+        let mut line = build_leg(matrix, center_x, center_y, perpendicular_x, perpendicular_y, dir_x, dir_y, diagonal, separation_px,  leg);
+
+        if line.is_empty() {
+            continue;
         }
 
-        y += separation;
-        left_to_right = !left_to_right;
+        // Para el zig-zag. Despues conectaria la punta de esta pata con la anterior para que quedo un camino continuo
+        // Por ahora lo dejo así para probar.
+        if leg % 2 != 0 {
+            line.reverse();
+        }
+
+        // Agregar pierna actual
+        path.extend(
+            line.iter().map(|(x, y)| {
+                (x.round() as usize, y.round() as usize)
+            })
+        );
     }
 
-    path_points
+    path
+}
+
+fn build_leg(matrix: &DepthMatrix, center_x: f64, center_y: f64, perpendicular_x: f64, perpendicular_y: f64, dir_x: f64, dir_y: f64, diagonal: f64, separation_px: f64, leg: i32) -> Vec<(f64, f64)> {
+
+    let offset = leg as f64 * separation_px;
+
+    // Este es el punto de origen de la pierna, que se desplaza a lo largo de la dirección perpendicular. Tanto para X como para Y.
+    let origin_x = center_x + perpendicular_x * offset;
+    let origin_y = center_y + perpendicular_y * offset;
+
+    let mut line = Vec::new();
+
+    let mut d = -diagonal / 2.0;
+
+    while d <= diagonal / 2.0 {
+
+        // Sobre el punto de origen obtenido en las lineas 80 y 81, avanzo en la dirección del azimut para generar el recorrido de la pierna. Tanto para X como para Y.
+        let x = origin_x + dir_x * d;
+        let y = origin_y + dir_y * d;
+
+        if valid(matrix, x, y) {
+            line.push((x, y));
+        }
+
+        d += 1.0;
+    }
+
+    line
+}
+
+fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
+
+    let xi = x.round() as isize;
+    let yi = y.round() as isize;
+
+    xi >= 0 && yi >= 0 && xi < matrix.width as isize && yi < matrix.height as isize && Some(matrix.data[yi as usize][xi as usize]) != matrix.no_data
 }

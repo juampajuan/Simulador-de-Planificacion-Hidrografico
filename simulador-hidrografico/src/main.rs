@@ -13,8 +13,13 @@ fn main() {
         }
     };
 
-    let recorrido = processing::routing::generate_route(300, &matrix);
-
+    let recorrido = processing::routing::generate_route(
+        &matrix,
+        90.0, // azimut
+        70.0, // separación
+    );
+    // println!("Resolución X: {}, Y: {}", matrix.size_x, matrix.size_y);
+    // println!("Ancho: {}, Alto: {}", matrix.width, matrix.height);
     // Recorrido
     // println!("Recorrido:");
     for (x, y) in recorrido {
