@@ -48,6 +48,8 @@ pub fn generate_route(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters:
 
     let legs = (diagonal / separation_px).ceil() as i32;
 
+    let previous_end: Option<(f64, f64)> = None;
+
     for leg in -legs / 2..=legs / 2 {
 
         let mut line = build_leg(matrix, center_x, center_y, perpendicular_x, perpendicular_y, dir_x, dir_y, diagonal, separation_px,  leg);
@@ -61,6 +63,11 @@ pub fn generate_route(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters:
         if leg % 2 != 0 {
             line.reverse();
         }
+
+        // Conecto la pierna con la otra
+        if let Some(prev) = previous_end {
+            connect(matrix, prev, line[0], &mut path);
+        }        
 
         // Agregar pierna actual
         path.extend(
@@ -100,6 +107,18 @@ fn build_leg(matrix: &DepthMatrix, center_x: f64, center_y: f64, perpendicular_x
 
     line
 }
+
+fn connect(_matrix: &DepthMatrix, start: (f64, f64), end: (f64, f64), _path: &mut Vec<(usize, usize)>,) {
+    let (x0, y0) = start;
+    let (x1, y1) = end;
+
+    let dx = x1 - x0;
+    let dy = y1 - y0;
+
+    let _steps = dx.abs().max(dy.abs()).ceil() as i32;
+}
+//Despues habria que recorrer de a i/steps pasos, y agregar los puntos de las rectas que generen dx y dy
+// Y usar valid
 
 fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
 
