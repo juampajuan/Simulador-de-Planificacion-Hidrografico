@@ -48,7 +48,7 @@ pub fn generate_route(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters:
 
     let legs = (diagonal / separation_px).ceil() as i32;
 
-    let previous_end: Option<(f64, f64)> = None;
+    let mut previous_end: Option<(f64, f64)> = None;
 
     for leg in -legs / 2..=legs / 2 {
 
@@ -75,6 +75,9 @@ pub fn generate_route(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters:
                 (x.round() as usize, y.round() as usize)
             })
         );
+
+        //Guardamos el último punto de esta pierna para conectarlo con el inicio de la que viene
+        update_previous_end(&line, &mut previous_end);
     }
 
     path
@@ -108,14 +111,38 @@ fn build_leg(matrix: &DepthMatrix, center_x: f64, center_y: f64, perpendicular_x
     line
 }
 
-fn connect(_matrix: &DepthMatrix, start: (f64, f64), end: (f64, f64), _path: &mut Vec<(usize, usize)>,) {
+fn connect(matrix: &DepthMatrix, start: (f64, f64), end: (f64, f64), path: &mut Vec<(usize, usize)>,) {
+    // Rellena los puntos intermedios entre el final de una pierna y el inicio de la otra
+    
     let (x0, y0) = start;
     let (x1, y1) = end;
 
     let dx = x1 - x0;
     let dy = y1 - y0;
 
-    let _steps = dx.abs().max(dy.abs()).ceil() as i32;
+    // Calculamos la cantidad de pasos
+    let steps = dx.abs().max(dy.abs()).ceil() as i32;
+
+    if steps == 0 {
+        return;
+    }
+
+    let mut current_step = 1;
+
+    while current_step <= steps {
+        
+        // Calculamos la proporcion del avance
+        let t = current_step as f64 / steps as f64;
+        
+        let px = x0 + (dx * t);
+        let py = y0 + (dy * t);
+
+        if valid(matrix, px, py) {
+            path.push((px.round() as usize, py.round() as usize));
+        }
+
+        current_step = current_step + 1;
+    }
 }
 //Despues habria que recorrer de a i/steps pasos, y agregar los puntos de las rectas que generen dx y dy
 // Y usar valid
@@ -126,4 +153,15 @@ fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
     let yi = y.round() as isize;
 
     xi >= 0 && yi >= 0 && xi < matrix.width as isize && yi < matrix.height as isize && Some(matrix.data[yi as usize][xi as usize]) != matrix.no_data
+}
+
+fn update_previous_end(line: &Vec<(f64, f64)>, previous_end: &mut Option<(f64, f64)>) {
+
+    match line.last() {
+        
+        Some(last_point) => {
+            *previous_end = Some(*last_point);
+        },
+        _ => {} 
+    }
 }
