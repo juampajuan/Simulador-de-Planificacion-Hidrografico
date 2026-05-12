@@ -144,8 +144,6 @@ fn connect(matrix: &DepthMatrix, start: (f64, f64), end: (f64, f64), path: &mut 
         current_step = current_step + 1;
     }
 }
-//Despues habria que recorrer de a i/steps pasos, y agregar los puntos de las rectas que generen dx y dy
-// Y usar valid
 
 fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
 
