@@ -1,3 +1,5 @@
+use std::os::unix::process;
+
 mod processing;
 mod structs;
 
@@ -18,6 +20,9 @@ fn main() {
         50.0, // azimut
         50.0, // separación
     );
+
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0);
+
     // println!("Resolución X: {}, Y: {}", matrix.size_x, matrix.size_y);
     // println!("Ancho: {}, Alto: {}", matrix.width, matrix.height);
     // Recorrido
@@ -25,6 +30,10 @@ fn main() {
     for (x, y) in recorrido {
         println!("({}, {})", x, y); // cargo run > res.txt para guardar el resultado ahi, despues copio y pego eso en el graficador
     }
+
+    // for (x, y) in puntos_a_medir{
+    //     println!("({}, {})", x, y);
+    // }
 
     // // Metadatos
     // println!("Ancho: {} pixels", matrix.data[0].len());

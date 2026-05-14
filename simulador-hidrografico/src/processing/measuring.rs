@@ -1,4 +1,4 @@
-fn find_measuring_points(path: Vec<(usize, usize)>, distance_between_points: f64) -> Vec<(usize, usize)> {
+pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64) -> Vec<(usize, usize)> {
     
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
 
