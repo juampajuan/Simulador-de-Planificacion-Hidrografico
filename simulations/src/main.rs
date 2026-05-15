@@ -1,4 +1,5 @@
-use std::os::unix::process;
+use std::{fs::File, os::unix::process};
+use std::io::Write;
 
 mod processing;
 mod structs;
@@ -17,24 +18,28 @@ fn main() {
 
     let recorrido = processing::routing::generate_route(
         &matrix,
-        50.0, // azimut
+        127.0, // azimut
         50.0, // separación
     );
 
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0);
+    let (puntos_a_medir, puntos_perpendiculares) = processing::measuring::find_measuring_points(&recorrido, 100.0);
 
     // println!("Resolución X: {}, Y: {}", matrix.size_x, matrix.size_y);
     // println!("Ancho: {}, Alto: {}", matrix.width, matrix.height);
     // Recorrido
     // println!("Recorrido:");
+    let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt"); 
     for (x, y) in recorrido {
-        println!("({}, {})", x, y); // cargo run > res.txt para guardar el resultado ahi, despues copio y pego eso en el graficador
+        writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
     }
-
-    // for (x, y) in puntos_a_medir{
-    //     println!("({}, {})", x, y);
-    // }
-
+    let mut points_file = File::create("points.txt").expect("No se pudo crear points.txt");
+    for (x, y) in puntos_a_medir {
+        writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
+    }
+    let mut points_file = File::create("perp.txt").expect("No se pudo crear points.txt");
+    for (x, y) in puntos_perpendiculares {
+        writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
+    }
     // // Metadatos
     // println!("Ancho: {} pixels", matrix.data[0].len());
     // println!("Alto: {} pixels", matrix.data.len());

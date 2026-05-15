@@ -16,3 +16,7 @@ Cargo.lock
 /target
 node_modules/
 client/dist/
+
+#testing files
+res.txt
+points.txt
