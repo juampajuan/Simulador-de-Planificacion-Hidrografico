@@ -1,5 +1,8 @@
+//reemplazar nombre a calculoar puntos Y tomr las mediciones.
 pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64) -> Vec<(usize, usize)> {
     
+    //convertir distancias a metros
+
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
 
     let origin = path[0];
@@ -23,6 +26,9 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
 
             //Aca quiza entra lo que habia dicho el porfesor, de elegir cual de los dos puntos esta mas cerca realmente.
             //Con esto me refiero a la charla del 13 de mayo, que Juampa estuvo casi solo.
+            
+            //Aca tambien se podria utilizar un metodo ajeno para tomar la medida directamente ya que tenemos la info de la 
+            //posicion.
             measuring_points.push(*point);
         }
 
