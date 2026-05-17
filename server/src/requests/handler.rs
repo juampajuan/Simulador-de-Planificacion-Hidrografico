@@ -49,7 +49,8 @@ fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
     }
 }
 
-pub fn create_server() -> Result<Server, Box<dyn std::error::Error + Send + Sync>> {
-    let server = Server::http("0.0.0.0:3000")?;
+pub fn create_server(port: i32) -> Result<Server, Box<dyn std::error::Error + Send + Sync>> {
+    let addr = format!("0.0.0.0:{}", port);
+    let server = Server::http(addr)?;
     Ok(server)
 }
