@@ -20,3 +20,6 @@ client/dist/
 #testing files
 res.txt
 points.txt
+perp.txt
+measures_circle.txt
+measures_perp.txt

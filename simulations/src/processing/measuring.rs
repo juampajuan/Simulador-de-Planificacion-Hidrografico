@@ -1,5 +1,12 @@
+use crate::{processing::measuring, structs::depth_matrix::DepthMatrix};
+
+pub enum MeasureMode {
+    Perpendicular { step_distance: f64 },
+    Circular { radius: f64 },
+}
+
 //reemplazar nombre a calculoar puntos Y tomr las mediciones.
-pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64) -> Vec<(usize, usize)> {
     
     //convertir distancias a metros
 
@@ -8,6 +15,8 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
     let mut current_point = &(path[0]);
     
     let mut distance_progress: f64 = 0.0;
+    
+    measuring_points.push(*current_point);
 
     for next_point in path {
 
@@ -23,19 +32,13 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
             // let falta = distance_between_points - (distance_progress - current_distance);
             //Aca quiza entra lo que habia dicho el porfesor, de elegir cual de los dos puntos esta mas cerca realmente.
             //Con esto me refiero a la charla del 13 de mayo, que Juampa estuvo casi solo.
-            
-            //Aca tambien se podria utilizar un metodo ajeno para tomar la medida directamente ya que tenemos la info de la 
-            //posicion.
 
             //Funcion aqui:
             measuring_points.push(*current_point);
         }
         current_point = next_point;
     }
-
-    let perpendicular_points = find_perpendicular_points(&measuring_points);
-
-    (measuring_points, perpendicular_points)
+    measuring_points
 }
 
 fn calculate_distance_between_points(point_a: &(usize, usize), point_b: &(usize, usize)) -> f64 {
@@ -48,35 +51,61 @@ fn calculate_distance_between_points(point_a: &(usize, usize), point_b: &(usize,
     ((a_x - b_x).powi(2) + (a_y - b_y).powi(2)).sqrt()
 }
 
-fn find_perpendicular_points(measure_points: &Vec<(usize, usize)>) -> Vec<(usize, usize)>{
-    let mut perp: Vec<(usize, usize)> = Vec::new();
+pub fn get_measures(mode: MeasureMode, matrix: &DepthMatrix, measure_points: &Vec<(usize, usize)>) -> Vec<Vec<f64>> {
+    let mut resulting_measures: Vec<Vec<f64>> = vec![vec![0.0; matrix.width]; matrix.height];
 
-    let mut previous_point = &(measure_points[0]);
+    let mut previous_point: Option<&(usize, usize)> = None;
     let mut current_point = &(measure_points[0]);
-    
-    for point in measure_points {
-        let iteration_points = get_points_perpendicular_to_this(previous_point, current_point, point, 10.0);
-        for p in iteration_points{
-            perp.push(p);
+
+    let get_group = |prev: Option<&(usize, usize)>, cur: &(usize, usize), next: Option<&(usize, usize)>| {
+        match mode {
+            MeasureMode::Perpendicular { step_distance } => get_points_perpendicular_to_this(prev, cur, next, step_distance),
+            MeasureMode::Circular { radius } => get_points_circular_to_this(cur, radius),
         }
-        previous_point = current_point;
-        current_point = point;
-    }
-
-    perp
-}
-
-fn get_points_perpendicular_to_this(prev_point: &(usize, usize),current_point: &(usize, usize),next_point: &(usize, usize),step_distance: f64) -> Vec<(usize, usize)> {
-    let dist_to_prev = calculate_distance_between_points(current_point, prev_point);
-    let dist_to_next = calculate_distance_between_points(current_point, next_point);
-
-    //Tomamos el punto mas lejano, que estara en la misma recta - direccion que el punto en cuestion
-    let reference = if dist_to_prev >= dist_to_next {
-        prev_point
-    } else {
-        next_point
     };
 
+    for next_point in measure_points {
+        let current_point_group = get_group(previous_point, current_point, Some(next_point));
+        resulting_measures[current_point.1][current_point.0] = calculate_measure(current_point_group, matrix);
+        previous_point = Some(current_point);
+        current_point = next_point;
+    }
+    let last_point_group = get_group(previous_point, current_point, None);
+    resulting_measures[current_point.1][current_point.0] = calculate_measure(last_point_group, matrix);
+
+    resulting_measures
+}
+
+fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
+    let mut measure = 0.0;
+    let group_len = points.len() as f64;
+    for point in points {
+        let x = point.0;
+        let y = point.1;
+        if x < matrix.width && y < matrix.height {
+            let pixel_val = matrix.data[y][x];
+            
+            // Validamos que el píxel actual no sea un valor "null" / "no_data"
+            if Some(pixel_val) != matrix.no_data {
+                measure += pixel_val;
+            } 
+        }
+    }
+    measure / group_len
+}
+
+pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, current_point: &(usize, usize), next_point: Option<&(usize, usize)>, step_distance: f64) -> Vec<(usize, usize)> {
+    // Elegir referencia según cuál existe y cuál está más lejos
+    let reference = match (prev_point, next_point) {
+        (Some(prev), Some(next)) => {
+            let dist_to_prev = calculate_distance_between_points(current_point, prev);
+            let dist_to_next = calculate_distance_between_points(current_point, next);
+            if dist_to_prev >= dist_to_next { prev } else { next }
+        }
+        (Some(prev), None) => prev,
+        (None, Some(next)) => next,
+        (None, None) => return Vec::new(),
+    };
 
     //Forma el vector
     let dx = reference.0 as f64 - current_point.0 as f64;
@@ -98,7 +127,7 @@ fn get_points_perpendicular_to_this(prev_point: &(usize, usize),current_point: &
 
     let mut points = Vec::new();
 
-    for i in 1..=4_i32 {
+    for i in 1..=5_i32 {
         let dist = i as f64 * step_distance;
 
         let lx = cx + perp_x * dist;
@@ -114,5 +143,35 @@ fn get_points_perpendicular_to_this(prev_point: &(usize, usize),current_point: &
         }
     }
 
+    points
+}
+
+pub fn get_points_circular_to_this(current_point: &(usize, usize), radius: f64) -> Vec<(usize, usize)> {
+    let mut points = Vec::new();
+
+    let center_x = current_point.0 as f64;
+    let center_y = current_point.1 as f64;
+
+    let squared_radius = radius * radius;
+    
+    // Definimos los límites de búsqueda controlando que no bajen de 0 (protección contra underflow)
+    let min_x = if center_x > radius { (center_x - radius).floor() as usize } else { 0 };
+    let max_x = (center_x + radius).ceil() as usize;
+    
+    let min_y = if center_y > radius { (center_y - radius).floor() as usize } else { 0 };
+    let max_y = (center_y + radius).ceil() as usize;
+    
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let dx = x as f64 - center_x;
+            let dy = y as f64 - center_y;
+            
+            // Condición del círculo: Pitágoras
+            if dx * dx + dy * dy <= squared_radius {
+                points.push((x, y));
+            }
+        }
+    }
+    
     points
 }
