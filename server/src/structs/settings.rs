@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 // Los tipos de datos que se aceptan en el config
 pub enum ConfigValue {
-    String(String),
+    String((String)),
     Int(i32), 
 }
 
@@ -12,6 +12,7 @@ pub enum ConfigValue {
 // Si no lo puede generar, no arranca la aplicacion
 pub struct Settings {
     pub port: i32,
+    pub cache_amount: i32
 }
 
 
@@ -22,6 +23,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
         // Aca se agrega y relaciona con el archivo.
         Ok(Settings {
             port: get_int(&config, "PORT")?,
+            cache_amount: get_int(&config, "CACHE_ITEMS_MAX")?,
         })
     }
 }

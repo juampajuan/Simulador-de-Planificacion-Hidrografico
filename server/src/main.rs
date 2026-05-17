@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 mod utils;
 use utils::config_loader::{load_settings};
@@ -7,10 +7,10 @@ use requests::handler::{create_server};
 mod threads;
 use threads::creators::{create_request_thread};
 mod structs;
+use structs::filecache::{FileCache};
 
 
-fn main() { 
-    // TODO: Generar struct para almacenar geotiffs a lo cache
+fn main() {
 
     // Intentamos cargar la config y transformamos en un recurso compartido.
     let settings = match load_settings() {
@@ -21,6 +21,10 @@ fn main() {
         }
     };
 
+    // Generamos el struct para hacer de cache con los geotiffs cargados.
+    let geotiff_cache = FileCache::new(settings.cache_amount);
+    let cache = Arc::new(Mutex::new(geotiff_cache));
+
     let server = match create_server(settings.port) {
         Ok(server) => server,
         Err(error) => {
@@ -29,8 +33,11 @@ fn main() {
         }
     };
 
+    println!("Server iniciado en puerto: {}", settings.port);
+
     for request in server.incoming_requests() {
         let settings_clone = Arc::clone(&settings);
-        create_request_thread(request);
+        let cache_clone = Arc::clone(&cache);
+        create_request_thread(request, cache_clone);
     }
 }
