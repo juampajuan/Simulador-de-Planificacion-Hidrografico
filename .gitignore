@@ -16,3 +16,12 @@ Cargo.lock
 /target
 node_modules/
 client/dist/
+
+#testing files
+res.txt
+points.txt
+perp.txt
+measures_circle.txt
+measures_perp.txt
+circ.txt
+mapa_reconstruido.txt
