@@ -77,8 +77,11 @@ pub fn get_measures(mode: MeasureMode, matrix: &DepthMatrix, measure_points: &Ve
 }
 
 fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
+
+    // EN esta funcion se deberia añadir las perturbaciones
+    
     let mut measure = 0.0;
-    let group_len = points.len() as f64;
+    let mut measures_counter = 0.0;
     for point in points {
         let x = point.0;
         let y = point.1;
@@ -88,10 +91,11 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
             // Validamos que el píxel actual no sea un valor "null" / "no_data"
             if Some(pixel_val) != matrix.no_data {
                 measure += pixel_val;
+                measures_counter += 1.0;
             } 
         }
     }
-    measure / group_len
+    measure / measures_counter
 }
 
 pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, current_point: &(usize, usize), next_point: Option<&(usize, usize)>, step_distance: f64) -> Vec<(usize, usize)> {
@@ -127,6 +131,7 @@ pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, cur
 
     let mut points = Vec::new();
 
+    //Hayq eu hacer que se mida una cantidad de puntos ingresada por paramtro y lo mismo con el salto entra cada punto
     for i in 1..=5_i32 {
         let dist = i as f64 * step_distance;
 

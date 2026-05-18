@@ -20,7 +20,7 @@ fn main() {
 
     let recorrido = processing::routing::generate_route(
         &matrix,
-        60.0, // azimut
+        90.0, // azimut
         50.0, // separación
     );
 
