@@ -3,7 +3,7 @@ pub mod structs;
 
 // TODO: Hay q completar. Decidir el Result q retorna
 
-pub fn generar_depth_matrix(/* nombre del file o path */) {
+pub fn create_depth_matrix(/* nombre del file o path */) {
 
     // Aca ejecutan los metodos y arman la depthmatrix
     // La retornan
@@ -13,7 +13,7 @@ pub fn generar_depth_matrix(/* nombre del file o path */) {
     println!("Generando depth_matrix ...");
 }
 
-pub fn generar_recorrido(/* DepthMatrix, parametros */) {
+pub fn create_path(/* DepthMatrix, parametros */) {
 
     // Grupo de metodos anidados
     // Generan el recorrido
@@ -22,7 +22,7 @@ pub fn generar_recorrido(/* DepthMatrix, parametros */) {
     println!("Generando recorrido ...");
 }
 
-pub fn generar_simulacion(/* DepthMatrix, parametros */) {
+pub fn run_simulation(/* DepthMatrix, parametros */) {
 
     // Aca ejecutan los metodos anidados 
     // Se hace la simulacion
@@ -31,10 +31,10 @@ pub fn generar_simulacion(/* DepthMatrix, parametros */) {
     println!("Simulando ...");
 }
 
-pub fn generar_imagen_recorrido(/* DepthMatrix, y lo que me digan */){
+pub fn create_path_image(/* DepthMatrix, y lo que me digan */){
     println!("Generando PNG ...");
 }
 
-pub fn generar_imagen_simulacion(/* Struct del alumno o lo que me digan */){
+pub fn create_simulation_image(/* Struct del alumno o lo que me digan */){
     println!("Generando PNG ...");
 }
