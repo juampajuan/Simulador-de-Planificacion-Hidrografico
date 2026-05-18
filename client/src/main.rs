@@ -1,6 +1,6 @@
 mod router;
 mod pages;
-// mod components;
+mod components;
 
 use yew::prelude::*;
 

@@ -1,10 +1,7 @@
 use yew::prelude::*;
-use yew_router::prelude::*;
-
 use wasm_bindgen_futures::spawn_local;
 use gloo_net::http::Request;
-
-use crate::router::Route;
+use crate::components::title::{Title};
 
 #[function_component(StudentPage)]
 pub fn student_page() -> Html {
@@ -18,7 +15,8 @@ pub fn student_page() -> Html {
 
             spawn_local(async move {
 
-                let response = Request::get("/")
+                // TODO: usar el metodo sin terminar de /requests.rs
+                let response = Request::get("localhost:3000/api/v1/users")
                     .send()
                     .await
                     .unwrap();
@@ -33,15 +31,15 @@ pub fn student_page() -> Html {
 
             || ()
         });
+        
     }
 
     html! {
-        <div class="h-screen bg-zinc-900 text-white flex flex-col items-center justify-center">
+        <div class="h-screen bg-blue-900 text-white flex flex-col items-center justify-center">
 
-            <h1 class="text-5xl font-bold mb-8">
-                { "STUDENT" }
-            </h1>
-
+            // Esto es un componente generico
+            <Title text={"STUDENT".to_string()} />
+ 
             <p class="text-2xl p-3 bg-green-800 rounded">
                 { (*mensaje).clone() }
             </p>
@@ -49,3 +47,8 @@ pub fn student_page() -> Html {
         </div>
     }
 }
+
+
+// generar_recorrido()
+
+// simular()

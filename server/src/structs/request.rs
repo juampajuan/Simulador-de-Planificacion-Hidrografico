@@ -31,5 +31,5 @@ impl RequestLog {
     }
 }
 
-use tiny_http::{Response};
-pub type HandlerResult = (Response<std::io::Cursor<Vec<u8>>>, u16);
+use tiny_http::ResponseBox;
+pub type HandlerResult = (ResponseBox, u16);

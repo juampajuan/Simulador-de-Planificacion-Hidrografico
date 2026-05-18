@@ -1,14 +1,23 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::collections::HashMap;
+
+pub enum Types {
+    String,
+    I32,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// TODO: Implementar, para comunicar los parametros en los POST entre client-server
+pub fn parse_string(line: String) -> Option<HashMap<String, Types>> {
+    let mut map = HashMap::new();
+ 
+    // Procesamos la linea y las dejamos en el HashMap
+    // key1=numero;key2="string"; .....
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+    Some(map)
+}
+
+pub fn serialize_map(map: HashMap<String, Types>) -> Option<String> {
+    // Procesamos el HashMap y lo transformamos en la linea.
+    // key1=numero;key2="string"; .....
+
+    Some("".to_string())
 }

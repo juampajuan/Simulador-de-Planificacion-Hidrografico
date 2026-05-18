@@ -22,7 +22,7 @@ pub fn get_users(request: &Request) -> HandlerResult {
     let response = Response::from_string("Lista de users")
         .with_status_code(200);
 
-    (response, 200)
+    (response.boxed(), 200)
 }
 
 // pub fn sumilar() {
