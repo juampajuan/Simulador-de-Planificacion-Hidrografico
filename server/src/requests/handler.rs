@@ -2,7 +2,7 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache, DepthMatrix};
-use crate::requests::endpoints::{webpage, users};
+use crate::requests::endpoints::{webpage, users, errors};
 
 const API_V1: &str = "/api/v1";
 
@@ -25,7 +25,7 @@ pub fn handle_request(request: Request, cache: Arc<Mutex<FileCache>>) -> Request
         // El de users, es un ejemplo a eliminar. 
         match (request.method(), api_path) {
             (Method::Get, "/users") => users::get_users(&request),
-            _ => webpage::not_found(),
+            _ => errors::not_found(),
         }
 
     } else {
