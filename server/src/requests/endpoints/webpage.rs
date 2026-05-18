@@ -7,6 +7,10 @@ pub fn get_page_file(request: &Request) -> HandlerResult {
     let response = Response::from_string(format!("Debe servir el archivo asociado al path: \"{}\". \nEl index.html si es \"/\" \nO un 404 si no existe.", request.url()))
         .with_status_code(200);
 
+    // url:8000/ -> index.html
+    // url:8000/algo.js -> algo.js
+    // url:8000/style.css -> style.css
+
     (response, 200)
 }
 
