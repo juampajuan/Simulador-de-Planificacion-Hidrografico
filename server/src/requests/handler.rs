@@ -29,11 +29,9 @@ pub fn handle_request(request: Request, cache: Arc<Mutex<FileCache>>) -> Request
         }
 
     } else {
+        // Entrega los archivos de la web.
         webpage::get_page_file(&request)
     };
-
-    // ---- http//sdadad.com/ --> la pagina
-    // ---- http//sdadad.com/api/v1/users --> GET all users
 
     response_sender(request, result)
 } 
