@@ -41,7 +41,7 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
     measuring_points
 }
 
-fn calculate_distance_between_points(point_a: &(usize, usize), point_b: &(usize, usize)) -> f64 {
+pub fn calculate_distance_between_points(point_a: &(usize, usize), point_b: &(usize, usize)) -> f64 {
     
     let a_x = point_a.0 as f64;
     let a_y = point_a.1 as f64;
@@ -95,6 +95,7 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
             } 
         }
     }
+
     measure / measures_counter
 }
 

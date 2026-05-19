@@ -2,7 +2,8 @@ use std::{fs::File, os::unix::process};
 use std::io::Write;
 
 use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
-
+use crate::processing::images::{process_depth};
+use crate::processing::interpolation::{interpolacion_jullen_theorem};
 mod processing;
 mod structs;
 
@@ -52,7 +53,12 @@ fn main() {
     let full_matrix_circle = get_measures(MeasureMode::Circular { radius: 10.0 },            &matrix, &puntos_a_medir);
 
     // --- Escritura de archivos ---
- 
+
+    let interpolacion = interpolacion_jullen_theorem(&puntos_a_medir, &full_matrix_perp);
+
+    process_depth(&interpolacion);
+    //process_depth(&matrix.data);
+    
     let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");
     for (x, y) in recorrido {
         writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
