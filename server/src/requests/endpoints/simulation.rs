@@ -17,8 +17,8 @@ pub fn create_path(request: &Request, cache: Arc<Mutex<FileCache>>) -> HandlerRe
     // Si no esta, la creo
     let matrix = simulations::create_depth_matrix(/* paso el path o algo */);
 
-    simulations::create_path(/* paramas */);
-    simulations::create_path_image(/* paramas */);
+    let path = simulations::create_path(matrix,/* azimut */, /* separation */);
+    let PNGImagePath = simulations::create_path_image(matrix, path);
  
     let response = Response::from_string(
         "Un increible path en forma de imagen"
