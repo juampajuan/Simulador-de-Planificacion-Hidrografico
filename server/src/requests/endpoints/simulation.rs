@@ -20,8 +20,22 @@ pub fn create_path(request: &Request, cache: Arc<Mutex<FileCache>>) -> HandlerRe
     simulations::create_path(/* paramas */);
     simulations::create_path_image(/* paramas */);
  
-    let response = Response::from_string("Un increible path en forma de imagen")
-        .with_status_code(200);
+    let response = Response::from_string(
+        "Un increible path en forma de imagen"
+    )
+    .with_status_code(200)
+    .with_header(
+        tiny_http::Header::from_bytes(
+            "Access-Control-Allow-Origin",
+            "*"
+        ).unwrap()
+    )
+    .with_header(
+        tiny_http::Header::from_bytes(
+            "Access-Control-Allow-Methods",
+            "POST, OPTIONS"
+        ).unwrap()
+    );
 
     (response.boxed(), 200)
 }
