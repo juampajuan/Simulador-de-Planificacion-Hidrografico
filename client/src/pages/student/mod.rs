@@ -3,6 +3,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 use gloo_net::http::Request;
 use web_sys::{window, HtmlElement};
+use js_sys::{Array, Uint8Array};
 
 #[function_component(StudentPage)]
 pub fn student_page() -> Html {
@@ -10,6 +11,8 @@ pub fn student_page() -> Html {
     let mensaje = use_state(|| {
         "Seleccione parametros para el recorrido".to_string()
     });
+
+    let image_url = use_state(|| None::<String>);
 
     let separacion = use_state(|| "".to_string());
     let azimut = use_state(|| "".to_string());
@@ -148,6 +151,7 @@ pub fn student_page() -> Html {
                                         let separacion = separacion.clone();
                                         let azimut = azimut.clone();
                                         let mensaje = mensaje.clone();
+                                        let image_url = image_url.clone();
 
                                         Callback::from(move |e: Event| {
 
@@ -161,13 +165,20 @@ pub fn student_page() -> Html {
                                             let az = (*azimut).clone();
 
                                             if !value.is_empty() && !az.is_empty() {
+                                                mensaje.set(
+                                                        "Generando recorrido...".to_string()
+                                                );
 
                                                 let mensaje = mensaje.clone();
+                                                let image_url = image_url.clone();
 
                                                 spawn_local(async move {
 
                                                     let body = format!(
-                                                        "separacion={}&azimut={}",
+                                                        r#"{{
+                                                            "separacion": {},
+                                                            "azimut": {}
+                                                        }}"#,
                                                         value,
                                                         az
                                                     );
@@ -175,18 +186,40 @@ pub fn student_page() -> Html {
                                                     let response = Request::post(
                                                         "http://localhost:3000/api/v1/create_path"
                                                     )
+                                                    .header("Content-Type", "application/json")
                                                     .body(body)
                                                     .unwrap()
                                                     .send()
                                                     .await
                                                     .unwrap();
 
-                                                    let text = response
-                                                        .text()
+                                                    let bytes = response
+                                                        .binary()
                                                         .await
                                                         .unwrap();
 
-                                                    mensaje.set(text);
+                                                    let uint8_array =
+                                                        js_sys::Uint8Array::from(bytes.as_slice());
+
+                                                    let array = js_sys::Array::new();
+
+                                                    array.push(&uint8_array.buffer());
+
+                                                    let blob =
+                                                        web_sys::Blob::new_with_u8_array_sequence(
+                                                            &array
+                                                        ).unwrap();
+
+                                                    let url =
+                                                        web_sys::Url::create_object_url_with_blob(
+                                                            &blob
+                                                        ).unwrap();
+
+                                                    image_url.set(Some(url));
+
+                                                    mensaje.set(
+                                                        "Imagen generada".to_string()
+                                                    );
                                                 });
                                             }
                                         })
@@ -209,6 +242,7 @@ pub fn student_page() -> Html {
                                         let azimut = azimut.clone();
                                         let separacion = separacion.clone();
                                         let mensaje = mensaje.clone();
+                                        let image_url = image_url.clone();
 
                                         Callback::from(move |e: Event| {
 
@@ -224,11 +258,18 @@ pub fn student_page() -> Html {
                                             if !value.is_empty() && !sep.is_empty() {
 
                                                 let mensaje = mensaje.clone();
+                                                let image_url = image_url.clone();
 
                                                 spawn_local(async move {
+                                                    mensaje.set(
+                                                        "Generando recorrido...".to_string()
+                                                    );
 
                                                     let body = format!(
-                                                        "separacion={}&azimut={}",
+                                                        r#"{{
+                                                            "separacion": {},
+                                                            "azimut": {}
+                                                        }}"#,
                                                         sep,
                                                         value
                                                     );
@@ -236,18 +277,40 @@ pub fn student_page() -> Html {
                                                     let response = Request::post(
                                                         "http://localhost:3000/api/v1/create_path"
                                                     )
+                                                    .header("Content-Type", "application/json")
                                                     .body(body)
                                                     .unwrap()
                                                     .send()
                                                     .await
                                                     .unwrap();
 
-                                                    let text = response
-                                                        .text()
+                                                    let bytes = response
+                                                        .binary()
                                                         .await
                                                         .unwrap();
 
-                                                    mensaje.set(text);
+                                                    let uint8_array =
+                                                        js_sys::Uint8Array::from(bytes.as_slice());
+
+                                                    let array = js_sys::Array::new();
+
+                                                    array.push(&uint8_array.buffer());
+
+                                                    let blob =
+                                                        web_sys::Blob::new_with_u8_array_sequence(
+                                                            &array
+                                                        ).unwrap();
+
+                                                    let url =
+                                                        web_sys::Url::create_object_url_with_blob(
+                                                            &blob
+                                                        ).unwrap();
+
+                                                    image_url.set(Some(url));
+
+                                                    mensaje.set(
+                                                        "Imagen generada".to_string()
+                                                    );
                                                 });
                                             }
                                         })
@@ -455,7 +518,6 @@ pub fn student_page() -> Html {
 
                 </div>
 
-                // Panel derecho
                 <div class="
                     flex-1
                     bg-green-900
@@ -469,9 +531,25 @@ pub fn student_page() -> Html {
                     transition-colors
                 ">
 
-                    <h2 class="text-2xl font-bold text-white text-center p-8">
-                        { (*mensaje).clone() }
-                    </h2>
+                    {
+                        if let Some(url) = &*image_url {
+
+                            html! {
+                                <img
+                                    src={url.clone()}
+                                    class="w-full h-full object-contain"
+                                />
+                            }
+
+                        } else {
+
+                            html! {
+                                <h2 class="text-2xl font-bold text-white text-center p-8">
+                                    { (*mensaje).clone() }
+                                </h2>
+                            }
+                        }
+                    }
 
                 </div>
 

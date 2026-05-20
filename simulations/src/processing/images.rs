@@ -48,17 +48,25 @@ pub fn makePNG_with_matrix_and_path(matrix: &DepthMatrix,
     }
 
     // 4. Pintar recorrido en rojo (con grosor de 1px alrededor)
-    for &(row, col) in path {
-        if row < matrix.height && col < matrix.width {
+    for &(x, y) in path {
+        if y < matrix.height && x < matrix.width {
+
             for dy in -1i32..=1 {
                 for dx in -1i32..=1 {
-                    let ny = row as i32 + dy;
-                    let nx = col as i32 + dx;
-                    if ny >= 0 && nx >= 0
+
+                    let ny = y as i32 + dy;
+                    let nx = x as i32 + dx;
+
+                    if ny >= 0
+                        && nx >= 0
                         && (ny as usize) < matrix.height
                         && (nx as usize) < matrix.width
                     {
-                        img.put_pixel(nx as u32, ny as u32, Rgb([255u8, 50u8, 50u8]));
+                        img.put_pixel(
+                            nx as u32,
+                            ny as u32,
+                            Rgb([255, 50, 50])
+                        );
                     }
                 }
             }
