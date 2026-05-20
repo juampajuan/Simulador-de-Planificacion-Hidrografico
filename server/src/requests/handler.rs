@@ -3,13 +3,14 @@ use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache, DepthMatrix};
 use crate::requests::endpoints::{webpage, simulation, errors};
+use tiny_http::Response;
 
 const API_V1: &str = "/api/v1";
 
 /// Recibe todas las requests y llama al metodo que corresponde
 // Cada metodo, devuelve una response
 // Que luego es enviada por el sender y logueada
-pub fn handle_request(request: Request, cache: Arc<Mutex<FileCache>>) -> RequestLog {
+pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> RequestLog {
 
     // Si se agrega otro versionado de apis, es tan facil, como agregar el `elseif` correspondiente.
     let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
@@ -17,8 +18,38 @@ pub fn handle_request(request: Request, cache: Arc<Mutex<FileCache>>) -> Request
         // AYUDA: En este match se agrega cada endpoint nueveo.
         // El de users, es un ejemplo a eliminar. 
         match (request.method(), api_path) {
-            (Method::Post, "/create_path") => simulation::create_path(&request, cache),
-            (Method::Post, "/run_simulation") => simulation::run_simulation(&request, cache),
+
+            (Method::Options, "/create_path") => {
+
+                let response = Response::empty(200)
+                    .with_header(
+                        tiny_http::Header::from_bytes(
+                            "Access-Control-Allow-Origin",
+                            "*"
+                        ).unwrap()
+                    )
+                    .with_header(
+                        tiny_http::Header::from_bytes(
+                            "Access-Control-Allow-Methods",
+                            "POST, OPTIONS"
+                        ).unwrap()
+                    )
+                    .with_header(
+                        tiny_http::Header::from_bytes(
+                            "Access-Control-Allow-Headers",
+                            "Content-Type"
+                        ).unwrap()
+                    );
+
+                (response.boxed(), 200)
+            }
+
+            (Method::Post, "/create_path") =>
+                simulation::create_path(&mut request, cache),
+
+            (Method::Post, "/run_simulation") =>
+                simulation::run_simulation(&request, cache),
+
             _ => errors::not_found(),
         }
 
