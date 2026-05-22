@@ -13,10 +13,12 @@ cargo add gloo-net -p client
 Para la ejecucion del __client__.
 ```bash
 # En primera terminal:
-npx tailwindcss -i ./styles.css -o ./tailwind.css --watch
+# Con la ruta en /src/client
+trunk serve
 
 # En la segunda
-trunk serve
+# Con la ruta en /src/client/ui
+npx tailwindcss -i ./styles.css -o ./tailwind.css --watch
 ```
 
 Para el __server__:
