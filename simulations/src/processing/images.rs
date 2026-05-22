@@ -1,5 +1,80 @@
-use image::{ImageBuffer, Luma, Rgb};
+use image::{ImageBuffer, Rgb, RgbImage};
 use crate::{structs::depth_matrix::DepthMatrix};
+
+pub fn makePNG_with_matrix_and_path(matrix: &DepthMatrix,
+    path: &Vec<(usize, usize)>,
+)-> RgbImage {
+    // 1. Min/max ignorando no_data
+    let mut min_depth = f64::MAX;
+    let mut max_depth = f64::MIN;
+
+    for row in &matrix.data {
+        for &val in row {
+            let is_valid = match matrix.no_data {
+                Some(nd) => val != nd,
+                None     => val.is_finite(),
+            };
+            if is_valid {
+                min_depth = min_depth.min(val);
+                max_depth = max_depth.max(val);
+            }
+        }
+    }
+
+     // 2. Crear imagen
+    let mut img = RgbImage::new(matrix.width as u32, matrix.height as u32);
+
+    // 3. Pintar fondo con gradiente azul
+    for (y, row) in matrix.data.iter().enumerate() {
+        for (x, &val) in row.iter().enumerate() {
+            let is_valid = match matrix.no_data {
+                Some(nd) => val != nd,
+                None     => val.is_finite(),
+            };
+
+            let color = if !is_valid {
+                Rgb([30u8, 30u8, 30u8])  // el noData es gris oscuro
+            } else {
+                let t = (val - min_depth) / (max_depth - min_depth);
+                Rgb([
+                    (20.0 + t * 10.0) as u8,
+                    (80.0 + t * 40.0) as u8,
+                    (150.0 + t * 80.0) as u8,
+                ])
+            };
+
+            img.put_pixel(x as u32, y as u32, color);
+        }
+    }
+
+    // 4. Pintar recorrido en rojo (con grosor de 1px alrededor)
+    for &(x, y) in path {
+        if y < matrix.height && x < matrix.width {
+
+            for dy in -1i32..=1 {
+                for dx in -1i32..=1 {
+
+                    let ny = y as i32 + dy;
+                    let nx = x as i32 + dx;
+
+                    if ny >= 0
+                        && nx >= 0
+                        && (ny as usize) < matrix.height
+                        && (nx as usize) < matrix.width
+                    {
+                        img.put_pixel(
+                            nx as u32,
+                            ny as u32,
+                            Rgb([255, 50, 50])
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    img
+}
 
 pub fn process_depth(matrix: &Vec<Vec<f64>>) {
 
