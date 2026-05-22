@@ -23,3 +23,4 @@ web-sys = { version = "0.3", features = [
 ] }
 
 js-sys = "0.3"
+lucide-yew = { version = "3.11.0", features = ["all-icons"] }

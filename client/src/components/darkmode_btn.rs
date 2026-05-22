@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use web_sys::{window, HtmlElement};
 use wasm_bindgen::JsCast;
+use lucide_yew::{Sun, Moon};
 
 #[function_component(DarkModeButton)]
 pub fn dark_mode_button() -> Html {
@@ -37,7 +38,7 @@ pub fn dark_mode_button() -> Html {
     html! {
         <button
             class="
-                p-1
+                p-1.5
                 rounded-full
                 hover:bg-black/10
                 dark:hover:bg-white/10
@@ -47,9 +48,9 @@ pub fn dark_mode_button() -> Html {
         >
             {
                 if *dark_mode {
-                    "☀️"
+                    html! {<Sun color="white" size=18 />}
                 } else {
-                    "🌙"
+                    html! {<Moon color="black" size=18 />}
                 }
             }
         </button>
