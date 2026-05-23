@@ -3,7 +3,7 @@ use std::io::Write;
 
 use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
 use crate::processing::images::{process_depth};
-use crate::processing::interpolation::{interpolacion_jullen_theorem, interpolation_idw_kdtrees};
+use crate::processing::interpolation::{interpolacion_jullen_theorem, interpolation_idw_kdtrees, interpolation_kriging};
 mod processing;
 mod structs;
 
@@ -37,7 +37,7 @@ fn main() {
     //x,y
     //2045, 665
 
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0);
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 20.0);
 
     
     // for point in puntos_a_medir{
@@ -57,7 +57,7 @@ fn main() {
     // let last_group = get_points_perpendicular_to_this(Some(previous_point), current_point, None, 2.5);
     // puntos_perpendiculares.extend(last_group);
 
-    let medidas = processing::measuring::get_measures(MeasureMode::Circular { radius: (5.0) }, &matrix, &puntos_a_medir);
+    //let medidas = processing::measuring::get_measures(MeasureMode::Circular { radius: (5.0) }, &matrix, &puntos_a_medir);
 
     //for i in 0..ancho{
     //     for j in 0..altura {
@@ -75,24 +75,24 @@ fn main() {
  
     // // --- Medidas ---
     let full_matrix_perp   = get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &puntos_a_medir);
-    // let full_matrix_circle = get_measures(MeasureMode::Circular { radius: 10.0 },            &matrix, &puntos_a_medir);
+    //let full_matrix_circle = get_measures(MeasureMode::Circular { radius: 10.0 },            &matrix, &puntos_a_medir);
 
     // // --- Escritura de archivos ---
 
     let interpolacion = interpolation_idw_kdtrees(&puntos_a_medir, &full_matrix_perp, &matrix);
 
     process_depth(&interpolacion);
-    // //process_depth(&matrix.data);
+    //process_depth(&matrix.data);
     
-    // let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");
-    // for (x, y) in recorrido {
-    //     writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
-    // }
+    let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");
+    for (x, y) in recorrido {
+        writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
+    }
  
-    // let mut points_file = File::create("points.txt").expect("No se pudo crear points.txt");
-    // for (x, y) in &puntos_a_medir {
-    //     writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
-    // }
+    let mut points_file = File::create("points.txt").expect("No se pudo crear points.txt");
+    for (x, y) in &puntos_a_medir {
+        writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
+    }
  
     // let mut perp_file = File::create("perp.txt").expect("No se pudo crear perp.txt");
     // for (x, y) in puntos_perpendiculares {

@@ -1,4 +1,5 @@
 use kiddo::{KdTree, SquaredEuclidean};
+use nalgebra::{DMatrix, DVector};
 
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::processing::measuring::calculate_distance_between_points;
@@ -164,7 +165,7 @@ pub fn interpolation_idw_kdtrees(measuring_points: &Vec<(usize, usize)>, matrix:
         None => f64::MAX,  
     };
 
-    let mut result = vec![vec![0.0; matrix[0].len()]; matrix.len()];
+    let mut result = vec![vec![0.0; geotiff.width]; geotiff.height];
 
     // Construimos el KD-tree con los puntos medidos
     let mut kdtree: KdTree<f64, 2> = KdTree::new();
@@ -221,6 +222,122 @@ pub fn interpolation_idw_kdtrees(measuring_points: &Vec<(usize, usize)>, matrix:
 
             if weight_total > 0.0 {
                 result[j][i] = weighted_sum / weight_total;
+            }
+        }
+    }
+
+    result
+}
+
+pub fn interpolation_kriging(measuring_points: &Vec<(usize, usize)>, matrix: &Vec<Vec<f64>>, geotiff: &DepthMatrix) -> Vec<Vec<f64>>{
+
+    let no_data: f64 = match geotiff.no_data {
+        Some(val) => val,      
+        None => f64::MAX,  
+    };
+
+    let mut result = vec![vec![0.0; geotiff.width]; geotiff.height];
+
+    // Construimos el KD-tree con los puntos medidos
+    let mut kdtree: KdTree<f64, 2> = KdTree::new();
+
+    for (idx, point) in measuring_points.iter().enumerate() {
+        let depth = matrix[point.1][point.0];
+        if depth != 0.0 && depth != no_data {
+            kdtree.add(&[point.0 as f64, point.1 as f64], idx as u64);
+        }
+    }
+
+    for j in 0..matrix.len(){
+        for i in 0..matrix[0].len(){
+            if geotiff.data[j][i] == no_data{
+                result[j][i] = no_data;
+                continue
+            }
+        
+
+            if matrix[j][i] != 0.0{
+                result[j][i] = matrix[j][i];
+                continue
+            }
+
+            let neighbors = kdtree.nearest_n::<SquaredEuclidean>(
+                    &[i as f64, j as f64],
+                    12,
+                );
+
+            // Si el vecino más cercano está exactamente en el mismo punto (distancia 0)
+                if neighbors[0].distance == 0.0 {
+                    let idx = neighbors[0].item;
+                    let p = measuring_points[idx as usize];
+                    result[j][i] = matrix[p.1][p.0];
+                    continue;
+                }
+
+            //CONSTRUCCIÓN DEL SISTEMA DE KRIGING (Matriz A y Vector B)
+            let n = neighbors.len();
+            
+            // Matriz A será de tamaño (n+1) x (n+1)
+            let mut mat_a = DMatrix::from_element(n + 1, n + 1, 1.0);
+            mat_a[(n, n)] = 0.0; // El último elemento de la diagonal es 0
+            
+            // Vector B será de tamaño (n+1) x 1
+            let mut vec_b = DVector::from_element(n + 1, 1.0);
+
+            // Función matemática del semivariograma 
+            let semivariograma = |dist_al_cuadrado: f64| -> f64 {
+                dist_al_cuadrado.sqrt() * 1.0 // Convertimos dist^2 a dist euclidiana
+            };
+
+            // Llenamos la Matriz A (relación entre vecinos) y Vector B (relación con el punto incógnito)
+            for row in 0..n {
+                let idx_row = neighbors[row].item;
+                let p_row = measuring_points[idx_row as usize];
+                let coords_row = [p_row.0 as f64, p_row.1 as f64];
+
+                //Llenamos el Vector B
+                vec_b[row] = semivariograma(neighbors[row].distance);
+
+                //Llenamos Matrix A (Solo la parte de los vecinos)
+                for col in 0..n{
+                    if row==col{
+                        mat_a[(row,col)] = 0.0 //Distancia a si mismo es 0
+                    } else {
+                        let idx_col = neighbors[col].item;
+                        let p_col = measuring_points[idx_col as usize];
+                        let dist_sq = (coords_row[0] - p_col.0 as f64).powi(2) + (coords_row[1] - p_col.1 as f64).powi(2);
+                        mat_a[(row, col)] = semivariograma(dist_sq);
+                    }
+                }
+            }
+            
+            //RESOLVER EL SISTEMA LINEAL: A * W = B -> Despejar W
+            // Usamos descomposición LU de nalgebra (rápida y segura para matrices chicas)
+            if let Some(weights) = mat_a.lu().solve(&vec_b) {
+                //Estimacion Final
+
+                let mut profundidad_estimada = 0.0;
+                for k in 0..n{
+                    let idx = neighbors[k].item;
+                    let p= measuring_points[idx as usize];
+                    let val_real = matrix[p.1][p.0];
+
+                    // weights[k] contiene el peso lambda para cada vecino
+                    profundidad_estimada += weights[k] * val_real;
+
+                }
+
+                result[j][i] = profundidad_estimada;
+            } else {
+                // Si la matriz es singular (raro, pero pasa si hay puntos duplicados), 
+                // usamos un promedio simple como plan de contingencia
+
+                let mut sum = 0.0;
+                for k in 0..n {
+                    let p = measuring_points[neighbors[k].item as usize];
+                    sum += matrix[p.1][p.0];
+                }
+                result[j][i] = sum / n as f64;
             }
         }
     }
