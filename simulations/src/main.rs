@@ -2,7 +2,7 @@ use std::{fs::File, os::unix::process};
 use std::io::Write;
 
 use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
-use crate::processing::images::{process_depth};
+use crate::processing::images::{makePng_with_matrix_and_interpolation};
 use crate::processing::interpolation::{interpolate,InterpolationMethod };
 mod processing;
 mod structs;
@@ -81,7 +81,7 @@ fn main() {
 
     let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_perp, &matrix);
 
-    process_depth(&interpolacion);
+    makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
     //process_depth(&matrix.data);
     
     let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");

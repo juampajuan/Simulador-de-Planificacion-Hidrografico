@@ -76,9 +76,13 @@ pub fn makePNG_with_matrix_and_path(matrix: &DepthMatrix,
     img
 }
 
-pub fn process_depth(matrix: &Vec<Vec<f64>>) {
+pub fn makePng_with_matrix_and_interpolation(matrix: &Vec<Vec<f64>>, geotiff: &DepthMatrix) -> RgbImage {
 
-    let fondo_especial = 170141000000000000000000000000000000000.0_f64;
+    let fondo_especial = if let Some(no_data) = geotiff.no_data {
+        no_data
+    } else {
+        170141000000000000000000000000000000000.0_f64
+    };
 
     let height = matrix.len() as u32;
     let width = matrix[0].len() as u32;
@@ -101,19 +105,17 @@ pub fn process_depth(matrix: &Vec<Vec<f64>>) {
     }
     let range = if max_val == min_val { 1.0 } else { max_val - min_val };
 
-    let mut pixels: Vec<u8> = Vec::with_capacity((width * height * 3) as usize);
+    let mut img = RgbImage::new(width, height);
 
-    for row in matrix {
-        for &val in row {
-            if val == fondo_especial {
-                pixels.push(0); // R
-                pixels.push(0); // G
-                pixels.push(0); // B
+    for (y, row) in matrix.iter().enumerate() {
+        for (x, &val) in row.iter().enumerate() {
+            let color = if val == fondo_especial {
+                Rgb([0u8, 0u8, 0u8])
             } else {
                 let t = ((val - min_val) / range).clamp(0.0, 1.0);
 
                 let (r, g, b) = if t < 0.5 {
-                    let factor = t * 2.0; 
+                    let factor = t * 2.0;
                     (
                         (factor * 255.0) as u8,
                         0,
@@ -128,16 +130,16 @@ pub fn process_depth(matrix: &Vec<Vec<f64>>) {
                     )
                 };
 
-                pixels.push(r);
-                pixels.push(g);
-                pixels.push(b);
-            }
+                Rgb([r, g, b])
+            };
+
+            img.put_pixel(x as u32, y as u32, color);
         }
     }
 
-    if let Some(img_buffer) = ImageBuffer::<Rgb<u8>, Vec<u8>>::from_raw(width, height, pixels) {
-        img_buffer.save("escala_personalizada.png").expect("Error al guardar imagen");
-        println!("¡Imagen generada con éxito!");
-        println!("Escala calculada para datos reales: Mín={:.2}, Máx={:.2}", min_val, max_val);
-    }
+    img.save("escala_personalizada.png").expect("Error al guardar imagen");
+    println!("¡Imagen generada con éxito!");
+    println!("Escala calculada para datos reales: Mín={:.2}, Máx={:.2}", min_val, max_val);
+
+    img
 }
