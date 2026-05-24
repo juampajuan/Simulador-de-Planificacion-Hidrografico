@@ -37,7 +37,7 @@ fn main() {
     //x,y
     //2045, 665
 
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 20.0);
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 50.0);
 
     
     // for point in puntos_a_medir{

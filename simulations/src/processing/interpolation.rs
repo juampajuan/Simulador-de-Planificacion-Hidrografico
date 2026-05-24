@@ -137,8 +137,9 @@ fn compute_idw(
             return val;
         }
 
-        weighted_sum += val / dist;
-        weight_total += 1.0 / dist;
+        let weight = 1.0 / dist.powf(2.0);
+        weighted_sum += val * weight;
+        weight_total += weight;
     }
 
     if weight_total > 0.0 { weighted_sum / weight_total } else { 0.0 }
