@@ -3,7 +3,7 @@ use std::io::Write;
 
 use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
 use crate::processing::images::{process_depth};
-use crate::processing::interpolation::{interpolacion_jullen_theorem, interpolation_idw_kdtrees, interpolation_kriging};
+use crate::processing::interpolation::{interpolate,InterpolationMethod };
 mod processing;
 mod structs;
 
@@ -79,7 +79,7 @@ fn main() {
 
     // // --- Escritura de archivos ---
 
-    let interpolacion = interpolation_idw_kdtrees(&puntos_a_medir, &full_matrix_perp, &matrix);
+    let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_perp, &matrix);
 
     process_depth(&interpolacion);
     //process_depth(&matrix.data);

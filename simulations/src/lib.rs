@@ -4,7 +4,7 @@ use structs::depth_matrix::DepthMatrix;
 
 use image::{RgbImage};
 
-use crate::{processing::{images::makePNG_with_matrix_and_path, interpolation::interpolacion_jullen_theorem, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::echosonder::EcosondaMode}; 
+use crate::{processing::{images::makePNG_with_matrix_and_path, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::echosonder::EcosondaMode}; 
 
 mod processing;
 
@@ -46,7 +46,7 @@ pub fn run_simulation(matrix: &DepthMatrix, students_path: &Vec<(usize, usize)>,
         EcosondaMode::Multihaz => get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure),
     };
 
-    let interpolacion = interpolacion_jullen_theorem(&points_to_measure, &measurements);
+    let interpolacion = interpolate(InterpolationMethod::IDW,&points_to_measure, &measurements, &matrix);
     
     interpolacion
 
