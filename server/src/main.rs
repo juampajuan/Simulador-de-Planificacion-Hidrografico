@@ -8,13 +8,22 @@ mod threads;
 use threads::creators::{create_request_thread};
 mod structs;
 use structs::filecache::{FileCache};
-
+mod db;
+use db::engine::DBEngine;
 
 fn main() {
 
     // Intentamos cargar la config y transformamos en un recurso compartido.
     let settings = match load_settings() {
         Ok(config) => Arc::new(config),
+        Err(err) => {
+            println!("{}", err);
+            return;
+        }
+    };
+
+    let db = match DBEngine::new("database.sqlite".to_string()) {
+        Ok(db) => db,
         Err(err) => {
             println!("{}", err);
             return;
