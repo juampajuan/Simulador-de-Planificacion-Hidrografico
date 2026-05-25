@@ -95,6 +95,7 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
             } 
         }
     }
+
     measure / measures_counter
 }
 
