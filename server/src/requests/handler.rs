@@ -48,7 +48,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> Req
                 simulation::create_path(&mut request, cache),
 
             (Method::Post, "/run_simulation") =>
-                simulation::run_simulation(&request, cache),
+                simulation::run_simulation(&mut request, cache),
 
             _ => errors::not_found(),
         }
