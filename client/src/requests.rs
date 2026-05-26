@@ -13,6 +13,7 @@ use js_sys::{Uint8Array, Array};
 pub fn trigger_path_generation(
     separacion: String,
     azimut: String,
+    gnss_type: String,
     mensaje: UseStateHandle<String>,
     image_url: UseStateHandle<Option<String>>,
 ) {

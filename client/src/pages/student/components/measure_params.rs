@@ -19,15 +19,6 @@ pub fn measures_params() -> Html {
                 })}
             </div>
 
-            <div class="flex flex-col p-3">
-                <label class="mb-2 font-semibold">{"GNSS"}</label>
-                <select class={input_cls}>
-                    { for ["Corrección de Fase", "Corrección DGPS", "Sin corrección"].iter().map(|opt| html! {
-                        <option>{ opt }</option>
-                    })}
-                </select>
-            </div>
-
             <div class="p-3">
                 <h3 class="text-2xl font-bold mb-4">{"Parámetros de Ecosonda"}</h3>
                 <div class="flex flex-col gap-4">

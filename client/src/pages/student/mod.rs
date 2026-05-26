@@ -12,6 +12,7 @@ pub fn student_page() -> Html {
     let image_url = use_state(|| None::<String>);
     let separacion = use_state(|| "".to_string());
     let azimut = use_state(|| "".to_string());
+    let gnss_type = use_state(|| "".to_string());
 
     html! {
         <Root title={"Simulador"}>
@@ -19,6 +20,7 @@ pub fn student_page() -> Html {
                 <PathParams 
                     separacion={separacion} 
                     azimut={azimut} 
+                    gnss_type={gnss_type}
                     mensaje={mensaje.clone()} 
                     image_url={image_url.clone()} 
                 />

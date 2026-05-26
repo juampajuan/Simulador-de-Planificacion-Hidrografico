@@ -1,4 +1,4 @@
-use crate::{processing::measuring, structs::depth_matrix::DepthMatrix, structs::student_measuring_parameters::StudentMeasuringParameters};
+use crate::{processing::measuring, structs::depth_matrix::DepthMatrix, structs::student_measuring_parameters::StudentMeasuringParameters, structs::professor_parameters::ProfessorParameters};
 
 pub enum MeasureMode {
     Perpendicular { step_distance: f64 },
@@ -225,7 +225,7 @@ pub fn get_points_circular_to_this(current_point: &(usize, usize), angle: f64, m
 //     Large { speed: f64, balance_index: usize}
 // }
 
-pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: StudentMeasuringParameters){
+pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: StudentMeasuringParameters, teacher_parameters: ProfessorParameters) -> Option<f64>{
 
     let depth = matrix.data[current_point.1][current_point.0];
     let echosounder_parameters = student_parameters.echo_sounder_parameters;
@@ -233,8 +233,12 @@ pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), st
     //El t este es puramente para darle cierto 
     let t = depth/1500.0;
 
-    let pc = (t * echosounder_parameters.echosounder_velocity as f64)/2.0;
+    let pc = (t * echosounder_parameters.echosounder_velocity as f64)/2.0 - teacher_parameters.tide;
+
+    if (pc > student_parameters.echo_sounder_parameters.max_limit) || (pc < student_parameters.echo_sounder_parameters.min_limit){
+        return None;
+    }
 
 
-
+    Some(pc)
 }
