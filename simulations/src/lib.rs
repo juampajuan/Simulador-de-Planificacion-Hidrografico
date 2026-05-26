@@ -42,7 +42,7 @@ pub fn run_simulation(matrix: &DepthMatrix, students_path: &Vec<(usize, usize)>,
     let points_to_measure = processing::measuring::find_measuring_points(students_path, distance_between_points);
 
     let measurements = match mode {
-        EcosondaMode::Monohaz => get_measures(MeasureMode::Circular { radius: 10.0 }, &matrix, &points_to_measure),
+        EcosondaMode::Monohaz => get_measures(MeasureMode::Circular { angle: 10.0 }, &matrix, &points_to_measure),
         EcosondaMode::Multihaz => get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure),
     };
 
