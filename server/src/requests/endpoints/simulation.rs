@@ -5,6 +5,7 @@ use crate::structs::request::{HandlerResult};
 use simulations;
 use std::io::Cursor;
 use image::ImageFormat;
+use simulations::structs::echosonder::EcosondaMode;
 
 use serde::Deserialize;
 
@@ -33,130 +34,135 @@ struct SimulationRequest {
 }
  
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
-
-    // Podes leer todo, pero no respondas aca. La respuesta, la creas y la retornas
-    // Leo los params de requests
-
-
     let mut content = String::new();
+    if let Err(_) = request.as_reader().read_to_string(&mut content) {
+        return (Response::from_string("Error reading body").with_status_code(400).boxed(), 400);
+    }
 
-    request.as_reader()
-        .read_to_string(&mut content)
-        .unwrap();
-
-    println!("{}", content);
-
-    let data = match serde_json::from_str::<PathRequest>(&content) {
-        Ok(data) => data,
-        Err(e) => {
-            println!("Error al parsear JSON: {:?}", e);
-            let response = Response::from_string("Invalid JSON")
-                .with_status_code(400);
-            return (response.boxed(), 400);
-        }
+    let data: PathRequest = match serde_json::from_str(&content) {
+        Ok(d) => d,
+        Err(_) => return (Response::from_string("Invalid JSON").with_status_code(400).boxed(), 400),
     };
 
-    // Chequeo si esta en el cache
-    // let mut cache = cache.lock().unwrap();
-    // cache.add(DepthMatrix { id: 1 });
-    // println!("{:?}", cache.get(1));
-
-    let tif = "Darsena_20cm_v2.tif";
+    let tif_id = "Darsena_20cm_v2.tif";
  
-    // Si no esta, la creo
-    let matrix = simulations::create_depth_matrix(tif);
-
-    let matrix = match matrix {
-        Ok(matrix) => matrix,
-        Err(e) => {
-            println!("Error al crear la matriz de profundidad: {:?}", e);
-            let response = Response::from_string("Error al procesar el archivo de profundidad")
-                .with_status_code(500);
-            return (response.boxed(), 500);
-        }
+    // Llamada a la crate externa
+    let matrix = match simulations::create_depth_matrix(tif_id) {
+        Ok(m) => m,
+        Err(_) => return (Response::from_string("Error processing TIF").with_status_code(500).boxed(), 500),
     };
 
     let path = simulations::create_path(&matrix, data.azimut, data.separacion, data.gnss_type);
     
-    let image =
-        simulations::create_path_image(&matrix, &path);
+    // Guardar en el cache
+    {
+        let mut lock = match cache.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        lock.update_path(tif_id.to_string(), matrix.clone(), path.clone());
+    }
 
-    let mut bytes: Vec<u8> = Vec::new();
-
-    image.write_to(
-        &mut Cursor::new(&mut bytes),
-        ImageFormat::Png
-    ).unwrap();
+    let image = simulations::create_path_image(&matrix, &path);
+    let mut bytes = Vec::new();
+    image.write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png).expect("Failed to encode PNG");
 
     let response = Response::from_data(bytes)
         .with_status_code(200)
-        .with_header(
-            tiny_http::Header::from_bytes(
-                "Content-Type",
-                "image/png"
-            ).unwrap()
-        )
-        .with_header(
-            tiny_http::Header::from_bytes(
-                "Access-Control-Allow-Origin",
-                "*"
-            ).unwrap()
-        );
+        .with_header(tiny_http::Header::from_bytes("Content-Type", "image/png").unwrap())
+        .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap());
 
     (response.boxed(), 200)
 }
 
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
-
-    // Podes leer todo, pero no respondas aca. La respuesta, la creas y la retornas
-    // Leo los params de requests
- 
-    // Si no esta en cache, la creo
-    // let matrix = simulations::create_depth_matrix(/* paso el path o algo */);
-
-    // simulations::create_path(/* paramas */);
-    // simulations::run_simulation(/* paramas */);
-    // simulations::create_simulation_image();
- 
-    
-    
-    
-    
     let mut content = String::new();
+    if let Err(_) = request.as_reader().read_to_string(&mut content) {
+        return (Response::from_string("Error leyendo body").with_status_code(400).boxed(), 400);
+    }
 
-    request.as_reader()
-    .read_to_string(&mut content)
-        .unwrap();
-    
-    println!("{}", content);
-    
-    let data = match serde_json::from_str::<SimulationRequest>(&content) {
-        Ok(data) => data,
+// 1. Parsear el JSON (lo que ya tenés)
+    let data: SimulationRequest = match serde_json::from_str(&content) {
+        Ok(d) => d,
         Err(e) => {
-            println!("Error al parsear JSON: {:?}", e);
-            let response = Response::from_string("Invalid JSON")
-            .with_status_code(400);
-        return (response.boxed(), 400);
+            println!("Error JSON: {}", e);
+            return (Response::from_string("JSON inválido").with_status_code(400).boxed(), 400);
         }
     };
-    let response = Response::from_string(format!("Recibí la simulación con los siguientes parámetros: uses_mathegapher: {}, uses_sound_profiler: {}, uses_inertial_sensor: {}, max_limit: {}, min_limit: {}, pulse_repetition_interval: {}, pulse_length: {}, uses_high_frecuency: {}, angle: {}, transmited_potency: {}, gain: {}, echosounder_velocity: {}, boat: {}",
-        data.uses_mathegapher,
-        data.uses_sound_profiler,
-        data.uses_inertial_sensor,
-        data.max_limit,
-        data.min_limit,
-        data.pulse_repetition_interval,
-        data.pulse_length,
-        data.uses_high_frecuency,
-        data.angle,
-        data.transmited_potency,
-        data.gain,
-        data.echosounder_velocity,
-        data.boat
-    ))
-    .with_status_code(200);
 
+    // 2. Acceder al caché de forma segura (MANEJO DE POISON ERROR)
+    let mut lock = match cache.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => {
+            println!("Mutex envenenado por un panic previo. Recuperando acceso...");
+            poisoned.into_inner()
+        }
+    };
+    
+    let tif_id = "Darsena_20cm_v2.tif"; 
+
+    let cached_item = match lock.get(tif_id) {
+        Some(item) => item,
+        None => {
+            return (
+                Response::from_string("Error: No se encontró la matriz. Genere el recorrido primero.")
+                    .with_status_code(404)
+                    .boxed()
+                    .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap()), 
+                404
+            );
+        }
+    };
+
+// 3. Clonar y limpiar el recorrido (Path)
+    let matrix = &cached_item.matrix;
+    let mut path = cached_item.last_path.clone(); 
+    
+    // Eliminamos duplicados (esto despues debo llevarlo al back)
+    path.dedup(); 
+
+    if path.is_empty() {
+        let resp = Response::from_string("Error: El recorrido está vacío")
+            .with_status_code(400)
+            .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap());
+        return (resp.boxed(), 400);
+    }
+    // 4. Determinar el modo de la ecosonda
+    let mode = if data.uses_high_frecuency {
+        EcosondaMode::Multihaz
+    } else {
+        EcosondaMode::Monohaz
+    };
+
+// 5. Ejecutar la simulación pesada
+    println!("Iniciando simulación para: {}", tif_id);
+    
+    // Importante: El pánico ocurre DENTRO de esta función.
+    // Al haber limpiado el path arriba, ya no debería suceder.
+    let interpolation = simulations::run_simulation(
+        matrix, 
+        &path, 
+        20.0, 
+        mode
+    );
+
+    // 6. Generar la imagen PNG de la simulación
+    let rgb_image = simulations::create_simulation_image(matrix, &interpolation);
+
+    let mut image_bytes: Vec<u8> = Vec::new();
+    if let Err(e) = rgb_image.write_to(&mut Cursor::new(&mut image_bytes), ImageFormat::Png) {
+        println!("Error generando PNG: {}", e);
+        return (Response::from_string("Error generando imagen").with_status_code(500).boxed(), 500);
+    }
+
+    // 7. Responder con la imagen y los HEADERS DE CORS (Vital para que no falle el navegador)
+    let response = Response::from_data(image_bytes)
+        .with_status_code(200)
+        .with_header(tiny_http::Header::from_bytes("Content-Type", "image/png").unwrap())
+        .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap())
+        .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Methods", "POST, OPTIONS").unwrap())
+        .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Headers", "Content-Type").unwrap());
+
+    println!("Simulación completada con éxito.");
     (response.boxed(), 200)
 }
-
- 

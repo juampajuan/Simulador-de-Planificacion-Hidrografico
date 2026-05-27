@@ -1,31 +1,19 @@
 use rand::random;
-use crate::structs::echosonder::EcosondaMode;
+use common::{EchosounderParameters, EcosondaMode, StudentMeasuringParameters};
 
-pub struct StudentMeasuringParameters {
-    pub uses_mathegapher: bool,
-    pub uses_sound_profiler: bool,
-    pub uses_inertial_sensor: bool,
-    pub echo_sounder_parameters: EchosounderParameters,
-    pub boat: Boat
+pub trait EchosounderLogic {
+    fn create_echosounder(&mut self);
+    fn apply_errors(
+        &self,
+        mediciones: Vec<((usize, usize), f64)>,
+        v_real: f64,
+        uses_sound_profiler: bool,
+    ) -> Vec<((usize, usize), Option<f64>)>;
 }
 
-pub struct EchosounderParameters {
-    pub uses_monohaz: bool,
-    pub mode: Option<EcosondaMode>,
-    pub max_limit: f64,
-    pub min_limit: f64,
-    pub pulse_repetition_interval: f64, //ms
-    pub pulse_length: usize,
-    pub uses_high_frecuency: bool,
-    pub transmited_potency: f64,
-    pub gain: f32,
-    pub echosounder_velocity: usize,
-    pub threshold: f64,
-}
+impl EchosounderLogic for EchosounderParameters {
 
-impl EchosounderParameters {
-
-    pub fn create_echosounder(&mut self) {
+    fn create_echosounder(&mut self) {
         self.mode = match self.uses_monohaz {
             true => {
                 // angulo en radianes para que tan() funcione correctamente
@@ -45,7 +33,7 @@ impl EchosounderParameters {
     ///   None    -> medicion perdida
     ///
     /// uses_sound_profiler: si true, no se aplica error de velocidad
-    pub fn apply_errors(
+    fn apply_errors(
         &self,
         mediciones: Vec<((usize, usize), f64)>,
         v_real: f64,

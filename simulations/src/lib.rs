@@ -3,7 +3,7 @@ pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use structs::student_path_parameters::StudentPathParameters;
 use structs::gnss_type::GnssType;
-
+use common::{EchosounderParameters, EcosondaMode, StudentMeasuringParameters};
 use image::{RgbImage};
 
 use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::{echosonder::EcosondaMode, student_measuring_parameters::StudentMeasuringParameters}}; 
@@ -61,7 +61,7 @@ pub fn run_simulation(
 
     echo.create_echosounder();
 
-    let mode = match &echo.mode {
+    let mode = match echo.mode {
         Some(m) => m,
         None => panic!("Llamar create_echosounder() antes de run_simulation()"),
     };
@@ -78,7 +78,7 @@ pub fn run_simulation(
     //calcular umbral en base a los parametros del alumno
     let measurements_ideal = match mode {
         EcosondaMode::Monohaz {angle, ..}=> {
-            get_measures(MeasureMode::Circular { angle: *angle }, &matrix, &points_to_measure, echo.threshold)
+            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &points_to_measure, echo.threshold)
         },
         EcosondaMode::Multihaz=> {
             get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure, echo.threshold)

@@ -52,12 +52,12 @@ pub fn param_cont(props: &ParamContProps) -> Html {
                 </div>
             </div>
 
-            // Cuando haya completado todo lo necesario, se cambia a false y lo podra clickear
-            <div class="w-full">
-                <button disabled={true} class="text-center disabled:opacity-30 bg-cyan-200 p-2 text-black font-semibold w-full">
-                    {"Realizar Medicion"}
-                </button>
-            </div>
+            // // Cuando haya completado todo lo necesario, se cambia a false y lo podra clickear
+            // <div class="w-full">
+            //     <button disabled={true} class="text-center disabled:opacity-30 bg-cyan-200 p-2 text-black font-semibold w-full">
+            //         {"Realizar Medicion"}
+            //     </button>
+            // </div>
         </div>
     }
 }

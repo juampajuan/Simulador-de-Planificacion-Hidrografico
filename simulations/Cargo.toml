@@ -10,4 +10,6 @@ spade = "2"
 kiddo = "4"
 nalgebra = "0.34.2"
 rand = "0.10.1"
-
+common = { path = "../common" }
+serde.workspace = true
+serde_json.workspace = true
