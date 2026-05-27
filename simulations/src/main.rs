@@ -78,7 +78,10 @@ fn main() {
  
     // --- Medidas ---
 
+    
+
     let mut highfrecuency = EchosounderParameters{
+        mode: EcosondaMode::Monohaz { angle: , absortion_coefficient: () },
         max_limit: 100.0,
         min_limit: 0.0,
         pulse_repetition_interval:100.0,
@@ -87,14 +90,12 @@ fn main() {
         transmited_potency: 220.0,
         gain: 0.0,
         echosounder_velocity: 1450,
-        uses_monohaz: true,
         threshold: 0.1,
-        mode: None,
     };
 
-    highfrecuency.create_echosounder();
 
     let mut lowfrecuency = EchosounderParameters{
+        mode: None,
         max_limit: 100.0,
         min_limit: 0.0,
         pulse_repetition_interval:100.0,
@@ -103,18 +104,13 @@ fn main() {
         transmited_potency: 220.0,
         gain: 0.0,
         echosounder_velocity: 1450,
-        uses_monohaz: true,
-        mode: None,
         threshold: 0.1,
     };
 
-    lowfrecuency.create_echosounder();
-
     let real_sound_velocity: f64 = 1500.0;
 
-    
     let full_matrix_circle_high_frecuency = match highfrecuency.mode {
-        Some(EcosondaMode::Monohaz {angle, ..}) => {
+        EcosondaMode::Monohaz {angle, ..} => {
             get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, highfrecuency.threshold)
         },
         _ =>{

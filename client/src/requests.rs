@@ -11,7 +11,8 @@ use common::{
     EchosounderParameters, 
     Boat, 
     PathParameters, 
-    GnssType
+    GnssType,
+    EcosondaMode,
 };
 
 #[derive(Default, Clone, PartialEq, Serialize)]
@@ -21,7 +22,7 @@ pub struct PathState {
     pub gnss_type: String,
 }
 
-#[derive(Default, Clone, PartialEq, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct EchoState {
     pub boat: String,
     pub max_limit: String,
@@ -36,7 +37,29 @@ pub struct EchoState {
     pub uses_sound_profiler: bool,
     pub uses_inertial_sensor: bool,
     pub uses_high_frecuency: bool,
-    pub angle: f32,
+    pub mode: EcosondaMode, // Usamos el enum de common
+}
+
+// Implementamos un constructor en lugar de Default para evitar el error rustc(E0117)
+impl EchoState {
+    pub fn new() -> Self {
+        Self {
+            boat: "W".to_string(),
+            max_limit: "100".to_string(),
+            min_limit: "0".to_string(),
+            pulse_repetition_interval: "100".to_string(),
+            pulse_length: "1".to_string(),
+            transmited_potency: "220".to_string(),
+            gain: "0".to_string(),
+            echosounder_velocity: "1450".to_string(),
+            umbral: "0.1".to_string(),
+            uses_mathegapher: false,
+            uses_sound_profiler: true,
+            uses_inertial_sensor: false,
+            uses_high_frecuency: true,
+            mode: EcosondaMode::Monohaz, // Variante simple
+        }
+    }
 }
 
 // --- GENERACIÓN DE RECORRIDO ---
@@ -79,7 +102,7 @@ pub fn run_simulation(
     mensaje.set("Iniciando simulación...".to_string());
     
     // Mapeo a Common: Construimos la estructura anidada y los Enums con variantes
-    let boat_speed = 0.005; // Valor base o parseado si lo agregas al UI
+    let boat_speed = 100.0; // Valor base o parseado si lo agregas al UI
 
     let params = StudentMeasuringParameters {
         uses_mathegapher: state.uses_mathegapher,
@@ -91,8 +114,9 @@ pub fn run_simulation(
             _ => Boat::W { speed: boat_speed },
         },
         echo_sounder_parameters: EchosounderParameters {
-            uses_monohaz: !state.uses_high_frecuency,
-            mode: None, // El backend lo inicializa con .create_echosounder()
+            mode: state.mode,
+            angle: 0.0, // Valor base
+            absortion_coefficient: 0.0, // Valor base
             max_limit: state.max_limit.parse().unwrap_or(0.0),
             min_limit: state.min_limit.parse().unwrap_or(0.0),
             pulse_repetition_interval: state.pulse_repetition_interval.parse().unwrap_or(0.0),

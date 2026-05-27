@@ -1,7 +1,7 @@
 // Asi se puede usar en servar.
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
-use common::{EcosondaMode, StudentMeasuringParameters, GnssType, PathParameters};
+use common::{EchosounderParameters, EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::structs::student_measuring_parameters::EchosounderLogic;
 use image::{RgbImage};
 
@@ -49,17 +49,13 @@ pub fn run_simulation(
     params: StudentMeasuringParameters,
 ) -> Vec<Vec<f64>> {
 
-    println!("Simulando ...");
+    println!("Simulannnnndo ...");
 
+    println!("Echo sounder a crear ...");
     let v_real = 1500.0;
     let mut echo = params.echo_sounder_parameters;
 
-    echo.create_echosounder();
-
-    let mode = match echo.mode {
-        Some(m) => m,
-        None => panic!("Llamar create_echosounder() antes de run_simulation()"),
-    };
+    println!("Echo sounder creado ...");
 
     let boat_speed = match params.boat {
         common::Boat::W { speed } => speed,
@@ -67,7 +63,9 @@ pub fn run_simulation(
     };
 
     //Calcula los intervalos entre cada medicion en base a la velociad del barco (metros/ms) y el intervalo de repeticion de plso (ms)
-    let distance_between_points = boat_speed/echo.pulse_repetition_interval;
+    // let distance_between_points = boat_speed/echo.pulse_repetition_interval;
+    let distance_between_points = 100.0;
+
 
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
@@ -75,37 +73,49 @@ pub fn run_simulation(
         &matrix,
     );
 
+    let mut echo = params.echo_sounder_parameters;
+    echo.create_echosounder();
+
+    println!("{:?}", params);
+    println!("{:?}", echo);
+
+
+//  StudentMeasuringParameters { uses_mathegapher: false, uses_sound_profiler: true, uses_inertial_sensor: false, echo_sounder_parameters: EchosounderParameters { mode: Monohaz { angle: 0.0, absortion_coefficient: 0.0 }, max_limit: 100.0, min_limit: 0.0, pulse_repetition_interval: 100.0, pulse_length: 1, uses_high_frecuency: true, transmited_potency: 220.0, gain: 0.0, echosounder_velocity: 1555, threshold: 0.1 }, boat: W { speed: 100.0 } }
+//  EchosounderParameters { mode: Monohaz { angle: 0.0, absortion_coefficient: 0.0 }, max_limit: 100.0, min_limit: 0.0, pulse_repetition_interval: 100.0, pulse_length: 1, uses_high_frecuency: true, transmited_potency: 220.0, gain: 0.0, echosounder_velocity: 1555, threshold: 0.1 }
+
     //calcular umbral en base a los parametros del alumno
-    let measurements_ideal = match mode {
-        EcosondaMode::Monohaz {angle, ..}=> {
-            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &points_to_measure, echo.threshold)
+    let measurements_ideal = match params.echo_sounder_parameters.mode {
+        EcosondaMode::Monohaz => {
+            get_measures(MeasureMode::Circular { angle: echo.angle }, &matrix, &points_to_measure, echo.threshold)
         },
-        EcosondaMode::Multihaz=> {
+        EcosondaMode::Multihaz => {
             get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure, echo.threshold)
         },
     };
 
-    let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
-        .iter()
-        .map(|&p| (p, measurements_ideal[p.1][p.0]))
-        .collect();
+    interpolate(InterpolationMethod::IDW, &points_to_measure, &measurements_ideal, &matrix)
 
-    let mediciones_observadas = echo.apply_errors(
-        mediciones_ideales,
-        v_real,
-        params.uses_sound_profiler,
-    );
+    // let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
+    //     .iter()
+    //     .map(|&p| (p, measurements_ideal[p.1][p.0]))
+    //     .collect();
 
-    let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
-    let mut points_validos: Vec<(usize, usize)> = Vec::new();
-    for (punto, z_obs) in &mediciones_observadas {
-        if let Some(z) = z_obs {
-            measurements_final[punto.1][punto.0] = *z;
-            points_validos.push(*punto);
-        }
-    }
+    // let mediciones_observadas = echo.apply_errors(
+    //     mediciones_ideales,
+    //     v_real,
+    //     params.uses_sound_profiler,
+    // );
 
-    interpolate(InterpolationMethod::IDW, &points_validos, &measurements_final, &matrix)
+    // let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
+    // let mut points_validos: Vec<(usize, usize)> = Vec::new();
+    // for (punto, z_obs) in &mediciones_observadas {
+    //     if let Some(z) = z_obs {
+    //         measurements_final[punto.1][punto.0] = *z;
+    //         points_validos.push(*punto);
+    //     }
+    // }
+
+    
 }
 
 pub fn create_path_image(

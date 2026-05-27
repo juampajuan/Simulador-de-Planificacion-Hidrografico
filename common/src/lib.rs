@@ -30,7 +30,7 @@ pub enum GnssType {
     PhaseCorrection
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Boat {
     W{
         speed: f64,
@@ -42,10 +42,7 @@ pub enum Boat {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum EcosondaMode {
-    Monohaz {
-        angle:f64,
-        absortion_coefficient: f64,
-    },       
+    Monohaz,       
     Multihaz,       
 }
 
@@ -58,10 +55,11 @@ pub struct PathParameters {
     pub gnss_type: GnssType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone,Copy, PartialEq)]
 pub struct EchosounderParameters {
-    pub uses_monohaz: bool,
-    pub mode: Option<EcosondaMode>,
+    pub mode: EcosondaMode,
+    pub angle: f64,
+    pub absortion_coefficient: f64,
     pub max_limit: f64,
     pub min_limit: f64,
     pub pulse_repetition_interval: f64, // ms
@@ -73,7 +71,7 @@ pub struct EchosounderParameters {
     pub threshold: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct StudentMeasuringParameters {
     pub uses_mathegapher: bool,
     pub uses_sound_profiler: bool,
