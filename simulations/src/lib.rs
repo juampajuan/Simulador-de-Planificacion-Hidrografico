@@ -6,7 +6,7 @@ use structs::gnss_type::GnssType;
 
 use image::{RgbImage};
 
-use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::echosonder::EcosondaMode}; 
+use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::{echosonder::EcosondaMode, student_measuring_parameters::StudentMeasuringParameters}}; 
 
 mod processing;
 
@@ -48,21 +48,67 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
 
 }
 
-pub fn run_simulation(matrix: &DepthMatrix, students_path: &Vec<(usize, usize)>, distance_between_points:f64, mode: EcosondaMode  ) -> Vec<Vec<f64>>{
+
+pub fn run_simulation(
+    matrix: &DepthMatrix,
+    students_path: &Vec<(usize, usize)>,
+    distance_between_points: f64,
+    params: &StudentMeasuringParameters,
+) -> Vec<Vec<f64>> {
 
     println!("Simulando ...");
 
-    let points_to_measure = processing::measuring::find_measuring_points(students_path, distance_between_points);
+    let vreal = 1500.0;
+    let echo = &params.echo_sounder_parameters;
 
-    let measurements = match mode {
-        EcosondaMode::Monohaz => get_measures(MeasureMode::Circular { angle: 10.0 }, &matrix, &points_to_measure),
-        EcosondaMode::Multihaz => get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure),
+    echo.create_echosounder();
+
+     // El mode ya fue calculado por create_echosounder()
+    let mode = match &echo.mode {
+        Some(m) => m,
+        None => panic!("Llamar create_echosounder() antes de run_simulation()"),
     };
 
-    let interpolacion = interpolate(InterpolationMethod::IDW,&points_to_measure, &measurements, &matrix);
-    
-    interpolacion
+    let points_to_measure = processing::measuring::find_measuring_points(
+        students_path,
+        distance_between_points,
+    );
 
+    // 1. Mediciones ideales (sin errores)
+    let measurements_ideal = match mode {
+        EcosondaMode::Monohaz { angle}=> {
+            get_measures(MeasureMode::Circular { angle: *angle }, &matrix, &points_to_measure)
+        },
+        EcosondaMode::Multihaz=> {
+            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure)
+        },
+    };
+
+    // 2. Convertir a vector (punto, z_ideal) para el pipeline
+    let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
+        .iter()
+        .map(|&p| (p, measurements_ideal[p.1][p.0]))
+        .collect();
+
+    // 3. Aplicar pipeline de errores
+    let mediciones_observadas = echo.apply_errors(
+        mediciones_ideales,
+        v_real,
+        params.uses_sound_profiler,
+    );
+
+    // 4. Reconstruir matriz — puntos None se descartan
+    let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
+    let mut points_validos: Vec<(usize, usize)> = Vec::new();
+    for (punto, z_obs) in &mediciones_observadas {
+        if let Some(z) = z_obs {
+            measurements_final[punto.1][punto.0] = *z;
+            points_validos.push(*punto);
+        }
+    }
+
+    // 5. Interpolar solo con puntos validos
+    interpolate(InterpolationMethod::IDW, &points_validos, &measurements_final, &matrix)
 }
 
 pub fn create_path_image(
