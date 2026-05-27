@@ -1,4 +1,6 @@
 pub enum EcosondaMode {
-    Monohaz,        
+    Monohaz {
+        angle:f64,
+    },       
     Multihaz,       
 }

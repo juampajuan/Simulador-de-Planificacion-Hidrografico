@@ -252,9 +252,13 @@ pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), st
 
     let pobs = (preal + teacher_parameters.tide) * (echosounder_parameters.echosounder_velocity as f64/ teacher_parameters.sound_velocity as f64) - teacher_parameters.tide;
 
+    
+
     if (pobs > student_parameters.echo_sounder_parameters.max_limit) || (pobs < student_parameters.echo_sounder_parameters.min_limit){
         return None;
     }
+
+
 
     Some(pobs)
 }

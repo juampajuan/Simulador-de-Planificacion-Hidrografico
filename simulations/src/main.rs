@@ -4,6 +4,7 @@ use std::io::Write;
 use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
 use crate::processing::images::{makePng_with_matrix_and_interpolation};
 use crate::processing::interpolation::{interpolate,InterpolationMethod };
+use crate::structs::student_measuring_parameters::EchosounderParameters;
 mod processing;
 mod structs;
 
@@ -74,12 +75,51 @@ fn main() {
     }
  
     // // --- Medidas ---
-    // let full_matrix_perp   = get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &puntos_a_medir);
-    let full_matrix_circle = get_measures(MeasureMode::Circular { angle: 20.0 }, &matrix, &puntos_a_medir);
 
+    let highfrecuency = EchosounderParameters{
+        max_limit: 0.0,
+        min_limit: 0.0,
+        pulse_repetition_interval:0,
+        pulse_length:0,
+        uses_high_frecuency:true,
+        transmited_potency: 0.0,
+        gain: 0.0,
+        echosounder_velocity: 1450,
+    };
+
+    let lowfrecuency = EchosounderParameters{
+        max_limit: 0.0,
+        min_limit: 0.0,
+        pulse_repetition_interval:0,
+        pulse_length:0,
+        uses_high_frecuency:false,
+        transmited_potency: 0.0,
+        gain: 0.0,
+        echosounder_velocity: 1450,
+    };
+
+    let real_sound_velocity: f64 = 1500.0;
+    let echosounder_angle_with_high_frecuency = highfrecuency.angulo_grados(&real_sound_velocity);
+    let echosounder_angle_with_low_frecuency = lowfrecuency.angulo_grados(&real_sound_velocity);
+
+    
+    let full_matrix_circle_high_frecuency = get_measures(
+        MeasureMode::Circular { angle: echosounder_angle_with_high_frecuency }, 
+        &matrix, 
+        &puntos_a_medir
+    );
+
+    let full_matrix_circle_low_frecuency = get_measures(
+        MeasureMode::Circular { angle: echosounder_angle_with_low_frecuency }, 
+        &matrix, 
+        &puntos_a_medir
+    );
+
+
+    // let full_matrix_perp   = get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &puntos_a_medir);
     // // --- Escritura de archivos ---
 
-    let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_circle, &matrix);
+    let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_circle_high_frecuency, &matrix);
 
     makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
     
