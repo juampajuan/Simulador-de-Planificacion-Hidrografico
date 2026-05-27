@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct DepthMatrix {
     pub data: Vec<Vec<f64>>,
     pub width: usize,
