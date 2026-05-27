@@ -1,5 +1,5 @@
 pub struct ProfessorParameters {
-    pub sound_velocity: usize,
+    pub sound_velocity: f64,
     pub surge: usize,
     pub tide: f64,
 }

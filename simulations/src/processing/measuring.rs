@@ -81,7 +81,6 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
     // EN esta funcion se deberia añadir las perturbaciones
     
     let mut measure = 0.0;
-    let mut measures_counter = 0.0;
     for point in points {
         let x = point.0;
         let y = point.1;
@@ -90,13 +89,14 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
             
             // Validamos que el píxel actual no sea un valor "null" / "no_data"
             if Some(pixel_val) != matrix.no_data {
-                measure += pixel_val;
-                measures_counter += 1.0;
+                if (pixel_val < measure) || (measure == 0.0){
+                    measure = pixel_val;
+                }
             } 
         }
     }
 
-    measure / measures_counter
+    measure
 }
 
 pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, current_point: &(usize, usize), next_point: Option<&(usize, usize)>, step_distance: f64) -> Vec<(usize, usize)> {
@@ -225,20 +225,36 @@ pub fn get_points_circular_to_this(current_point: &(usize, usize), angle: f64, m
 //     Large { speed: f64, balance_index: usize}
 // }
 
-pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: StudentMeasuringParameters, teacher_parameters: ProfessorParameters) -> Option<f64>{
 
-    let depth = matrix.data[current_point.1][current_point.0];
-    let echosounder_parameters = student_parameters.echo_sounder_parameters;
+// 1. Velocidad del sonido
+// El valor más importante. La ecosonda lo usa para convertir el tiempo medido en profundidad. Se ingresa manualmente y debe corresponder a la velocidad real del agua donde se trabaja. El error típico por velocidad incorrecta es: dv = prof / 150 (según el Manual C-13 de la OHI). Si se mide con barra de control, se puede calcular la velocidad "equivalente" ajustada.
+// 4. Longitud del pulso
+// Determina la energía que se transmite al agua. Pulsos más largos → más energía → más alcance. Pulsos más cortos → mejor resolución vertical.
+// 5. Potencia transmitida
+// Debe mantenerse en el valor más bajo posible que aún permita detectar el fondo. Si se sube demasiado se generan ecos falsos.
+// 6. Ganancia
+// Amplificación del eco de retorno. Si es demasiado baja, el eco llega redondeado y el sondaje resulta mayor al real. Si es demasiado alta, se registran falsas reflexiones de peces, vegetación o ruido.
+// 7. Ganancia Variable en Función del Tiempo (TVG)
+// Incrementa automáticamente la ganancia a medida que el eco demora más (fondos más profundos), compensando la atenuación por dispersión esférica y absorción.
+// 8. Umbral
+// El valor de tiempo (o sondaje) a partir del cual la ecosonda registra la reflexión como "el fondo". Afecta directamente qué se registra como profundidad.
+// 9. Intervalo de Repetición del Pulso (PRR)
+// El tiempo entre dos emisiones consecutivas. Debe ser suficiente para que el eco de la emisión anterior llegue antes de emitir el siguiente pulso (evitar "ecos fantasma").
 
-    //El t este es puramente para darle cierto 
-    let t = depth/1500.0;
+// punto de medición
+//     → aplicar error por pulse_length: afecta resolución vertical (dos blancos < longitud de pulso no se distinguen)
+//     → aplicar error por gain: si gain muy alta → ruido aleatorio; si muy baja → valor levemente mayor
 
-    let pc = (t * echosounder_parameters.echosounder_velocity as f64)/2.0 - teacher_parameters.tide;
+pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: &StudentMeasuringParameters, teacher_parameters: &ProfessorParameters) -> Option<f64>{
 
-    if (pc > student_parameters.echo_sounder_parameters.max_limit) || (pc < student_parameters.echo_sounder_parameters.min_limit){
+    let preal = matrix.data[current_point.1][current_point.0];
+    let echosounder_parameters = &student_parameters.echo_sounder_parameters;
+
+    let pobs = (preal + teacher_parameters.tide) * (echosounder_parameters.echosounder_velocity as f64/ teacher_parameters.sound_velocity as f64) - teacher_parameters.tide;
+
+    if (pobs > student_parameters.echo_sounder_parameters.max_limit) || (pobs < student_parameters.echo_sounder_parameters.min_limit){
         return None;
     }
 
-
-    Some(pc)
+    Some(pobs)
 }
