@@ -1,4 +1,4 @@
-use crate::{processing::measuring, structs::depth_matrix::DepthMatrix, structs::student_measuring_parameters::StudentMeasuringParameters, structs::professor_parameters::ProfessorParameters};
+use crate::{structs::depth_matrix::DepthMatrix};
 
 pub enum MeasureMode {
     Perpendicular { step_distance: f64 },

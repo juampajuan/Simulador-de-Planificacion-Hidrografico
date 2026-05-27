@@ -1,5 +1,5 @@
 use rand::random;
-use common::{EchosounderParameters, EcosondaMode, StudentMeasuringParameters};
+use common::{EchosounderParameters, EcosondaMode};
 
 pub trait EchosounderLogic {
     fn create_echosounder(&mut self);

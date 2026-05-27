@@ -4,8 +4,8 @@ use std::io::Write;
 use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
 use crate::processing::images::{makePng_with_matrix_and_interpolation};
 use crate::processing::interpolation::{interpolate,InterpolationMethod };
-use crate::structs::student_measuring_parameters::EchosounderParameters;
-use crate::structs::echosonder::EcosondaMode;
+use common::{EcosondaMode, EchosounderParameters};
+use crate::structs::student_measuring_parameters::EchosounderLogic;
 
 mod processing;
 mod structs;
@@ -78,34 +78,34 @@ fn main() {
  
     // --- Medidas ---
 
-    let highfrecuency = EchosounderParameters{
-        max_limit: 0.0,
+    let mut highfrecuency = EchosounderParameters{
+        max_limit: 100.0,
         min_limit: 0.0,
-        pulse_repetition_interval:0.0,
-        pulse_length:0,
+        pulse_repetition_interval:100.0,
+        pulse_length:1,
         uses_high_frecuency:true,
-        transmited_potency: 0.0,
+        transmited_potency: 220.0,
         gain: 0.0,
         echosounder_velocity: 1450,
         uses_monohaz: true,
-        threshold: 1.0,
+        threshold: 0.1,
         mode: None,
     };
 
     highfrecuency.create_echosounder();
 
-    let lowfrecuency = EchosounderParameters{
-        max_limit: 0.0,
+    let mut lowfrecuency = EchosounderParameters{
+        max_limit: 100.0,
         min_limit: 0.0,
-        pulse_repetition_interval:0.0,
-        pulse_length:0,
+        pulse_repetition_interval:100.0,
+        pulse_length:1,
         uses_high_frecuency:false,
-        transmited_potency: 0.0,
+        transmited_potency: 220.0,
         gain: 0.0,
         echosounder_velocity: 1450,
         uses_monohaz: true,
         mode: None,
-        threshold: 1.0,
+        threshold: 0.1,
     };
 
     lowfrecuency.create_echosounder();
@@ -115,7 +115,7 @@ fn main() {
     
     let full_matrix_circle_high_frecuency = match highfrecuency.mode {
         Some(EcosondaMode::Monohaz {angle, ..}) => {
-            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, echo.threshold)
+            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, highfrecuency.threshold)
         },
         _ =>{
             vec![]
@@ -124,7 +124,7 @@ fn main() {
 
     let full_matrix_circle_low_frecuency = match lowfrecuency.mode {
         Some(EcosondaMode::Monohaz {angle, ..}) => {
-            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, echo.threshold)
+            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, lowfrecuency.threshold)
         },
         _ =>{
             vec![]

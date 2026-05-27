@@ -1,16 +1,22 @@
 use yew::prelude::*; 
 use wasm_bindgen_futures::spawn_local;
 use gloo_net::http::Request;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 use web_sys::{Url, Blob};
 use js_sys::{Uint8Array, Array};
 
+// --- IMPORTANTE: Usamos los tipos de la verdad única ---
+use common::{
+    StudentMeasuringParameters, 
+    EchosounderParameters, 
+    Boat, 
+    PathParameters, 
+    GnssType
+};
 
 #[derive(Default, Clone, PartialEq, Serialize)]
 pub struct PathState {
-    #[serde(serialize_with = "serialize_str_to_f64")]
     pub separacion: String,
-    #[serde(serialize_with = "serialize_str_to_f64")]
     pub azimut: String,
     pub gnss_type: String,
 }
@@ -18,46 +24,22 @@ pub struct PathState {
 #[derive(Default, Clone, PartialEq, Serialize)]
 pub struct EchoState {
     pub boat: String,
-    #[serde(serialize_with = "serialize_str_to_f64")]
     pub max_limit: String,
-    #[serde(serialize_with = "serialize_str_to_f64")]
     pub min_limit: String,
-    #[serde(serialize_with = "serialize_str_to_usize")]
     pub pulse_repetition_interval: String,
-    #[serde(serialize_with = "serialize_str_to_usize")]
     pub pulse_length: String,
-    #[serde(serialize_with = "serialize_str_to_f64")]
     pub transmited_potency: String,
-    #[serde(serialize_with = "serialize_str_to_f32")]
     pub gain: String,
-    #[serde(serialize_with = "serialize_str_to_usize")]
     pub echosounder_velocity: String,
-    #[serde(serialize_with = "serialize_str_to_f64")]
     pub umbral: String,
     pub uses_mathegapher: bool,
     pub uses_sound_profiler: bool,
     pub uses_inertial_sensor: bool,
-
-    // Hay que ver esto cuando se decida que onda el back
-    #[serde(skip_serializing)] // No lo mandamos directo, usamos el helper abajo
-    pub frecuencia: String,
     pub uses_high_frecuency: bool,
     pub angle: f32,
 }
 
-
-fn serialize_str_to_f64<S>(value: &String, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
-    s.serialize_f64(value.parse::<f64>().unwrap_or(0.0))
-}
-
-fn serialize_str_to_f32<S>(value: &String, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
-    s.serialize_f32(value.parse::<f32>().unwrap_or(0.0))
-}
-
-fn serialize_str_to_usize<S>(value: &String, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
-    s.serialize_u64(value.parse::<usize>().unwrap_or(0) as u64)
-}
-
+// --- GENERACIÓN DE RECORRIDO ---
 
 pub fn trigger_path_generation(
     state: PathState, 
@@ -67,8 +49,19 @@ pub fn trigger_path_generation(
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
     mensaje.set("Generando recorrido...".to_string());
 
+    // Mapeo a Common: Convertimos Strings a Tipos Reales y Enums
+    let params = PathParameters {
+        separacion: state.separacion.parse().unwrap_or(0.0),
+        azimut: state.azimut.parse().unwrap_or(0.0),
+        gnss_type: match state.gnss_type.as_str() {
+            "Fase" => GnssType::PhaseCorrection,
+            "DGPS" => GnssType::DGPSCorrection,
+            _ => GnssType::NoCorrection,
+        },
+    };
+
     spawn_local(async move {
-        if let Some(res) = post_json("http://localhost:3000/api/v1/create_path", &state, mensaje.clone()).await {
+        if let Some(res) = post_json("http://localhost:3000/api/v1/create_path", &params, mensaje.clone()).await {
             let url = response_to_image_url(res).await;
             update_image_state(image_url, url);
             mensaje.set("Recorrido generado".to_string());
@@ -76,19 +69,44 @@ pub fn trigger_path_generation(
     });
 }
 
+// --- EJECUCIÓN DE SIMULACIÓN ---
+
 pub fn run_simulation(
-    mut state: EchoState, 
+    state: EchoState, 
     mensaje: UseStateHandle<String>,
     image_url: UseStateHandle<Option<String>>,
 ) {
     mensaje.set("Iniciando simulación...".to_string());
     
-    // Seteamos valores técnicos requeridos por el backend
-    state.uses_high_frecuency = true;
-    state.angle = 0.0;
+    // Mapeo a Common: Construimos la estructura anidada y los Enums con variantes
+    let boat_speed = 0.005; // Valor base o parseado si lo agregas al UI
+
+    let params = StudentMeasuringParameters {
+        uses_mathegapher: state.uses_mathegapher,
+        uses_sound_profiler: state.uses_sound_profiler,
+        uses_inertial_sensor: state.uses_inertial_sensor,
+        // Aquí resolvemos el error "expected struct variant"
+        boat: match state.boat.as_str() {
+            "Y" => Boat::Y { speed: boat_speed },
+            _ => Boat::W { speed: boat_speed },
+        },
+        echo_sounder_parameters: EchosounderParameters {
+            uses_monohaz: !state.uses_high_frecuency,
+            mode: None, // El backend lo inicializa con .create_echosounder()
+            max_limit: state.max_limit.parse().unwrap_or(0.0),
+            min_limit: state.min_limit.parse().unwrap_or(0.0),
+            pulse_repetition_interval: state.pulse_repetition_interval.parse().unwrap_or(0.0),
+            pulse_length: state.pulse_length.parse().unwrap_or(0),
+            uses_high_frecuency: state.uses_high_frecuency,
+            transmited_potency: state.transmited_potency.parse().unwrap_or(0.0),
+            gain: state.gain.parse().unwrap_or(0.0),
+            echosounder_velocity: state.echosounder_velocity.parse().unwrap_or(0),
+            threshold: state.umbral.parse().unwrap_or(0.0),
+        },
+    };
 
     spawn_local(async move {
-        if let Some(res) = post_json("http://localhost:3000/api/v1/run_simulation", &state, mensaje.clone()).await {
+        if let Some(res) = post_json("http://localhost:3000/api/v1/run_simulation", &params, mensaje.clone()).await {
             let url = response_to_image_url(res).await;
             update_image_state(image_url, url);
             mensaje.set("Simulación completada".to_string());
@@ -96,12 +114,26 @@ pub fn run_simulation(
     });
 }
 
+// --- HELPERS (Sin cambios, pero ahora reciben tipos de Common) ---
+
 async fn post_json<T: Serialize>(url: &str, data: &T, mensaje: UseStateHandle<String>) -> Option<gloo_net::http::Response> {
     let body = serde_json::to_string(data).ok()?;
-    match Request::post(url).header("Content-Type", "application/json").body(body).unwrap().send().await {
+    match Request::post(url)
+        .header("Content-Type", "application/json")
+        .body(body)
+        .unwrap()
+        .send()
+        .await 
+    {
         Ok(res) if res.status() == 200 => Some(res),
-        Ok(res) => { mensaje.set(format!("Error {}: Server rechazó datos", res.status())); None },
-        _ => { mensaje.set("Error de conexión".to_string()); None }
+        Ok(res) => { 
+            mensaje.set(format!("Error {}: Datos incompatibles", res.status())); 
+            None 
+        },
+        _ => { 
+            mensaje.set("Error de conexión".to_string()); 
+            None 
+        }
     }
 }
 

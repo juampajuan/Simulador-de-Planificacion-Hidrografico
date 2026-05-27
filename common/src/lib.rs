@@ -23,11 +23,21 @@ use serde::{Deserialize, Serialize};
 //     Some("".to_string())
 // }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum GnssType {
+    NoCorrection,
+    DGPSCorrection,
+    PhaseCorrection
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Boat {
-    W,
-    Y,
+    W{
+        speed: f64,
+    },
+    Y{
+        speed: f64,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
@@ -45,7 +55,7 @@ pub enum EcosondaMode {
 pub struct PathParameters {
     pub separacion: f64,
     pub azimut: f64,
-    pub gnss_type: String,
+    pub gnss_type: GnssType,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

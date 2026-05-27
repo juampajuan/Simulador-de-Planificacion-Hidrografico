@@ -1,12 +1,11 @@
 // Asi se puede usar en servar.
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
-use structs::student_path_parameters::StudentPathParameters;
-use structs::gnss_type::GnssType;
-use common::{EchosounderParameters, EcosondaMode, StudentMeasuringParameters};
+use common::{EcosondaMode, StudentMeasuringParameters, GnssType, PathParameters};
+use crate::structs::student_measuring_parameters::EchosounderLogic;
 use image::{RgbImage};
 
-use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::{echosonder::EcosondaMode, student_measuring_parameters::StudentMeasuringParameters}}; 
+use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 
 mod processing;
 
@@ -27,22 +26,18 @@ pub fn create_depth_matrix(file_path :&str) -> Result<DepthMatrix,()>{
     Ok(matrix) 
 }
 
-pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64, gnss_type: String) -> Vec<(usize,usize)> {
+pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64, gnss_type: GnssType) -> Vec<(usize,usize)> {
 
     println!("Generando recorrido ...");
 
-    let path_params = StudentPathParameters {
-        azimuth_deg,
-        separation_meters,
-        gnss_type: match gnss_type.as_str() {
-            "Corrección de Fase" => GnssType::PhaseCorrection,
-            "Corrección DGPS" => GnssType::DGPSCorrection,
-            _ => GnssType::NoCorrection, 
-        }
+    let path_params = PathParameters {
+        azimut: azimuth_deg,
+        separacion: separation_meters,
+        gnss_type,
     };
 
     // Usar el struck path_params acá para generar ruta.
-    let path = generate_route(matrix, path_params.azimuth_deg, path_params.separation_meters);
+    let path = generate_route(matrix, path_params.azimut, path_params.separacion);
 
     path
 
@@ -66,8 +61,13 @@ pub fn run_simulation(
         None => panic!("Llamar create_echosounder() antes de run_simulation()"),
     };
 
+    let boat_speed = match params.boat {
+        common::Boat::W { speed } => speed,
+        common::Boat::Y { speed } => speed,
+    };
+
     //Calcula los intervalos entre cada medicion en base a la velociad del barco (metros/ms) y el intervalo de repeticion de plso (ms)
-    let distance_between_points = params.boat.speed/echo.pulse_repetition_interval;
+    let distance_between_points = boat_speed/echo.pulse_repetition_interval;
 
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
