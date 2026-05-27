@@ -228,7 +228,7 @@ pub fn get_points_circular_to_this(current_point: &(usize, usize), angle: f64, m
 pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: StudentMeasuringParameters, teacher_parameters: ProfessorParameters) -> Option<f64>{
 
     let depth = matrix.data[current_point.1][current_point.0];
-    let echosounder_parameters = student_parameters.echo_sounder_parameters;
+    let echosounder_parameters = &student_parameters.echo_sounder_parameters;
 
     //El t este es puramente para darle cierto 
     let t = depth/1500.0;
