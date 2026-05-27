@@ -42,62 +42,60 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
     };
 
     // Usar el struck path_params acá para generar ruta.
-    let path = generate_route(matrix, azimuth_deg, separation_meters);
+    let path = generate_route(matrix, path_params.azimuth_deg, path_params.separation_meters);
 
     path
 
 }
 
-
 pub fn run_simulation(
     matrix: &DepthMatrix,
     students_path: &Vec<(usize, usize)>,
-    distance_between_points: f64,
-    params: &StudentMeasuringParameters,
+    params: StudentMeasuringParameters,
 ) -> Vec<Vec<f64>> {
 
     println!("Simulando ...");
 
-    let vreal = 1500.0;
-    let echo = &params.echo_sounder_parameters;
+    let v_real = 1500.0;
+    let mut echo = params.echo_sounder_parameters;
 
     echo.create_echosounder();
 
-     // El mode ya fue calculado por create_echosounder()
     let mode = match &echo.mode {
         Some(m) => m,
         None => panic!("Llamar create_echosounder() antes de run_simulation()"),
     };
 
+    //Calcula los intervalos entre cada medicion en base a la velociad del barco (metros/ms) y el intervalo de repeticion de plso (ms)
+    let distance_between_points = params.boat.speed/echo.pulse_repetition_interval;
+
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
         distance_between_points,
+        &matrix,
     );
 
-    // 1. Mediciones ideales (sin errores)
+    //calcular umbral en base a los parametros del alumno
     let measurements_ideal = match mode {
-        EcosondaMode::Monohaz { angle}=> {
-            get_measures(MeasureMode::Circular { angle: *angle }, &matrix, &points_to_measure)
+        EcosondaMode::Monohaz {angle, ..}=> {
+            get_measures(MeasureMode::Circular { angle: *angle }, &matrix, &points_to_measure, echo.threshold)
         },
         EcosondaMode::Multihaz=> {
-            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure)
+            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure, echo.threshold)
         },
     };
 
-    // 2. Convertir a vector (punto, z_ideal) para el pipeline
     let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
         .iter()
         .map(|&p| (p, measurements_ideal[p.1][p.0]))
         .collect();
 
-    // 3. Aplicar pipeline de errores
     let mediciones_observadas = echo.apply_errors(
         mediciones_ideales,
         v_real,
         params.uses_sound_profiler,
     );
 
-    // 4. Reconstruir matriz — puntos None se descartan
     let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
     let mut points_validos: Vec<(usize, usize)> = Vec::new();
     for (punto, z_obs) in &mediciones_observadas {
@@ -107,7 +105,6 @@ pub fn run_simulation(
         }
     }
 
-    // 5. Interpolar solo con puntos validos
     interpolate(InterpolationMethod::IDW, &points_validos, &measurements_final, &matrix)
 }
 

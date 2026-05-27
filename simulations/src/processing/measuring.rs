@@ -5,8 +5,7 @@ pub enum MeasureMode {
     Circular { angle: f64 },
 }
 
-//reemplazar nombre a calculoar puntos Y tomr las mediciones.
-pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64) -> Vec<(usize, usize)> {
+pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64, matrix: &DepthMatrix) -> Vec<(usize, usize)> {
     
     //convertir distancias a metros
 
@@ -20,7 +19,7 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
 
     for next_point in path {
 
-        let current_distance = calculate_distance_between_points(current_point, next_point);
+        let current_distance = calculate_distance_between_points(current_point, next_point, matrix);
 
         distance_progress += current_distance;
 
@@ -30,10 +29,7 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
             // Posible mejora para elegir cual de los dos pixeles tomar como punto segun a cuanto estan del punto real
             // let exceso = distance_progress - distance_between_points;
             // let falta = distance_between_points - (distance_progress - current_distance);
-            //Aca quiza entra lo que habia dicho el porfesor, de elegir cual de los dos puntos esta mas cerca realmente.
-            //Con esto me refiero a la charla del 13 de mayo, que Juampa estuvo casi solo.
 
-            //Funcion aqui:
             measuring_points.push(*current_point);
         }
         current_point = next_point;
@@ -41,17 +37,17 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
     measuring_points
 }
 
-pub fn calculate_distance_between_points(point_a: &(usize, usize), point_b: &(usize, usize)) -> f64 {
+pub fn calculate_distance_between_points(point_a: &(usize, usize), point_b: &(usize, usize), matrix: &DepthMatrix) -> f64 {
     
-    let a_x = point_a.0 as f64;
-    let a_y = point_a.1 as f64;
-    let b_x = point_b.0 as f64;
-    let b_y = point_b.1 as f64;
+    let a_x = point_a.0 as f64 * matrix.size_x;
+    let a_y = point_a.1 as f64 * matrix.size_y;
+    let b_x = point_b.0 as f64 * matrix.size_x;
+    let b_y = point_b.1 as f64 * matrix.size_y;
 
     ((a_x - b_x).powi(2) + (a_y - b_y).powi(2)).sqrt()
 }
 
-pub fn get_measures(mode: MeasureMode, matrix: &DepthMatrix, measure_points: &Vec<(usize, usize)>) -> Vec<Vec<f64>> {
+pub fn get_measures(mode: MeasureMode, matrix: &DepthMatrix, measure_points: &Vec<(usize, usize)>, threshold: f64) -> Vec<Vec<f64>> {
     let mut resulting_measures: Vec<Vec<f64>> = vec![vec![0.0; matrix.width]; matrix.height];
 
     let mut previous_point: Option<&(usize, usize)> = None;
@@ -59,26 +55,26 @@ pub fn get_measures(mode: MeasureMode, matrix: &DepthMatrix, measure_points: &Ve
 
     let get_group = |prev: Option<&(usize, usize)>, cur: &(usize, usize), next: Option<&(usize, usize)>| {
         match mode {
-            MeasureMode::Perpendicular { step_distance } => get_points_perpendicular_to_this(prev, cur, next, step_distance),
+            MeasureMode::Perpendicular { step_distance } => get_points_perpendicular_to_this(prev, cur, next, step_distance, matrix),
             MeasureMode::Circular { angle } => get_points_circular_to_this(cur, angle, &matrix),
         }
     };
 
     for next_point in measure_points {
         let current_point_group = get_group(previous_point, current_point, Some(next_point));
-        resulting_measures[current_point.1][current_point.0] = calculate_measure(current_point_group, matrix);
+        resulting_measures[current_point.1][current_point.0] = calculate_measure(current_point_group, matrix, threshold);
         previous_point = Some(current_point);
         current_point = next_point;
     }
     let last_point_group = get_group(previous_point, current_point, None);
-    resulting_measures[current_point.1][current_point.0] = calculate_measure(last_point_group, matrix);
+    resulting_measures[current_point.1][current_point.0] = calculate_measure(last_point_group, matrix, threshold);
 
     resulting_measures
 }
 
-fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
+fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix, threshold: f64) -> f64 {
 
-    // EN esta funcion se deberia añadir las perturbaciones
+    // let tiempoquetomamedicion = distancia/velocidaddelagua
     
     let mut measure = 0.0;
     for point in points {
@@ -86,10 +82,13 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
         let y = point.1;
         if x < matrix.width && y < matrix.height {
             let pixel_val = matrix.data[y][x];
+
+            //Distnacia sobre velocidad del agua: metros sobre metros/segundo
+            let pixel_time = pixel_val/1500.0;
             
             // Validamos que el píxel actual no sea un valor "null" / "no_data"
-            if Some(pixel_val) != matrix.no_data {
-                if (pixel_val < measure) || (measure == 0.0){
+            if (Some(pixel_val) != matrix.no_data) && (pixel_time <= threshold) {
+                if (pixel_val > measure) || (measure == 0.0){
                     measure = pixel_val;
                 }
             } 
@@ -99,12 +98,12 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
     measure
 }
 
-pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, current_point: &(usize, usize), next_point: Option<&(usize, usize)>, step_distance: f64) -> Vec<(usize, usize)> {
+pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, current_point: &(usize, usize), next_point: Option<&(usize, usize)>, step_distance: f64, matrix: &DepthMatrix) -> Vec<(usize, usize)> {
     // Elegir referencia según cuál existe y cuál está más lejos
     let reference = match (prev_point, next_point) {
         (Some(prev), Some(next)) => {
-            let dist_to_prev = calculate_distance_between_points(current_point, prev);
-            let dist_to_next = calculate_distance_between_points(current_point, next);
+            let dist_to_prev = calculate_distance_between_points(current_point, prev, matrix);
+            let dist_to_next = calculate_distance_between_points(current_point, next, matrix);
             if dist_to_prev >= dist_to_next { prev } else { next }
         }
         (Some(prev), None) => prev,
@@ -226,39 +225,13 @@ pub fn get_points_circular_to_this(current_point: &(usize, usize), angle: f64, m
 // }
 
 
-// 1. Velocidad del sonido
-// El valor más importante. La ecosonda lo usa para convertir el tiempo medido en profundidad. Se ingresa manualmente y debe corresponder a la velocidad real del agua donde se trabaja. El error típico por velocidad incorrecta es: dv = prof / 150 (según el Manual C-13 de la OHI). Si se mide con barra de control, se puede calcular la velocidad "equivalente" ajustada.
 // 4. Longitud del pulso
 // Determina la energía que se transmite al agua. Pulsos más largos → más energía → más alcance. Pulsos más cortos → mejor resolución vertical.
 // 5. Potencia transmitida
 // Debe mantenerse en el valor más bajo posible que aún permita detectar el fondo. Si se sube demasiado se generan ecos falsos.
 // 6. Ganancia
 // Amplificación del eco de retorno. Si es demasiado baja, el eco llega redondeado y el sondaje resulta mayor al real. Si es demasiado alta, se registran falsas reflexiones de peces, vegetación o ruido.
-// 7. Ganancia Variable en Función del Tiempo (TVG)
-// Incrementa automáticamente la ganancia a medida que el eco demora más (fondos más profundos), compensando la atenuación por dispersión esférica y absorción.
-// 8. Umbral
-// El valor de tiempo (o sondaje) a partir del cual la ecosonda registra la reflexión como "el fondo". Afecta directamente qué se registra como profundidad.
-// 9. Intervalo de Repetición del Pulso (PRR)
-// El tiempo entre dos emisiones consecutivas. Debe ser suficiente para que el eco de la emisión anterior llegue antes de emitir el siguiente pulso (evitar "ecos fantasma").
 
 // punto de medición
 //     → aplicar error por pulse_length: afecta resolución vertical (dos blancos < longitud de pulso no se distinguen)
 //     → aplicar error por gain: si gain muy alta → ruido aleatorio; si muy baja → valor levemente mayor
-
-pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: &StudentMeasuringParameters, teacher_parameters: &ProfessorParameters) -> Option<f64>{
-
-    let preal = matrix.data[current_point.1][current_point.0];
-    let echosounder_parameters = &student_parameters.echo_sounder_parameters;
-
-    let pobs = (preal + teacher_parameters.tide) * (echosounder_parameters.echosounder_velocity as f64/ teacher_parameters.sound_velocity as f64) - teacher_parameters.tide;
-
-    
-
-    if (pobs > student_parameters.echo_sounder_parameters.max_limit) || (pobs < student_parameters.echo_sounder_parameters.min_limit){
-        return None;
-    }
-
-
-
-    Some(pobs)
-}

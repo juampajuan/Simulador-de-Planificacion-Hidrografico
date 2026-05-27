@@ -5,6 +5,8 @@ use crate::processing::measuring::{MeasureMode, get_measures, get_points_circula
 use crate::processing::images::{makePng_with_matrix_and_interpolation};
 use crate::processing::interpolation::{interpolate,InterpolationMethod };
 use crate::structs::student_measuring_parameters::EchosounderParameters;
+use crate::structs::echosonder::EcosondaMode::*;
+
 mod processing;
 mod structs;
 
@@ -38,7 +40,7 @@ fn main() {
     //x,y
     //2045, 665
 
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0);
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0, &matrix);
 
     
     // for point in puntos_a_medir{
@@ -79,23 +81,29 @@ fn main() {
     let highfrecuency = EchosounderParameters{
         max_limit: 0.0,
         min_limit: 0.0,
-        pulse_repetition_interval:0,
+        pulse_repetition_interval:0.0,
         pulse_length:0,
         uses_high_frecuency:true,
         transmited_potency: 0.0,
         gain: 0.0,
         echosounder_velocity: 1450,
+        uses_monohaz: true,
+        mode: Monohaz{},
+        threshold: 1.0,
     };
 
     let lowfrecuency = EchosounderParameters{
         max_limit: 0.0,
         min_limit: 0.0,
-        pulse_repetition_interval:0,
+        pulse_repetition_interval:0.0,
         pulse_length:0,
         uses_high_frecuency:false,
         transmited_potency: 0.0,
         gain: 0.0,
         echosounder_velocity: 1450,
+        uses_monohaz: true,
+        mode: Monohaz{},
+        threshold: 1.0,
     };
 
     let real_sound_velocity: f64 = 1500.0;
@@ -106,13 +114,13 @@ fn main() {
     let full_matrix_circle_high_frecuency = get_measures(
         MeasureMode::Circular { angle: echosounder_angle_with_high_frecuency }, 
         &matrix, 
-        &puntos_a_medir
+        &puntos_a_medir, 1.0
     );
 
     let full_matrix_circle_low_frecuency = get_measures(
         MeasureMode::Circular { angle: echosounder_angle_with_low_frecuency }, 
         &matrix, 
-        &puntos_a_medir
+        &puntos_a_medir, 1.0
     );
 
 
