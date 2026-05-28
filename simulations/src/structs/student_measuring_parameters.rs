@@ -17,7 +17,7 @@ impl EchosounderLogic for EchosounderParameters {
         let (angulo_rad, alfa) = calculate_angle_and_absortion_coefficient(self.uses_high_frecuency);
         
         // Asignamos los valores reales calculados
-        self.angle = angulo_rad.to_degrees();
+        self.angle = angulo_rad;
         self.absortion_coefficient = alfa;
     }
     fn apply_errors(
@@ -45,9 +45,9 @@ impl EchosounderLogic for EchosounderParameters {
 fn calculate_angle_and_absortion_coefficient(uses_high_frecuency: bool) -> (f64, f64) {
     let v_real = 1500.0;
     let (f, d, absortion_coefficient) = if uses_high_frecuency {
-        (200_000.0, 0.10, 0.060) // Alta frecuencia
+        (200000.0, 0.10, 0.060) // Alta frecuencia
     } else {
-        (12_000.0, 0.20, 0.004)  // Baja frecuencia
+        (12000.0, 0.20, 0.004)  // Baja frecuencia
     };
     let angulo_grados: f64 = 60.0 * (v_real / f) / d;
     (angulo_grados, absortion_coefficient)
