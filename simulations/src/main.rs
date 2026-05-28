@@ -1,19 +1,19 @@
-use std::{fs::File, os::unix::process};
+use std::fs::File;
 use std::io::Write;
-
-use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this, get_points_perpendicular_to_this};
-use crate::processing::images::{makePng_with_matrix_and_interpolation};
-use crate::processing::interpolation::{interpolate,InterpolationMethod };
+ 
+use crate::processing::measuring::{MeasureMode, get_measures, get_points_circular_to_this};
+use crate::processing::images::makePng_with_matrix_and_interpolation;
+use crate::processing::interpolation::{interpolate, InterpolationMethod};
 use common::{EcosondaMode, EchosounderParameters};
 use crate::structs::student_measuring_parameters::EchosounderLogic;
-
+ 
 mod processing;
 mod structs;
-
+ 
 fn main() {
-
+ 
     let path = "Darsena_20cm_v2.tif";
-
+ 
     let matrix = match processing::geotiff::processing_geotiff(path) {
         Ok(matrix) => matrix,
         Err(e) => {
@@ -21,28 +21,18 @@ fn main() {
             return;
         }
     };
-    
-    // let altura: usize = matrix.height;
-    // let ancho: usize = matrix.width;
-
-
+ 
     let recorrido = processing::routing::generate_route(
         &matrix,
-        90.0, // azimut
-        50.0, // separación
+        90.0,  // azimut
+        50.0,  // separación en metros
     );
+ 
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 3.0, &matrix);
 
+    println!("size_x: {}, size_y: {}", matrix.size_x, matrix.size_y);
+    println!("width: {}, height: {}", matrix.width, matrix.height);
 
-    // for point in recorrido{
-    //     println!("{}, {}", point.0, point.1);
-    // }
-
-    //x,y
-    //2045, 665
-
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0, &matrix);
-
-    
     // for point in puntos_a_medir{
     //     println!("{}, {}", point.0, point.1);
     // }
@@ -67,79 +57,66 @@ fn main() {
     //         println!("{}, {}. {}", i, j, medidas[i][j]);
     //     }
     // }
-
-
-    // --- Puntos circulares ---
-    let mut puntos_circulares = Vec::new();
-    for punto in &puntos_a_medir {
-        let group = get_points_circular_to_this(punto, 20.0, &matrix);
-        puntos_circulares.extend(group);
-    }
  
-    // --- Medidas ---
-
-    
-
-    let mut highfrecuency = EchosounderParameters{
-        mode: EcosondaMode::Monohaz { angle: , absortion_coefficient: () },
+    // --- Ecosonda alta frecuencia (monohaz) ---
+    let mut high_frequency = EchosounderParameters {
+        mode: EcosondaMode::Monohaz,
+        angle: 0.0,                      // se calcula en create_echosounder
+        absortion_coefficient: 0.0,      // se calcula en create_echosounder
         max_limit: 100.0,
         min_limit: 0.0,
-        pulse_repetition_interval:100.0,
-        pulse_length:1,
-        uses_high_frecuency:true,
+        pulse_repetition_interval: 100.0,
+        pulse_length: 1,
+        uses_high_frecuency: true,
         transmited_potency: 220.0,
         gain: 0.0,
         echosounder_velocity: 1450,
         threshold: 0.1,
     };
-
-
-    let mut lowfrecuency = EchosounderParameters{
-        mode: None,
+    high_frequency.create_echosounder();
+ 
+    // --- Ecosonda baja frecuencia (monohaz) ---
+    let mut low_frequency = EchosounderParameters {
+        mode: EcosondaMode::Monohaz,
+        angle: 0.0,
+        absortion_coefficient: 0.0,
         max_limit: 100.0,
         min_limit: 0.0,
-        pulse_repetition_interval:100.0,
-        pulse_length:1,
-        uses_high_frecuency:false,
+        pulse_repetition_interval: 100.0,
+        pulse_length: 1,
+        uses_high_frecuency: false,
         transmited_potency: 220.0,
         gain: 0.0,
         echosounder_velocity: 1450,
         threshold: 0.1,
     };
-
-    let real_sound_velocity: f64 = 1500.0;
-
-    let full_matrix_circle_high_frecuency = match highfrecuency.mode {
-        EcosondaMode::Monohaz {angle, ..} => {
-            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, highfrecuency.threshold)
-        },
-        _ =>{
-            vec![]
-        }
-    };
-
-    let full_matrix_circle_low_frecuency = match lowfrecuency.mode {
-        Some(EcosondaMode::Monohaz {angle, ..}) => {
-            get_measures(MeasureMode::Circular { angle: angle }, &matrix, &puntos_a_medir, lowfrecuency.threshold)
-        },
-        _ =>{
-            vec![]
-        }
-
-    };
-
-    // let full_matrix_perp   = get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &puntos_a_medir);
-    // // --- Escritura de archivos ---
-
-    let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_circle_high_frecuency, &matrix);
-
+    low_frequency.create_echosounder();
+ 
+    // --- Medidas (sin errores) ---
+    let full_matrix_high = get_measures(
+        MeasureMode::Circular { angle: high_frequency.angle },
+        &matrix,
+        &puntos_a_medir,
+        high_frequency.threshold,
+    );
+ 
+    let full_matrix_low = get_measures(
+        MeasureMode::Circular { angle: low_frequency.angle },
+        &matrix,
+        &puntos_a_medir,
+        low_frequency.threshold,
+    );
+ 
+    // --- Interpolación y guardado ---
+    let interpolacion = interpolate(InterpolationMethod::IDW, &puntos_a_medir, &full_matrix_high, &matrix);
     makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
-    
+ 
+    // --- Archivos de debug ---
     let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");
-    for (x, y) in recorrido {
+    for (x, y) in &recorrido {
         writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
     }
- 
+
     // let mut points_file = File::create("points.txt").expect("No se pudo crear points.txt");
     // for (x, y) in &puntos_a_medir {
     //     writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
@@ -151,12 +128,13 @@ fn main() {
     // }
  
     let mut circ_file = File::create("circ.txt").expect("No se pudo crear circ.txt");
-    for (x, y) in puntos_circulares {
-        writeln!(circ_file, "({}, {})", x, y).expect("No se pudo escribir en circ.txt");
+    for punto in &puntos_a_medir {
+        let group = get_points_circular_to_this(punto, high_frequency.angle, &matrix);
+        for (x, y) in group {
+            writeln!(circ_file, "({}, {})", x, y).expect("No se pudo escribir en circ.txt");
+        }
     }
 
-
-    
     // // Solo escribe puntos con medida distinta de 0
     // let mut measures_perp_file = File::create("measures_perp.txt").expect("No se pudo crear measures_perp.txt");
     // for row in 0..full_matrix_perp.len() {
@@ -179,5 +157,4 @@ fn main() {
     //         }
     //     }
     // }
-
 }

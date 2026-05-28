@@ -30,7 +30,7 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
             // let exceso = distance_progress - distance_between_points;
             // let falta = distance_between_points - (distance_progress - current_distance);
 
-            measuring_points.push(*current_point);
+            measuring_points.push(*next_point);
         }
         current_point = next_point;
     }
@@ -83,7 +83,7 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix, threshol
         if x < matrix.width && y < matrix.height {
             let pixel_val = matrix.data[y][x];
 
-            //Distnacia sobre velocidad del agua: metros sobre metros/segundo
+            //Distancia sobre velocidad del agua: metros sobre metros/segundo
             let pixel_time = pixel_val/1500.0;
             
             // Validamos que el píxel actual no sea un valor "null" / "no_data"

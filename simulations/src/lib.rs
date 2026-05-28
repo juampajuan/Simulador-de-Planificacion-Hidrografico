@@ -66,7 +66,6 @@ pub fn run_simulation(
     // let distance_between_points = boat_speed/echo.pulse_repetition_interval;
     let distance_between_points = 100.0;
 
-
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
         distance_between_points,
