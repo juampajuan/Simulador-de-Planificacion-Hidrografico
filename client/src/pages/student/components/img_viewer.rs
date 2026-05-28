@@ -29,6 +29,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 if let Some(url) = &props.image_url {
                     html! {
                         <img
+                            key={url.to_string()} // <--- CLAVE: Fuerza a Yew a recrear el elemento
                             src={url}
                             class="h-full object-contain rounded-lg"
                         />
