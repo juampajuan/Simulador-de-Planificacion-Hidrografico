@@ -5,12 +5,12 @@ use lucide_yew::{Sun, Moon};
 
 #[function_component(DarkModeButton)]
 pub fn dark_mode_button() -> Html {
-    let dark_mode = use_state(|| false);
+    let dark_mode = use_state(|| true);
 
-    let toggle_dark_mode = {
+    let set_dark_mode = {
         let dark_mode = dark_mode.clone();
 
-        Callback::from(move |_| {
+        Callback::from(move |enabled: bool| {
             let document = window()
                 .unwrap()
                 .document()
@@ -25,15 +25,34 @@ pub fn dark_mode_button() -> Html {
 
             let class_list = html.class_list();
 
-            if *dark_mode {
-                class_list.remove_1("dark").unwrap();
-                dark_mode.set(false);
-            } else {
+            if enabled {
                 class_list.add_1("dark").unwrap();
-                dark_mode.set(true);
+            } else {
+                class_list.remove_1("dark").unwrap();
             }
+
+            dark_mode.set(enabled);
         })
     };
+
+    let toggle_dark_mode = {
+        let dark_mode = dark_mode.clone();
+        let set_dark_mode = set_dark_mode.clone();
+
+        Callback::from(move |_| {
+            set_dark_mode.emit(!*dark_mode);
+        })
+    };
+
+    use_effect_with((), {
+        let set_dark_mode = set_dark_mode.clone();
+
+        move |_| {
+            set_dark_mode.emit(true);
+
+            || ()
+        }
+    });
 
     html! {
         <button

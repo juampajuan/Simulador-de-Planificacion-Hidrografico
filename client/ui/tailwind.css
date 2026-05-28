@@ -943,6 +943,30 @@ video {
   scrollbar-color: var(--sb-thumb) transparent;
 }
 
+.dot-grid {
+  background-image: radial-gradient(#00000025 1px, transparent 0);
+  background-size: 20px 20px;
+  /* Adjust spacing between dots */
+}
+
+.dark .dot-grid {
+  background-image: radial-gradient(#ffffff25 1px, transparent 0);
+  background-size: 20px 20px;
+  /* Adjust spacing between dots */
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .hover\:bg-black\/10:hover {
   background-color: rgb(0 0 0 / 0.1);
 }

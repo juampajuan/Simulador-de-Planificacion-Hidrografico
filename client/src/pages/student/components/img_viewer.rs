@@ -23,6 +23,8 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 border
                 border-white/20
                 rounded-md 
+                dot-grid
+                dark:dot-grid-dark
             "
         >
             {
