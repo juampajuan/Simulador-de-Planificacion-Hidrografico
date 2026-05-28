@@ -5,9 +5,18 @@ pub enum MeasureMode {
     Circular { angle: f64 },
 }
 
+pub fn calculate_effective_measurement_distance(
+    distance_between_points: &f64,  // metros, PRI × velocidad
+    pixel_size: &f64,                // metros, size_x del GeoTIFF
+    min_pixels: f64,               // mínimo de píxeles entre mediciones (default: 50)
+) -> f64 {
+    let min_distance = min_pixels * pixel_size;
+    distance_between_points * min_distance
+}
+
 pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64, matrix: &DepthMatrix) -> Vec<(usize, usize)> {
     
-    //convertir distancias a metros
+    let distance_between_points_escalated = calculate_effective_measurement_distance(&distance_between_points,&matrix.size_x, 100.0);
 
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
 
@@ -23,8 +32,8 @@ pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points
 
         distance_progress += current_distance;
 
-        if distance_progress >= distance_between_points{
-            distance_progress -= distance_between_points;
+        if distance_progress >= distance_between_points_escalated{
+            distance_progress -= distance_between_points_escalated;
 
             // Posible mejora para elegir cual de los dos pixeles tomar como punto segun a cuanto estan del punto real
             // let exceso = distance_progress - distance_between_points;

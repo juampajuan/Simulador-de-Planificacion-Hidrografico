@@ -28,7 +28,7 @@ fn main() {
         50.0,  // separación en metros
     );
  
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 3.0, &matrix);
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 0.2, &matrix);
 
     println!("size_x: {}, size_y: {}", matrix.size_x, matrix.size_y);
     println!("width: {}, height: {}", matrix.width, matrix.height);
@@ -91,6 +91,7 @@ fn main() {
         threshold: 0.1,
     };
     low_frequency.create_echosounder();
+
  
     // --- Medidas (sin errores) ---
     let full_matrix_high = get_measures(
