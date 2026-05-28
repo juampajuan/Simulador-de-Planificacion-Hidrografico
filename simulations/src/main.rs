@@ -28,6 +28,7 @@ fn main() {
         50.0,  // separación en metros
     );
  
+    let recorrido_distorcionado = processing::routing::apply_gnss_noise(&recorrido, &matrix, 20.0);
     let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 0.2, &matrix);
 
     println!("size_x: {}, size_y: {}", matrix.size_x, matrix.size_y);
@@ -94,27 +95,27 @@ fn main() {
 
  
     // --- Medidas (sin errores) ---
-    let full_matrix_high = get_measures(
-        MeasureMode::Circular { angle: high_frequency.angle },
-        &matrix,
-        &puntos_a_medir,
-        high_frequency.threshold,
-    );
+    // let full_matrix_high = get_measures(
+    //     MeasureMode::Circular { angle: high_frequency.angle },
+    //     &matrix,
+    //     &puntos_a_medir,
+    //     high_frequency.threshold,
+    // );
  
-    let full_matrix_low = get_measures(
-        MeasureMode::Circular { angle: low_frequency.angle },
-        &matrix,
-        &puntos_a_medir,
-        low_frequency.threshold,
-    );
+    // let full_matrix_low = get_measures(
+    //     MeasureMode::Circular { angle: low_frequency.angle },
+    //     &matrix,
+    //     &puntos_a_medir,
+    //     low_frequency.threshold,
+    // );
  
-    // --- Interpolación y guardado ---
-    let interpolacion = interpolate(InterpolationMethod::IDW, &puntos_a_medir, &full_matrix_high, &matrix);
-    makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
+    //// --- Interpolación y guardado ---
+    // let interpolacion = interpolate(InterpolationMethod::IDW, &puntos_a_medir, &full_matrix_high, &matrix);
+    // makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
  
     // --- Archivos de debug ---
     let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");
-    for (x, y) in &recorrido {
+    for (x, y) in &recorrido_distorcionado {
         writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
     }
 
@@ -128,13 +129,13 @@ fn main() {
     //     writeln!(perp_file, "({}, {})", x, y).expect("No se pudo escribir en perp.txt");
     // }
  
-    let mut circ_file = File::create("circ.txt").expect("No se pudo crear circ.txt");
-    for punto in &puntos_a_medir {
-        let group = get_points_circular_to_this(punto, high_frequency.angle, &matrix);
-        for (x, y) in group {
-            writeln!(circ_file, "({}, {})", x, y).expect("No se pudo escribir en circ.txt");
-        }
-    }
+    // let mut circ_file = File::create("circ.txt").expect("No se pudo crear circ.txt");
+    // for punto in &puntos_a_medir {
+    //     let group = get_points_circular_to_this(punto, high_frequency.angle, &matrix);
+    //     for (x, y) in group {
+    //         writeln!(circ_file, "({}, {})", x, y).expect("No se pudo escribir en circ.txt");
+    //     }
+    // }
 
     // // Solo escribe puntos con medida distinta de 0
     // let mut measures_perp_file = File::create("measures_perp.txt").expect("No se pudo crear measures_perp.txt");

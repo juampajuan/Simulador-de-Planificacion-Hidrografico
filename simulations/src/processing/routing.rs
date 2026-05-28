@@ -163,3 +163,91 @@ fn update_previous_end(line: &Vec<(f64, f64)>, previous_end: &mut Option<(f64, f
         _ => {} 
     }
 }
+
+use rand::{Rng, RngExt};
+
+pub fn apply_gnss_noise(
+    path: &[(usize, usize)],
+    matrix: &DepthMatrix,
+    max_offset_meters: f64,
+) -> Vec<(usize, usize)> {
+    let mut rng = rand::rng();
+    let n = path.len();
+
+    let is_turn: Vec<bool> = (0..n)
+        .map(|i| {
+            if i == 0 || i + 1 >= n { return true; }
+            let (px, py) = (path[i - 1].0 as f64, path[i - 1].1 as f64);
+            let (cx, cy) = (path[i].0 as f64, path[i].1 as f64);
+            let (nx, ny) = (path[i + 1].0 as f64, path[i + 1].1 as f64);
+            let dx1 = cx - px; let dy1 = cy - py;
+            let dx2 = nx - cx; let dy2 = ny - cy;
+            let len1 = (dx1 * dx1 + dy1 * dy1).sqrt();
+            let len2 = (dx2 * dx2 + dy2 * dy2).sqrt();
+            if len1 == 0.0 || len2 == 0.0 { return true; }
+            let dot = (dx1 * dx2 + dy1 * dy2) / (len1 * len2);
+            dot < 0.7
+        })
+        .collect();
+
+    let mut segments: Vec<(usize, usize)> = vec![];
+    let mut start = 0;
+    for i in 1..n {
+        if is_turn[i] {
+            if i > start + 1 { segments.push((start, i)); }
+            start = i;
+        }
+    }
+
+    let mut result: Vec<(usize, usize)> = path.to_vec();
+
+    for (seg_start, seg_end) in segments {
+        let seg_len = seg_end - seg_start;
+
+        let (xs, ys) = (path[seg_start].0 as f64, path[seg_start].1 as f64);
+        let (xe, ye) = (path[seg_end].0 as f64, path[seg_end].1 as f64);
+        let dx = xe - xs;
+        let dy = ye - ys;
+        let len = (dx * dx + dy * dy).sqrt();
+        if len == 0.0 { continue; }
+        let (px, py) = (-dy / len, dx / len);
+
+
+        let harmonics: Vec<(f64, f64)> = (1..=4)
+            .map(|k| {
+                let amplitude = max_offset_meters / k as f64;
+                let phase: f64 = rng.random::<f64>() * std::f64::consts::TAU;
+                (amplitude, phase)
+            })
+            .collect();
+
+        let max_possible: f64 = harmonics.iter().map(|(a, _)| a).sum();
+
+        for j in 0..=seg_len {
+            let idx = seg_start + j;
+            let t = j as f64 / seg_len as f64 * std::f64::consts::PI;
+
+            // Suma de armónicos, todos multiplicados por sin(t) para forzar 0 en extremos
+            let raw: f64 = harmonics.iter()
+                .enumerate()
+                .map(|(ki, (amp, phase))| {
+                    let k = ki + 1;
+                    amp * (k as f64 * t + phase).sin()
+                })
+                .sum();
+
+            // Envelope: sin(t) fuerza que los extremos sean exactamente 0
+            let offset = (raw / max_possible) * max_offset_meters * t.sin();
+
+            let (x0, y0) = (path[idx].0 as f64, path[idx].1 as f64);
+            let nx = x0 + px * offset / matrix.size_x;
+            let ny = y0 + py * offset / matrix.size_y;
+
+            if valid(matrix, nx, ny) {
+                result[idx] = (nx.round() as usize, ny.round() as usize);
+            }
+        }
+    }
+
+    result
+}
