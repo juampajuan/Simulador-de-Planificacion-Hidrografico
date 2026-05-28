@@ -19,8 +19,8 @@ fn main() {
         }
     };
     
-    let altura: usize = matrix.height;
-    let ancho: usize = matrix.width;
+    // let altura: usize = matrix.height;
+    // let ancho: usize = matrix.width;
 
 
     let recorrido = processing::routing::generate_route(
@@ -37,7 +37,7 @@ fn main() {
     //x,y
     //2045, 665
 
-    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 50.0);
+    let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 100.0);
 
     
     // for point in puntos_a_medir{
@@ -57,52 +57,51 @@ fn main() {
     // let last_group = get_points_perpendicular_to_this(Some(previous_point), current_point, None, 2.5);
     // puntos_perpendiculares.extend(last_group);
 
-    //let medidas = processing::measuring::get_measures(MeasureMode::Circular { radius: (5.0) }, &matrix, &puntos_a_medir);
+    // let medidas = processing::measuring::get_measures(MeasureMode::Circular { angle: (10.0) }, &matrix, &puntos_a_medir);
 
-    //for i in 0..ancho{
+    // for i in 0..ancho{
     //     for j in 0..altura {
     //         println!("{}, {}. {}", i, j, medidas[i][j]);
     //     }
     // }
 
 
-    // // --- Puntos circulares ---
-    // let mut puntos_circulares = Vec::new();
-    // for punto in &puntos_a_medir {
-    //     let group = get_points_circular_to_this(punto, 2.5);
-    //     puntos_circulares.extend(group);
-    // }
+    // --- Puntos circulares ---
+    let mut puntos_circulares = Vec::new();
+    for punto in &puntos_a_medir {
+        let group = get_points_circular_to_this(punto, 20.0, &matrix);
+        puntos_circulares.extend(group);
+    }
  
     // // --- Medidas ---
-    let full_matrix_perp   = get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &puntos_a_medir);
-    //let full_matrix_circle = get_measures(MeasureMode::Circular { radius: 10.0 },            &matrix, &puntos_a_medir);
+    // let full_matrix_perp   = get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &puntos_a_medir);
+    let full_matrix_circle = get_measures(MeasureMode::Circular { angle: 20.0 }, &matrix, &puntos_a_medir);
 
     // // --- Escritura de archivos ---
 
-    let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_perp, &matrix);
+    let interpolacion = interpolate(InterpolationMethod::IDW,&puntos_a_medir, &full_matrix_circle, &matrix);
 
     makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
-    //process_depth(&matrix.data);
     
     let mut res_file = File::create("res.txt").expect("No se pudo crear res.txt");
     for (x, y) in recorrido {
         writeln!(res_file, "({}, {})", x, y).expect("No se pudo escribir en res.txt");
     }
  
-    let mut points_file = File::create("points.txt").expect("No se pudo crear points.txt");
-    for (x, y) in &puntos_a_medir {
-        writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
-    }
+    // let mut points_file = File::create("points.txt").expect("No se pudo crear points.txt");
+    // for (x, y) in &puntos_a_medir {
+    //     writeln!(points_file, "({}, {})", x, y).expect("No se pudo escribir en points.txt");
+    // }
  
     // let mut perp_file = File::create("perp.txt").expect("No se pudo crear perp.txt");
     // for (x, y) in puntos_perpendiculares {
     //     writeln!(perp_file, "({}, {})", x, y).expect("No se pudo escribir en perp.txt");
     // }
  
-    // let mut circ_file = File::create("circ.txt").expect("No se pudo crear circ.txt");
-    // for (x, y) in puntos_circulares {
-    //     writeln!(circ_file, "({}, {})", x, y).expect("No se pudo escribir en circ.txt");
-    // }
+    let mut circ_file = File::create("circ.txt").expect("No se pudo crear circ.txt");
+    for (x, y) in puntos_circulares {
+        writeln!(circ_file, "({}, {})", x, y).expect("No se pudo escribir en circ.txt");
+    }
 
 
     

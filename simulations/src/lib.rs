@@ -1,10 +1,12 @@
 // Asi se puede usar en servar.
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
+use structs::student_path_parameters::StudentPathParameters;
+use structs::gnss_type::GnssType;
 
 use image::{RgbImage};
 
-use crate::{processing::{images::makePNG_with_matrix_and_path, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::echosonder::EcosondaMode}; 
+use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}, structs::echosonder::EcosondaMode}; 
 
 mod processing;
 
@@ -25,10 +27,21 @@ pub fn create_depth_matrix(file_path :&str) -> Result<DepthMatrix,()>{
     Ok(matrix) 
 }
 
-pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64) -> Vec<(usize,usize)> {
+pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64, gnss_type: String) -> Vec<(usize,usize)> {
 
     println!("Generando recorrido ...");
 
+    let path_params = StudentPathParameters {
+        azimuth_deg,
+        separation_meters,
+        gnss_type: match gnss_type.as_str() {
+            "Corrección de Fase" => GnssType::PhaseCorrection,
+            "Corrección DGPS" => GnssType::DGPSCorrection,
+            _ => GnssType::NoCorrection, 
+        }
+    };
+
+    // Usar el struck path_params acá para generar ruta.
     let path = generate_route(matrix, azimuth_deg, separation_meters);
 
     path
@@ -42,7 +55,7 @@ pub fn run_simulation(matrix: &DepthMatrix, students_path: &Vec<(usize, usize)>,
     let points_to_measure = processing::measuring::find_measuring_points(students_path, distance_between_points);
 
     let measurements = match mode {
-        EcosondaMode::Monohaz => get_measures(MeasureMode::Circular { radius: 10.0 }, &matrix, &points_to_measure),
+        EcosondaMode::Monohaz => get_measures(MeasureMode::Circular { angle: 10.0 }, &matrix, &points_to_measure),
         EcosondaMode::Multihaz => get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure),
     };
 
@@ -63,6 +76,9 @@ pub fn create_path_image(
     img
 }
 
-pub fn create_simulation_image(/* Struct del alumno o lo que me digan */){
+pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbImage {
     println!("Generando PNG ...");
+
+    let img = makePng_with_matrix_and_interpolation(student_interpolation, matrix);
+    img
 }

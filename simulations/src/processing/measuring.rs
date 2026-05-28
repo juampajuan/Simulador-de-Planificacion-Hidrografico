@@ -1,8 +1,8 @@
-use crate::{processing::measuring, structs::depth_matrix::DepthMatrix};
+use crate::{processing::measuring, structs::depth_matrix::DepthMatrix, structs::student_measuring_parameters::StudentMeasuringParameters};
 
 pub enum MeasureMode {
     Perpendicular { step_distance: f64 },
-    Circular { radius: f64 },
+    Circular { angle: f64 },
 }
 
 //reemplazar nombre a calculoar puntos Y tomr las mediciones.
@@ -60,7 +60,7 @@ pub fn get_measures(mode: MeasureMode, matrix: &DepthMatrix, measure_points: &Ve
     let get_group = |prev: Option<&(usize, usize)>, cur: &(usize, usize), next: Option<&(usize, usize)>| {
         match mode {
             MeasureMode::Perpendicular { step_distance } => get_points_perpendicular_to_this(prev, cur, next, step_distance),
-            MeasureMode::Circular { radius } => get_points_circular_to_this(cur, radius),
+            MeasureMode::Circular { angle } => get_points_circular_to_this(cur, angle, &matrix),
         }
     };
 
@@ -152,11 +152,27 @@ pub fn get_points_perpendicular_to_this(prev_point: Option<&(usize, usize)>, cur
     points
 }
 
-pub fn get_points_circular_to_this(current_point: &(usize, usize), radius: f64) -> Vec<(usize, usize)> {
+pub fn calculate_covered_radius(current_point: &(usize, usize), angle: f64, matrix: &DepthMatrix) -> f64{
+    //Para esta nueva version de los puntos circulares, se utilizara la formula de las diapositivas de Fernando.
+    //a = 2 z tan(fi/2) -> Esto es el diametro, asi que lo divido por 2 para el radio
+    //A = pi(z tan(fi/2))**2
+    //z es la profundidad del punto central
+
+    let z = matrix.data[current_point.1][current_point.0];
+
+    //ojo al usar radius, porque hay que ver si el alumno entiene que da solo el radio del cono o el diametro.
+    let a = z * (angle).tan();
+
+    a.abs()
+}
+
+pub fn get_points_circular_to_this(current_point: &(usize, usize), angle: f64, matrix: &DepthMatrix) -> Vec<(usize, usize)> {
     let mut points = Vec::new();
 
     let center_x = current_point.0 as f64;
     let center_y = current_point.1 as f64;
+    
+    let radius = calculate_covered_radius(current_point, angle, matrix);
 
     let squared_radius = radius * radius;
     
@@ -180,4 +196,45 @@ pub fn get_points_circular_to_this(current_point: &(usize, usize), radius: f64) 
     }
     
     points
+}
+
+// pub struct StudentMeasuringParameters {
+//     pub uses_mathegapher: bool,
+//     pub uses_sound_profiler: bool,
+//     pub uses_inertial_sensor: bool,
+//     pub echo_sounder_parameters: EchosounderParameters,
+//     pub boat: Boat
+// }
+
+// pub struct EchosounderParameters {
+//     pub max_limit: f64,
+//     pub min_limit: f64,
+//     pub pulse_repetition_interval: usize,
+//     pub pulse_length: usize,
+//     pub uses_high_frecuency: bool,
+//     pub angle: f32,
+//     pub transmited_potency: f64,
+//     pub gain: f32,
+//     pub echosounder_velocity: usize,
+// }
+
+
+// pub enum Boat {
+//     Small { speed: f64, balance_index: usize },
+//     Medium { speed: f64, balance_index: usize},
+//     Large { speed: f64, balance_index: usize}
+// }
+
+pub fn make_measurement(matrix: &DepthMatrix, current_point: &(usize, usize), student_parameters: StudentMeasuringParameters){
+
+    let depth = matrix.data[current_point.1][current_point.0];
+    let echosounder_parameters = student_parameters.echo_sounder_parameters;
+
+    //El t este es puramente para darle cierto 
+    let t = depth/1500.0;
+
+    let pc = (t * echosounder_parameters.echosounder_velocity as f64)/2.0;
+
+
+
 }

@@ -12,6 +12,24 @@ use serde::Deserialize;
 struct PathRequest {
     separacion: f64,
     azimut: f64,
+    gnss_type: String,
+}
+
+#[derive(Deserialize)]
+struct SimulationRequest {
+    uses_mathegapher: bool,
+    uses_sound_profiler: bool,
+    uses_inertial_sensor: bool,
+    max_limit: f64,
+    min_limit: f64,
+    pulse_repetition_interval: usize,
+    pulse_length: usize,
+    uses_high_frecuency: bool,
+    angle: f32,
+    transmited_potency: f64,
+    gain: f32,
+    echosounder_velocity: usize,
+    boat: String,
 }
  
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
@@ -58,7 +76,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
         }
     };
 
-    let path = simulations::create_path(&matrix, data.azimut, data.separacion);
+    let path = simulations::create_path(&matrix, data.azimut, data.separacion, data.gnss_type);
     
     let image =
         simulations::create_path_image(&matrix, &path);
@@ -88,7 +106,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
     (response.boxed(), 200)
 }
 
-pub fn run_simulation(request: &Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
+pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
 
     // Podes leer todo, pero no respondas aca. La respuesta, la creas y la retornas
     // Leo los params de requests
@@ -100,8 +118,43 @@ pub fn run_simulation(request: &Request, cache: Arc<Mutex<FileCache>>) -> Handle
     // simulations::run_simulation(/* paramas */);
     // simulations::create_simulation_image();
  
-    let response = Response::from_string("Un increible path en forma de imagen")
-        .with_status_code(200);
+    
+    
+    
+    
+    let mut content = String::new();
+
+    request.as_reader()
+    .read_to_string(&mut content)
+        .unwrap();
+    
+    println!("{}", content);
+    
+    let data = match serde_json::from_str::<SimulationRequest>(&content) {
+        Ok(data) => data,
+        Err(e) => {
+            println!("Error al parsear JSON: {:?}", e);
+            let response = Response::from_string("Invalid JSON")
+            .with_status_code(400);
+        return (response.boxed(), 400);
+        }
+    };
+    let response = Response::from_string(format!("Recibí la simulación con los siguientes parámetros: uses_mathegapher: {}, uses_sound_profiler: {}, uses_inertial_sensor: {}, max_limit: {}, min_limit: {}, pulse_repetition_interval: {}, pulse_length: {}, uses_high_frecuency: {}, angle: {}, transmited_potency: {}, gain: {}, echosounder_velocity: {}, boat: {}",
+        data.uses_mathegapher,
+        data.uses_sound_profiler,
+        data.uses_inertial_sensor,
+        data.max_limit,
+        data.min_limit,
+        data.pulse_repetition_interval,
+        data.pulse_length,
+        data.uses_high_frecuency,
+        data.angle,
+        data.transmited_potency,
+        data.gain,
+        data.echosounder_velocity,
+        data.boat
+    ))
+    .with_status_code(200);
 
     (response.boxed(), 200)
 }
