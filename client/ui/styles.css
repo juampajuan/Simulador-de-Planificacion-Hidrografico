@@ -15,6 +15,18 @@
     }
 }
 
+@font-face {
+    font-family: 'Font';
+    src: url('/static/FinlandicaText-VariableFont_wght.ttf');
+    font-weight: 100 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    font-family: 'Font', sans-serif;
+}
+
 * {
     scrollbar-width: thin;
     scrollbar-color: var(--sb-thumb) transparent;
