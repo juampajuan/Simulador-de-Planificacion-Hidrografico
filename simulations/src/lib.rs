@@ -37,7 +37,7 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
     };
 
     // Usar el struck path_params acá para generar ruta.
-    let path = generate_route(matrix, path_params.azimut, path_params.separacion);
+    let (path, evil_path) = generate_route(matrix, path_params.azimut, path_params.separacion, 20.0);
 
     path
 

@@ -22,13 +22,13 @@ fn main() {
         }
     };
  
-    let recorrido = processing::routing::generate_route(
+    let (recorrido, recorrido_distorcionado) = processing::routing::generate_route(
         &matrix,
         90.0,  // azimut
         50.0,  // separación en metros
+        20.0, //Max offset
     );
  
-    let recorrido_distorcionado = processing::routing::apply_gnss_noise(&recorrido, &matrix, 20.0);
     let puntos_a_medir = processing::measuring::find_measuring_points(&recorrido, 0.2, &matrix);
 
     println!("size_x: {}, size_y: {}", matrix.size_x, matrix.size_y);
