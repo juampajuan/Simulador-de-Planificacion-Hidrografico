@@ -9,3 +9,8 @@ image = "0.25.10"
 spade = "2"
 kiddo = "4"
 nalgebra = "0.34.2"
+rand = "0.10.1"
+common = { path = "../common" }
+serde.workspace = true
+serde_json.workspace = true
+rand_distr = "0.6.0"

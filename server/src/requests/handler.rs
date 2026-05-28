@@ -12,14 +12,11 @@ const API_V1: &str = "/api/v1";
 // Que luego es enviada por el sender y logueada
 pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> RequestLog {
 
-    // Si se agrega otro versionado de apis, es tan facil, como agregar el `elseif` correspondiente.
     let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
 
-        // AYUDA: En este match se agrega cada endpoint nueveo.
-        // El de users, es un ejemplo a eliminar. 
         match (request.method(), api_path) {
 
-            (Method::Options, "/create_path") => {
+            (Method::Options, "/create_path" | "/run_simulation" ) => {
 
                 let response = Response::empty(200)
                     .with_header(
@@ -31,7 +28,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> Req
                     .with_header(
                         tiny_http::Header::from_bytes(
                             "Access-Control-Allow-Methods",
-                            "POST, OPTIONS"
+                            "POST, GET, OPTIONS"
                         ).unwrap()
                     )
                     .with_header(

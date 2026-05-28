@@ -12,7 +12,7 @@ pub enum ConfigValue {
 // Si no lo puede generar, no arranca la aplicacion
 pub struct Settings {
     pub port: i32,
-    pub cache_amount: i32
+    pub cache_amount: usize
 }
 
 
@@ -23,8 +23,19 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
         // Aca se agrega y relaciona con el archivo.
         Ok(Settings {
             port: get_int(&config, "PORT")?,
-            cache_amount: get_int(&config, "CACHE_ITEMS_MAX")?,
+            cache_amount: get_usize(&config, "CACHE_ITEMS_MAX")?,
         })
+    }
+}
+
+fn get_usize(
+    config: &HashMap<String, ConfigValue>,
+    key: &str,
+) -> Result<usize, String> {
+    match config.get(key) {
+        Some(ConfigValue::Int(v)) => Ok(*v as usize),
+        Some(_) => Err(format!("'{key}' no es un entero")),
+        None => Err(format!("Falta '{key}'")),
     }
 }
 
