@@ -36,8 +36,16 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
         gnss_type,
     };
 
+    let max_offset = match path_params.gnss_type {
+        GnssType::NoCorrection => {20.0},
+        GnssType::DGPSCorrection => {5.0},
+        GnssType::PhaseCorrection => {1.0},
+    };
+
+    println!("{}", max_offset);
+
     // Usar el struck path_params acá para generar ruta.
-    let evil_path = generate_route(matrix, path_params.azimut, path_params.separacion, 20.0);
+    let evil_path = generate_route(matrix, path_params.azimut, path_params.separacion, max_offset);
 
     evil_path
 
