@@ -2,7 +2,7 @@
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use common::{EchosounderParameters, EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
-use crate::structs::student_measuring_parameters::EchosounderLogic;
+use crate::{processing::measuring_errors::apply_errors, structs::student_measuring_parameters::EchosounderLogic};
 use image::{RgbImage};
 
 use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
@@ -100,27 +100,23 @@ pub fn run_simulation(
         },
     };
 
-    interpolate(InterpolationMethod::IDW, &points_to_measure, &measurements_ideal, &matrix)
+    let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
+        .iter()
+        .map(|&p| (p, measurements_ideal[p.1][p.0]))
+        .collect();
 
-    // let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
-    //     .iter()
-    //     .map(|&p| (p, measurements_ideal[p.1][p.0]))
-    //     .collect();
+    let mediciones_observadas = apply_errors(mediciones_ideales, &students_path, &params, matrix);
 
-    // let mediciones_observadas = echo.apply_errors(
-    //     mediciones_ideales,
-    //     v_real,
-    //     params.uses_sound_profiler,
-    // );
+    let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
+    let mut points_validos: Vec<(usize, usize)> = Vec::new();
+    for (punto, z_obs) in &mediciones_observadas {
+        if let Some(z) = z_obs {
+            measurements_final[punto.1][punto.0] = *z;
+            points_validos.push(*punto);
+        }
+    }
 
-    // let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
-    // let mut points_validos: Vec<(usize, usize)> = Vec::new();
-    // for (punto, z_obs) in &mediciones_observadas {
-    //     if let Some(z) = z_obs {
-    //         measurements_final[punto.1][punto.0] = *z;
-    //         points_validos.push(*punto);
-    //     }
-    // }
+    interpolate(InterpolationMethod::IDW, &points_validos, &measurements_final, &matrix)
 
     
 }
