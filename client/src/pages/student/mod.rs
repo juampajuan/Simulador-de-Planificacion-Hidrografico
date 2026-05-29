@@ -30,7 +30,6 @@ pub fn student_page() -> Html {
                 />
                 
                 // Pasamos los handles para que la simulación pueda escribir en ellos
-                // <div class="pointer-events-none [&_input]:opacity-50 [&_button]:opacity-50 space-y-3">
                 <MeasuresParams 
                     mensaje={mensaje.clone()} 
                     image_url={image_url.clone()} 
