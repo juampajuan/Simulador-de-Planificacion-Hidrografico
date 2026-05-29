@@ -68,9 +68,11 @@ pub fn trigger_path_generation(
     state: PathState, 
     mensaje: UseStateHandle<String>,
     image_url: UseStateHandle<Option<String>>,
+    loading: UseStateHandle<bool>
 ) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
     mensaje.set("Generando recorrido...".to_string());
+    loading.set(true);
 
     // Mapeo a Common: Convertimos Strings a Tipos Reales y Enums
     let params = PathParameters {
@@ -87,6 +89,7 @@ pub fn trigger_path_generation(
         if let Some(res) = post_json("http://localhost:3000/api/v1/create_path", &params, mensaje.clone()).await {
             let url = response_to_image_url(res).await;
             update_image_state(image_url, url);
+            loading.set(false);
             mensaje.set("Recorrido generado".to_string());
         }
     });
