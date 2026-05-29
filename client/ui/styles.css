@@ -15,7 +15,83 @@
     }
 }
 
+@font-face {
+    font-family: 'Font';
+    src: url('/static/FinlandicaText-VariableFont_wght.ttf');
+    font-weight: 100 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    font-family: 'Font', sans-serif;
+}
+
 * {
     scrollbar-width: thin;
     scrollbar-color: var(--sb-thumb) transparent;
 }
+
+.dot-grid { 
+    background-image: radial-gradient(#00000025 1px, transparent 0);
+    background-size: 20px 20px; /* Adjust spacing between dots */
+}
+
+.dark .dot-grid { 
+    background-image: radial-gradient(#ffffff25 1px, transparent 0);
+    background-size: 20px 20px; /* Adjust spacing between dots */
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.loader2 {
+  width: 48px;
+  height: 48px;
+  background: #000000a2;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+.loader2::after {
+  content: '';  
+  box-sizing: border-box;
+  position: absolute;
+  left: 6px;
+  top: 10px;
+  width: 12px;
+  height: 12px;
+  color: #53acff;
+  background: currentColor;
+  border-radius: 50%;
+  box-shadow: 25px 2px, 10px 22px;
+}
+
+.dark .loader2{
+    background: #ffffff00;
+}
+
+.dark .loader2::after{
+    color: #a5f3fc;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+} 
+
+

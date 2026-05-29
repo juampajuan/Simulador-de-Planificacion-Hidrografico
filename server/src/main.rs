@@ -8,7 +8,8 @@ mod threads;
 use threads::creators::{create_request_thread};
 mod structs;
 use structs::filecache::{FileCache};
-
+mod db;
+use db::engine::DBEngine;
 
 fn main() {
 
@@ -20,6 +21,14 @@ fn main() {
             return;
         }
     };
+
+    // let db = match DBEngine::new("database.sqlite".to_string()) {
+    //     Ok(db) => db,
+    //     Err(err) => {
+    //         println!("{}", err);
+    //         return;
+    //     }
+    // };
 
     // Generamos el struct para hacer de cache con los geotiffs cargados.
     let geotiff_cache = FileCache::new(settings.cache_amount);
