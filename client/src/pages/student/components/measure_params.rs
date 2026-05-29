@@ -8,6 +8,7 @@ use lucide_yew::{Radio, Ship};
 pub struct MeasuresProps {
     pub mensaje: UseStateHandle<String>,
     pub image_url: UseStateHandle<Option<String>>,
+    pub loading: UseStateHandle<bool>
 }
 
 #[function_component(MeasuresParams)]
@@ -15,6 +16,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     let state = use_state(EchoState::new);
     let mensaje = props.mensaje.clone();
     let image_url = props.image_url.clone();
+    let loading = props.loading.clone();
     
     let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white";
 
@@ -45,8 +47,15 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
         }
     };
 
+    let disabled_buttons = if *loading {
+        "pointer-events-none [&_input]:opacity-50 [&_button]:opacity-50"
+    } else {
+        ""
+    };
+
+
     html! {
-        <>
+        <div class={classes!("space-y-3", disabled_buttons)}>
             <div class="border-white/15 p-3 bg-zinc-900 rounded-md border flex flex-col gap-3">
                 <Subtitle text={"2. Embarcación"} 
                     icon={html! {
@@ -149,18 +158,18 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
 
             <div class="w-full mt-auto">
                 <button 
-                    disabled={!is_form_complete} 
+                    disabled={!is_form_complete || *props.loading} 
                     onclick={Callback::from({
                         let state = state.clone();
                         let mensaje = mensaje.clone();
                         let image_url = image_url.clone();
-                        move |_| run_simulation((*state).clone(), mensaje.clone(), image_url.clone())
+                        move |_| run_simulation((*state).clone(), mensaje.clone(), image_url.clone(), loading.clone())
                     })} 
                     class="uppercase text-center disabled:opacity-30 bg-cyan-200 p-3 text-black font-bold w-full hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100"
                 >
                     {"Simular MEDICIÓN"}
                 </button>
             </div>
-        </>
+        </div>
     }
 }

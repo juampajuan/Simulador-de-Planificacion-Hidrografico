@@ -10,6 +10,7 @@ use self::components::measure_params::MeasuresParams;
 pub fn student_page() -> Html {
     let mensaje = use_state(|| "Seleccione parametros para el recorrido".to_string());
     let image_url = use_state(|| None::<String>);
+    let loading = use_state(|| false);
     
     // Estados para PathParams
     let separacion = use_state(|| "".to_string());
@@ -25,20 +26,22 @@ pub fn student_page() -> Html {
                     gnss_type={gnss_type}
                     mensaje={mensaje.clone()} 
                     image_url={image_url.clone()} 
+                    loading={loading.clone()} 
                 />
                 
                 // Pasamos los handles para que la simulación pueda escribir en ellos
                 // <div class="pointer-events-none [&_input]:opacity-50 [&_button]:opacity-50 space-y-3">
-                    <MeasuresParams 
-                        mensaje={mensaje.clone()} 
-                        image_url={image_url.clone()} 
-                    />
-                // </div>
+                <MeasuresParams 
+                    mensaje={mensaje.clone()} 
+                    image_url={image_url.clone()} 
+                    loading={loading.clone()} 
+                /> 
             </ParamCont>
 
             <IMGviewer
                 image_url={(*image_url).clone()}
                 mensaje={(*mensaje).clone()}
+                loading={loading.clone()} 
             />
         </Root>
     }

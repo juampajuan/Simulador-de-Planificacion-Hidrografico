@@ -13,6 +13,7 @@ pub struct PathProps {
     pub gnss_type: UseStateHandle<String>,
     pub mensaje: UseStateHandle<String>,
     pub image_url: UseStateHandle<Option<String>>,
+    pub loading: UseStateHandle<bool>
 }
 
 #[function_component(PathParams)]
@@ -20,10 +21,10 @@ pub fn path_params(props: &PathProps) -> Html {
     let input_cls =
         "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white disabled:dark:text-white/50 disabled:dark:bg-zinc-600";
 
-    let loading = use_state(|| false);
+    // let loading = use_state(|| false);
 
     let trigger = {
-        let loading = loading.clone();
+        let loading = props.loading.clone();
         let m = props.mensaje.clone();
         let img = props.image_url.clone();
 
@@ -54,7 +55,7 @@ pub fn path_params(props: &PathProps) -> Html {
 
                 <input
                     type="number"
-                    disabled={*loading}
+                    disabled={*props.loading}
                     placeholder="10"
                     class={input_cls}
                     value={(*props.separacion).clone()}
@@ -79,7 +80,7 @@ pub fn path_params(props: &PathProps) -> Html {
 
                 <input
                     type="number"
-                    disabled={*loading}
+                    disabled={*props.loading}
                     placeholder="45"
                     class={input_cls}
                     value={(*props.azimut).clone()}
@@ -104,7 +105,7 @@ pub fn path_params(props: &PathProps) -> Html {
 
                 <select
                     class={input_cls}
-                    disabled={*loading}
+                    disabled={*props.loading}
                     onchange={{
                         let g_handle = props.gnss_type.clone();
 
@@ -138,6 +139,7 @@ pub fn path_params(props: &PathProps) -> Html {
  
             <div class="flex justify-end">
                 <button
+                    disabled={*props.loading}
                     class="text-center w-48 disabled:opacity-30 bg-cyan-200 p-2 px-6 text-black text-sm font-bold hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100"
                     onclick={{
                         let trigger = trigger.clone();
@@ -155,15 +157,7 @@ pub fn path_params(props: &PathProps) -> Html {
                         })
                     }}
                 >
-
-                    {
-                        if *loading {
-                            html! {<div class="loader"/>}
-                        } else {
-                            html! {"Visualizar recorrido"}
-                        }
-                    }
-                    
+                    {"Visualizar recorrido"}
                 </button>
             </div>
 

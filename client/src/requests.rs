@@ -71,7 +71,7 @@ pub fn trigger_path_generation(
     loading: UseStateHandle<bool>
 ) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
-    mensaje.set("Generando recorrido...".to_string());
+    mensaje.set("Generando recorrido".to_string());
     loading.set(true);
 
     // Mapeo a Common: Convertimos Strings a Tipos Reales y Enums
@@ -101,8 +101,10 @@ pub fn run_simulation(
     state: EchoState, 
     mensaje: UseStateHandle<String>,
     image_url: UseStateHandle<Option<String>>,
+    loading: UseStateHandle<bool>
 ) {
-    mensaje.set("Iniciando simulación...".to_string());
+    mensaje.set("Simulando medición".to_string());
+    loading.set(true);
     
     // Mapeo a Common: Construimos la estructura anidada y los Enums con variantes
     let boat_speed = 100.0; // Valor base o parseado si lo agregas al UI
@@ -136,6 +138,7 @@ pub fn run_simulation(
         if let Some(res) = post_json("http://localhost:3000/api/v1/run_simulation", &params, mensaje.clone()).await {
             let url = response_to_image_url(res).await;
             update_image_state(image_url, url);
+            loading.set(false);
             mensaje.set("Simulación completada".to_string());
         }
     });

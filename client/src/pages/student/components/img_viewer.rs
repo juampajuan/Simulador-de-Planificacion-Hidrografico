@@ -4,6 +4,7 @@ use yew::prelude::*;
 pub struct IMGviewerProps {
     pub image_url: Option<AttrValue>,
     pub mensaje: AttrValue,
+    pub loading: UseStateHandle<bool>
 }
 
 #[function_component(IMGviewer)]
@@ -24,9 +25,11 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 border-white/20
                 rounded-md 
                 dot-grid
+                relative
                 dark:dot-grid-dark
             "
         >
+
             {
                 if let Some(url) = &props.image_url {
                     html! {
@@ -44,6 +47,22 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                     }
                 }
             }
+            
+            { 
+                if *props.loading {
+                    html! {
+                        <div class="flex flex-col absolute top-0 backdrop-blur left-0 dark:bg-black/50 w-full h-full justify-center items-center">
+                            <div class="loader2"/>
+                            <h2 class="dark:text-cyan-200 font-bold text-center p-5">
+                                    { &props.mensaje }
+                            </h2>
+                        </div>
+                    }
+                }  else {
+                    html! {}
+                }
+            }
+
         </div>
     }
 }
