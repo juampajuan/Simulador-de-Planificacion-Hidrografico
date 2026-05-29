@@ -1,6 +1,7 @@
 // Aca agregas cada componente GENERICO
 // Es decir que se usa en multiples rutas.
 pub mod title;
+pub mod subtitle;
 pub mod root;
 pub mod darkmode_btn;
 

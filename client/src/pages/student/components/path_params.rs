@@ -1,6 +1,7 @@
 use yew::prelude::*;
-use crate::requests::{trigger_path_generation, PathState}; // Importamos PathState
+use crate::{components::subtitle::Subtitle, requests::{PathState, trigger_path_generation}}; // Importamos PathState
 use web_sys::{HtmlInputElement, HtmlSelectElement};
+use lucide_yew::{Route};
 
 #[derive(Properties, PartialEq)]
 pub struct PathProps {
@@ -13,7 +14,7 @@ pub struct PathProps {
 
 #[function_component(PathParams)]
 pub fn path_params(props: &PathProps) -> Html {
-    let input_cls = "rounded p-2 text-black dark:bg-zinc-700 dark:text-white";
+    let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white";
 
     let trigger = {
         let m = props.mensaje.clone();
@@ -29,12 +30,18 @@ pub fn path_params(props: &PathProps) -> Html {
     };
 
     html! {
-        <div class="border-b border-dashed border-white/40 p-3">
-            <h3 class="mb-4 font-bold text-white">{ "Parámetros de Recorrido" }</h3>
-            <div class="flex flex-col gap-4">
+        <div class="border-white/15 p-3 bg-zinc-900 rounded-md border flex flex-col gap-3">
+            <Subtitle text={"1. Recorrido"} 
+                icon={html! {
+                    <Route size={18} />
+                }}
+            />
+             
+            <div class="flex flex-col gap-1">
+                <span class="text-xs font-semibold text-white/40 ml-1">{"Separación (mts)"}</span>
                 <input
                     type="number"
-                    placeholder="Separación (mts)"
+                    placeholder="10"
                     class={input_cls}
                     value={(*props.separacion).clone()}
                     onchange={{
@@ -49,9 +56,13 @@ pub fn path_params(props: &PathProps) -> Html {
                         })
                     }}
                 />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <span class="text-xs font-semibold text-white/40 ml-1">{"Azimut (Grados)"}</span>
                 <input
                     type="number"
-                    placeholder="Azimut"
+                    placeholder="45"
                     class={input_cls}
                     value={(*props.azimut).clone()}
                     onchange={{
@@ -67,9 +78,9 @@ pub fn path_params(props: &PathProps) -> Html {
                     }}
                 />
             </div>
-
-            <div class="flex flex-col mt-4">
-                <label class="mb-2 font-semibold text-white">{"GNSS"}</label>
+    
+            <div class="flex flex-col gap-1">
+                <span class="text-xs font-semibold text-white/40 ml-1">{"GNSS"}</span>
                 <select 
                     class={input_cls}
                     onchange={{
@@ -89,6 +100,7 @@ pub fn path_params(props: &PathProps) -> Html {
                     })}
                 </select>
             </div>
+         
         </div>
     }
 }

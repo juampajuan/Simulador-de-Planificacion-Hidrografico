@@ -17,7 +17,7 @@ pub fn student_page() -> Html {
     let gnss_type = use_state(|| "".to_string());
 
     html! {
-        <Root title={"Simulador"}>
+        <Root title={"Simulador Hidrográfico"}>
             <ParamCont>
                 <PathParams 
                     separacion={separacion} 
@@ -28,10 +28,12 @@ pub fn student_page() -> Html {
                 />
                 
                 // Pasamos los handles para que la simulación pueda escribir en ellos
-                <MeasuresParams 
-                    mensaje={mensaje.clone()} 
-                    image_url={image_url.clone()} 
-                />
+                // <div class="pointer-events-none [&_input]:opacity-50 [&_button]:opacity-50 space-y-3">
+                    <MeasuresParams 
+                        mensaje={mensaje.clone()} 
+                        image_url={image_url.clone()} 
+                    />
+                // </div>
             </ParamCont>
 
             <IMGviewer

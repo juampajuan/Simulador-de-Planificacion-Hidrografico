@@ -13,7 +13,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
             class="
                 flex-1
                 bg-cyan-100
-                dark:bg-zinc-800
+                dark:bg-zinc-900
                 flex
                 items-center
                 justify-center
