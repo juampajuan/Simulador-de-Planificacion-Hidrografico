@@ -7,7 +7,7 @@ pub fn generate_route(
     azimuth_deg: f64,
     separation_meters: f64,
     max_offset_meters: f64,
-) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+) -> Vec<(usize, usize)> {
 
     let mut path: Vec<(usize, usize)> = Vec::new();
     // Cada segmento es un rango de índices sobre `path` que corresponde
@@ -84,7 +84,7 @@ pub fn generate_route(
 
     let noisy = apply_gnss_noise_segmented(&path, &segments, matrix, max_offset_meters);
 
-    (path, noisy)
+    noisy
 }
 
 // Versión pública que acepta un path ya construido y recalcula los segmentos
