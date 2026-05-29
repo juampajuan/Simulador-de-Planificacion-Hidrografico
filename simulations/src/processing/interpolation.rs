@@ -3,18 +3,14 @@ use kiddo::SquaredEuclidean;
 use kiddo::NearestNeighbour;
 use crate::structs::depth_matrix::DepthMatrix;
 
-// ============================================================
+// ------------------------------------------------------------
 //  Tipos y enum público
-// ============================================================
+// ------------------------------------------------------------
 
 pub enum InterpolationMethod {
     IDW,
     Kriging,
 }
-
-// ============================================================
-//  Punto de entrada unificado
-// ============================================================
 
 pub fn interpolate(
     method: InterpolationMethod,
@@ -28,13 +24,13 @@ pub fn interpolate(
     }
 }
 
-// ============================================================
+// ------------------------------------------------------------
 //  KD-Tree compartido
 //  Retorna:
 //    - kdtree  : árbol de búsqueda; item = índice en values[]
 //    - values  : profundidad de cada punto válido
 //    - indices : posición original en measuring_points[] (necesario para Kriging)
-// ============================================================
+// ------------------------------------------------------------
 
 fn build_kdtree(
     measuring_points: &Vec<(usize, usize)>,
@@ -57,70 +53,9 @@ fn build_kdtree(
     (kdtree, values, indices)
 }
 
-// ============================================================
-//  Eliminación gaussiana con pivoteo parcial
-//  Resuelve el sistema  A · x = b
-//  Retorna Some(x) o None si la matriz es singular
-// ============================================================
-
-fn gaussian_elimination(mat_a: &Vec<Vec<f64>>, vec_b: &Vec<f64>) -> Option<Vec<f64>> {
-    // No invertimos la matriz A directamente. En cambio resolvemos el sistema A · x = b usando eliminación gaussiana.
-    // [A | b], Nos queda una union de la matriz A  y el vector B . 
-    // Convertimos el lado de A en la matriz identidad. al hacer eso el lado de B (la ultima columna) quedara con los resultados de los pesos. [I|x]
-
-    let n = vec_b.len();
-
-    // Copia aumentada [A | b]
-    let mut aug = vec![vec![0.0f64; n + 1]; n];
-    for i in 0..n {
-        for j in 0..n {
-            aug[i][j] = mat_a[i][j];
-        }
-        aug[i][n] = vec_b[i];
-    }
-
-    for col in 0..n {
-        // Buscar fila con mayor valor absoluto en esta columna (pivoteo parcial)
-        let mut pivot_row = col;
-        for row in (col + 1)..n {
-            if aug[row][col].abs() > aug[pivot_row][col].abs() {
-                pivot_row = row;
-            }
-        }
-
-        aug.swap(col, pivot_row);
-
-        let pivot = aug[col][col];
-        if pivot.abs() < 1e-10 {
-            return None; // Matriz singular
-        }
-
-        // Normalizar fila del pivote
-        for j in col..=n {
-            aug[col][j] /= pivot;
-        }
-
-        // Eliminar la columna en las demás filas
-        for row in 0..n {
-            if row == col { continue; }
-            let factor = aug[row][col];
-            for j in col..=n {
-                aug[row][j] -= factor * aug[col][j];
-            }
-        }
-    }
-
-    // La solución queda en la última columna
-    let mut result = vec![0.0f64; n];
-    for i in 0..n {
-        result[i] = aug[i][n];
-    }
-    Some(result)
-}
-
-// ============================================================
+// ------------------------------------------------------------
 //  IDW
-// ============================================================
+// ------------------------------------------------------------
 
 fn compute_idw(
     neighbours: &Vec<NearestNeighbour<f64, u64>>,
@@ -182,9 +117,65 @@ pub fn interpolation_idw_kdtrees(
     result
 }
 
-// ============================================================
+// ------------------------------------------------------------
 //  Kriging
-// ============================================================
+// ------------------------------------------------------------
+
+//  Eliminación gaussiana con pivoteo parcial
+//  Resuelve el sistema  A · x = b
+//  Retorna Some(x) o None si la matriz es singular
+fn gaussian_elimination(mat_a: &Vec<Vec<f64>>, vec_b: &Vec<f64>) -> Option<Vec<f64>> {
+    
+
+    let n = vec_b.len();
+
+    // Copia aumentada [A | b]
+    let mut aug = vec![vec![0.0f64; n + 1]; n];
+    for i in 0..n {
+        for j in 0..n {
+            aug[i][j] = mat_a[i][j];
+        }
+        aug[i][n] = vec_b[i];
+    }
+
+    for col in 0..n {
+        // Buscar fila con mayor valor absoluto en esta columna (pivoteo parcial)
+        let mut pivot_row = col;
+        for row in (col + 1)..n {
+            if aug[row][col].abs() > aug[pivot_row][col].abs() {
+                pivot_row = row;
+            }
+        }
+
+        aug.swap(col, pivot_row);
+
+        let pivot = aug[col][col];
+        if pivot.abs() < 1e-10 {
+            return None; // Matriz singular
+        }
+
+        // Normalizar fila del pivote
+        for j in col..=n {
+            aug[col][j] /= pivot;
+        }
+
+        // Eliminar la columna en las demás filas
+        for row in 0..n {
+            if row == col { continue; }
+            let factor = aug[row][col];
+            for j in col..=n {
+                aug[row][j] -= factor * aug[col][j];
+            }
+        }
+    }
+
+    // La solución queda en la última columna
+    let mut result = vec![0.0f64; n];
+    for i in 0..n {
+        result[i] = aug[i][n];
+    }
+    Some(result)
+}
 
 fn build_semivariogram_system(
     neighbours: &Vec<NearestNeighbour<f64, u64>>,
