@@ -82,9 +82,10 @@ pub fn generate_route(
         update_previous_end(&line, &mut previous_end);
     }
 
-    let noisy = apply_gnss_noise_segmented(&path, &segments, matrix, max_offset_meters);
+    // let noisy = apply_gnss_noise_segmented(&path, &segments, matrix, max_offset_meters);
 
-    noisy
+    // noisy
+    path
 }
 
 // Versión pública que acepta un path ya construido y recalcula los segmentos
