@@ -5,18 +5,18 @@ pub enum MeasureMode {
     Circular { angle: f64 },
 }
 
-pub fn calculate_effective_measurement_distance(
+fn calculate_effective_measurement_distance(
     distance_between_points: &f64,  // metros, PRI × velocidad
-    pixel_size: &f64,                // metros, size_x del GeoTIFF
-    min_pixels: f64,               // mínimo de píxeles entre mediciones (default: 50)
+    pixel_size: &f64,                // metros, size_x del GeoTIFF              
 ) -> f64 {
+    let min_pixels = 50.0; // mínimo de píxeles entre mediciones (default: 50)
     let min_distance = min_pixels * pixel_size;
-    distance_between_points * min_distance
+    distance_between_points * min_distance / 0.1
 }
 
 pub fn find_measuring_points(path: &Vec<(usize, usize)>, distance_between_points: f64, matrix: &DepthMatrix) -> Vec<(usize, usize)> {
     
-    let distance_between_points_escalated = calculate_effective_measurement_distance(&distance_between_points,&matrix.size_x, 100.0);
+    let distance_between_points_escalated = calculate_effective_measurement_distance(&distance_between_points,&matrix.size_x);
 
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
 
@@ -205,16 +205,3 @@ pub fn get_points_circular_to_this(current_point: &(usize, usize), angle: f64, m
     
     points
 }
-
-
-
-// 4. Longitud del pulso
-// Determina la energía que se transmite al agua. Pulsos más largos → más energía → más alcance. Pulsos más cortos → mejor resolución vertical.
-// 5. Potencia transmitida
-// Debe mantenerse en el valor más bajo posible que aún permita detectar el fondo. Si se sube demasiado se generan ecos falsos.
-// 6. Ganancia
-// Amplificación del eco de retorno. Si es demasiado baja, el eco llega redondeado y el sondaje resulta mayor al real. Si es demasiado alta, se registran falsas reflexiones de peces, vegetación o ruido.
-
-// punto de medición
-//     → aplicar error por pulse_length: afecta resolución vertical (dos blancos < longitud de pulso no se distinguen)
-//     → aplicar error por gain: si gain muy alta → ruido aleatorio; si muy baja → valor levemente mayor
