@@ -1,5 +1,6 @@
 use crate::{structs::depth_matrix::DepthMatrix};
 
+#[allow(dead_code)]
 pub enum MeasureMode {
     Perpendicular { step_distance: f64 },
     Circular { angle: f64 },

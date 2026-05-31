@@ -1,11 +1,11 @@
 // Asi se puede usar en servar.
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
-use common::{EchosounderParameters, EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
+use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::{processing::measuring_errors::apply_errors, structs::student_measuring_parameters::EchosounderLogic};
 use image::{RgbImage};
 
-use crate::{processing::{images::{makePNG_with_matrix_and_path, makePng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
+use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 
 mod processing;
 
@@ -60,7 +60,6 @@ pub fn run_simulation(
     println!("Simulannnnndo ...");
 
     println!("Echo sounder a crear ...");
-    let v_real = 1500.0;
 
     println!("Echo sounder creado ...");
 
@@ -131,7 +130,7 @@ pub fn create_path_image(
 )-> RgbImage  {
     println!("Generando PNG ...");
 
-    let img = makePNG_with_matrix_and_path(matrix,path);
+    let img = makepng_with_matrix_and_path(matrix,path);
 
     img
 }
@@ -139,6 +138,6 @@ pub fn create_path_image(
 pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbImage {
     println!("Generando PNG ...");
 
-    let img = makePng_with_matrix_and_interpolation(student_interpolation, matrix);
+    let img = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
     img
 }

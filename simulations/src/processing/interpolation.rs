@@ -7,6 +7,7 @@ use crate::structs::depth_matrix::DepthMatrix;
 //  Tipos y enum público
 // ------------------------------------------------------------
 
+#[allow(dead_code)]
 pub enum InterpolationMethod {
     IDW,
     Kriging,

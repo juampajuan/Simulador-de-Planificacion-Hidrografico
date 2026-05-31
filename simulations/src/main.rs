@@ -1,7 +1,7 @@
 mod processing;
 mod structs;
 
-use common::{Boat, EcosondaMode, EchosounderParameters, GnssType, StudentMeasuringParameters};
+use common::{Boat, EcosondaMode, EchosounderParameters, StudentMeasuringParameters};
 use structs::student_measuring_parameters::EchosounderLogic;
 
 fn main() {
@@ -16,8 +16,8 @@ fn main() {
     // --- Recorrido ---
     let path = processing::routing::generate_route(
         &matrix,
-        90.0,  // azimut
-        50.0,  // separación en metros
+        40.0,  // azimut
+        10.0,  // separación en metros
         1.0,   // offset GNSS
     );
 
@@ -46,8 +46,13 @@ fn main() {
         boat: Boat::W { speed: 3.0 },  //m/s
     };
 
+    let boat_speed = match params.boat {
+        common::Boat::W { speed } => speed,
+        common::Boat::Y { speed } => speed,
+    };
+    let distance_between_points =boat_speed * echo.pulse_repetition_interval/1000.0;
     // --- Puntos de medición ---
-    let points_to_measure = processing::measuring::find_measuring_points(&path, 100.0, &matrix);
+    let points_to_measure = processing::measuring::find_measuring_points(&path, distance_between_points, &matrix);
 
     // --- Mediciones ideales ---
     let measurements_ideal = processing::measuring::get_measures(
@@ -88,11 +93,11 @@ fn main() {
     );
 
     // --- Guardar imágenes ---
-    let img_path = processing::images::makePNG_with_matrix_and_path(&matrix, &path);
+    let img_path = processing::images::makepng_with_matrix_and_path(&matrix, &path);
     img_path.save("recorrido.png").expect("Error al guardar recorrido.png");
     println!("recorrido.png guardado");
 
-    let img_sim = processing::images::makePng_with_matrix_and_interpolation(&interpolacion, &matrix);
+    let img_sim = processing::images::makepng_with_matrix_and_interpolation(&interpolacion, &matrix);
     img_sim.save("simulacion.png").expect("Error al guardar simulacion.png");
     println!("simulacion.png guardado");
 }

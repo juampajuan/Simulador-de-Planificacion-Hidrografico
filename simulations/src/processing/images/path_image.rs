@@ -2,7 +2,7 @@ use image::{Rgb, RgbImage};
 use crate::structs::depth_matrix::DepthMatrix;
 use super::colormap::depth_color;
 
-pub fn makePNG_with_matrix_and_path(
+pub fn makepng_with_matrix_and_path(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
 ) -> RgbImage {
@@ -23,21 +23,22 @@ pub fn makePNG_with_matrix_and_path(
     }
 
     for &(x, y) in path {
-        if y < matrix.height && x < matrix.width {
-            for dy in -1i32..=1 {
-                for dx in -1i32..=1 {
-                    let ny = y as i32 + dy;
-                    let nx = x as i32 + dx;
-                    if ny >= 0 && nx >= 0
-                        && (ny as usize) < matrix.height
-                        && (nx as usize) < matrix.width
-                    {
-                        img.put_pixel(nx as u32, ny as u32, Rgb([255, 255, 255]));
-                    }
-                }
+    if y < matrix.height && x < matrix.width {
+        // Calculamos los límites usando usize de forma segura
+        let y_min = y.saturating_sub(1);
+        let y_max = (y + 1).min(matrix.height - 1);
+        
+        let x_min = x.saturating_sub(1);
+        let x_max = (x + 1).min(matrix.width - 1);
+
+        // Iteramos directamente sobre las coordenadas válidas de la matriz
+        for ny in y_min..=y_max {
+            for nx in x_min..=x_max {
+                img.put_pixel(nx as u32, ny as u32, Rgb([255, 255, 255]));
             }
         }
     }
+}
 
     img
 }

@@ -81,6 +81,7 @@ fn calculate_tide_levels(
 //  Aplicación de errores
 // ------------------------------------------------------------
 
+/// Aplica los errores uno por uno en cada medicion tomada segun los parametros seleccionados por el alumno
 pub fn apply_errors(
     mediciones: Vec<((usize, usize), f64)>,
     path: &Vec<(usize, usize)>,
@@ -233,6 +234,7 @@ fn apply_gain_error(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Opt
     }
 }
 
+///Limita las mediciones, deja solo las que permetenecen al rango indicado.
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
     z.and_then(|p| {
         if p >= min_limit && p <= max_limit { Some(p) } else { None }

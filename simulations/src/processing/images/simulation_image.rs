@@ -2,7 +2,7 @@ use image::{Rgb, RgbImage};
 use crate::structs::depth_matrix::DepthMatrix;
 use super::colormap::depth_color;
 
-pub fn makePng_with_matrix_and_interpolation(
+pub fn makepng_with_matrix_and_interpolation(
     matrix: &Vec<Vec<f64>>,
     geotiff: &DepthMatrix,
 ) -> RgbImage {
