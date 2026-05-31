@@ -107,7 +107,7 @@ pub fn run_simulation(
     loading.set(true);
     
     // Mapeo a Common: Construimos la estructura anidada y los Enums con variantes
-    let boat_speed = 100.0; // Valor base o parseado si lo agregas al UI
+    let boat_speed = 1.0; // Valor base o parseado si lo agregas al UI
 
     let params = StudentMeasuringParameters {
         uses_mathegapher: state.uses_mathegapher,

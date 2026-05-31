@@ -54,14 +54,13 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
 pub fn run_simulation(
     matrix: &DepthMatrix,
     students_path: &Vec<(usize, usize)>,
-    params: StudentMeasuringParameters,
+    mut params: StudentMeasuringParameters,
 ) -> Vec<Vec<f64>> {
 
     println!("Simulannnnndo ...");
 
     println!("Echo sounder a crear ...");
     let v_real = 1500.0;
-    let mut echo = params.echo_sounder_parameters;
 
     println!("Echo sounder creado ...");
 
@@ -70,9 +69,14 @@ pub fn run_simulation(
         common::Boat::Y { speed } => speed,
     };
 
+    // pulse_repetition_interval viene en ms.
+    // boat_speed viene en m/s
+
+    // pulse_repetition_interval lo pasamos a segundos.
+
     //Calcula los intervalos entre cada medicion en base a la velociad del barco (metros/ms) y el intervalo de repeticion de plso (ms)
-    // let distance_between_points = boat_speed/echo.pulse_repetition_interval;
-    let distance_between_points = 100.0;
+    let distance_between_points = boat_speed*params.echo_sounder_parameters.pulse_repetition_interval/1000.0;
+    println!("{:?}", distance_between_points);
 
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
@@ -80,11 +84,9 @@ pub fn run_simulation(
         &matrix,
     );
 
-    let mut echo = params.echo_sounder_parameters;
-    echo.create_echosounder();
+    params.echo_sounder_parameters.create_echosounder();
 
     println!("{:?}", params);
-    println!("{:?}", echo);
 
 
 //  StudentMeasuringParameters { uses_mathegapher: false, uses_sound_profiler: true, uses_inertial_sensor: false, echo_sounder_parameters: EchosounderParameters { mode: Monohaz { angle: 0.0, absortion_coefficient: 0.0 }, max_limit: 100.0, min_limit: 0.0, pulse_repetition_interval: 100.0, pulse_length: 1, uses_high_frecuency: true, transmited_potency: 220.0, gain: 0.0, echosounder_velocity: 1555, threshold: 0.1 }, boat: W { speed: 100.0 } }
@@ -93,10 +95,10 @@ pub fn run_simulation(
     //calcular umbral en base a los parametros del alumno
     let measurements_ideal = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
-            get_measures(MeasureMode::Circular { angle: echo.angle }, &matrix, &points_to_measure, echo.threshold)
+            get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, &matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
         },
         EcosondaMode::Multihaz => {
-            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure, echo.threshold)
+            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
         },
     };
 
@@ -117,6 +119,8 @@ pub fn run_simulation(
     }
 
     interpolate(InterpolationMethod::IDW, &points_validos, &measurements_final, &matrix)
+    // interpolate(InterpolationMethod::IDW, &points_to_measure, &measurements_ideal, &matrix)
+
 
     
 }
