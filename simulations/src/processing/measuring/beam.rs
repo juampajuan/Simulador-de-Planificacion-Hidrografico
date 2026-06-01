@@ -53,10 +53,8 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix, threshol
             let pixel_val = matrix.data[y][x];
             let pixel_time = pixel_val / SOUND_VELOCITY;
 
-            if Some(pixel_val) != matrix.no_data && pixel_time <= threshold {
-                if pixel_val > measure || measure == 0.0 {
-                    measure = pixel_val;
-                }
+            if Some(pixel_val) != matrix.no_data && pixel_time <= threshold && (pixel_val > measure || measure == 0.0) {
+                measure = pixel_val;
             }
         }
     }
@@ -137,8 +135,6 @@ fn get_points_circular_to_this(
     let center_y = current_point.1 as f64;
     let radius = calculate_covered_radius(current_point, angle, matrix);
     let squared_radius = radius * radius;
-
-    println!("{}", radius);
 
     // Definimos los límites de búsqueda controlando que no bajen de 0 (protección contra underflow)
     let min_x = if center_x > radius { (center_x - radius).floor() as usize } else { 0 };

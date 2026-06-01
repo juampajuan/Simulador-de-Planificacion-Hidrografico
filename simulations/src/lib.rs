@@ -9,8 +9,8 @@ use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_mat
 
 mod processing;
 
-// TODO: Hay q completar. Decidir el Result q retorna
 
+#[allow(clippy::result_unit_err)]
 pub fn create_depth_matrix(file_path :&str) -> Result<DepthMatrix,()>{
 
     println!("Generando depth_matrix ...");
@@ -45,9 +45,7 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
     println!("{}", max_offset);
 
     // Usar el struck path_params acá para generar ruta.
-    let evil_path = generate_route(matrix, path_params.azimut, path_params.separacion, max_offset);
-
-    evil_path
+    generate_route(matrix, path_params.azimut, path_params.separacion, max_offset)
 
 }
 
@@ -69,17 +67,17 @@ pub fn run_simulation(
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
         distance_between_points,
-        &matrix,
+        matrix,
     );
 
     params.echo_sounder_parameters.create_echosounder();
 
     let measurements_ideal = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
-            get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, &matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
+            get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
         },
         EcosondaMode::Multihaz => {
-            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, &matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
+            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
         },
     };
 
@@ -88,7 +86,7 @@ pub fn run_simulation(
         .map(|&p| (p, measurements_ideal[p.1][p.0]))
         .collect();
 
-    let mediciones_observadas = apply_disturbances(mediciones_ideales, &students_path, &params, matrix);
+    let mediciones_observadas = apply_disturbances(mediciones_ideales, students_path, &params, matrix);
 
     let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
     let mut points_validos: Vec<(usize, usize)> = Vec::new();
@@ -99,7 +97,7 @@ pub fn run_simulation(
         }
     }
 
-    interpolate(InterpolationMethod::IDW, &points_validos, &measurements_final, &matrix)
+    interpolate(InterpolationMethod::Idw, &points_validos, &measurements_final, matrix)
 }
 
 pub fn create_path_image(
@@ -108,14 +106,11 @@ pub fn create_path_image(
 )-> RgbImage  {
     println!("Generando PNG ...");
 
-    let img = makepng_with_matrix_and_path(matrix,path);
-
-    img
+    makepng_with_matrix_and_path(matrix,path)
 }
 
 pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbImage {
     println!("Generando PNG ...");
 
-    let img = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
-    img
+    makepng_with_matrix_and_interpolation(student_interpolation, matrix)
 }

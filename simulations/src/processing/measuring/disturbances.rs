@@ -40,7 +40,7 @@ const INERTIAL_ANGLE_STD_DEG: f64 = 3.0;
 
 
 /// Suma la distancia real recorrida por todo el path (en metros).
-pub fn total_path_distance(path: &Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
+pub fn total_path_distance(path: &[(usize, usize)], matrix: &DepthMatrix) -> f64 {
     let mut total = 0.0;
     for i in 0..path.len().saturating_sub(1) {
         total += calculate_distance_between_points(&path[i], &path[i + 1], matrix);
@@ -52,7 +52,7 @@ pub fn total_path_distance(path: &Vec<(usize, usize)>, matrix: &DepthMatrix) -> 
 fn calculate_tide_levels(
     n: usize,
     params: &StudentMeasuringParameters,
-    path: &Vec<(usize, usize)>,
+    path: &[(usize, usize)],
     matrix: &DepthMatrix,
 ) -> Option<Vec<f64>> {
     if params.uses_mathegapher {
@@ -83,7 +83,7 @@ fn calculate_tide_levels(
  
 pub fn apply_disturbances(
     mediciones: Vec<((usize, usize), f64)>,
-    path: &Vec<(usize, usize)>,
+    path: &[(usize, usize)],
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
 ) -> Vec<((usize, usize), Option<f64>)> {

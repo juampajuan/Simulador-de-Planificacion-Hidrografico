@@ -102,7 +102,7 @@ fn detect_segments(path: &[(usize, usize)]) -> Vec<std::ops::Range<usize>> {
     let mut segments = Vec::new();
     let mut start = 0;
 
-    for i in 1..n {
+    for (i, _) in is_turn.iter().enumerate().take(n).skip(1) {
         if is_turn[i] {
             if i > start + 1 {
                 segments.push(start..i);

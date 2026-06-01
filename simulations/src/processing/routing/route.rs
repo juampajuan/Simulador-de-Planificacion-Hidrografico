@@ -158,7 +158,7 @@ fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
         && Some(matrix.data[yi as usize][xi as usize]) != matrix.no_data
 }
 
-fn update_previous_end(line: &Vec<(f64, f64)>, previous_end: &mut Option<(f64, f64)>) {
+fn update_previous_end(line: &[(f64, f64)], previous_end: &mut Option<(f64, f64)>) {
     if let Some(last_point) = line.last() {
         *previous_end = Some(*last_point);
     }

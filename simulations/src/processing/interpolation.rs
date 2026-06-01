@@ -9,18 +9,18 @@ use crate::structs::depth_matrix::DepthMatrix;
 
 #[allow(dead_code)]
 pub enum InterpolationMethod {
-    IDW,
+    Idw,
     Kriging,
 }
 
 pub fn interpolate(
     method: InterpolationMethod,
-    measuring_points: &Vec<(usize, usize)>,
-    matrix: &Vec<Vec<f64>>,
+    measuring_points: &[(usize, usize)],
+    matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
 ) -> Vec<Vec<f64>> {
     match method {
-        InterpolationMethod::IDW     => interpolation_idw_kdtrees(measuring_points, matrix, geotiff),
+        InterpolationMethod::Idw     => interpolation_idw_kdtrees(measuring_points, matrix, geotiff),
         InterpolationMethod::Kriging => interpolation_kriging(measuring_points, matrix, geotiff),
     }
 }
@@ -34,8 +34,8 @@ pub fn interpolate(
 // ------------------------------------------------------------
 
 fn build_kdtree(
-    measuring_points: &Vec<(usize, usize)>,
-    matrix: &Vec<Vec<f64>>,
+    measuring_points: &[(usize, usize)],
+    matrix: &[Vec<f64>],
     no_data: f64,
 ) -> (KdTree<f64, 2>, Vec<f64>, Vec<usize>) {
     let mut kdtree:  KdTree<f64, 2> = KdTree::new();
@@ -60,7 +60,7 @@ fn build_kdtree(
 
 fn compute_idw(
     neighbours: &Vec<NearestNeighbour<f64, u64>>,
-    values: &Vec<f64>,
+    values: &[f64],
 ) -> f64 {
     let mut weighted_sum = 0.0;
     let mut weight_total = 0.0;
@@ -82,11 +82,11 @@ fn compute_idw(
 }
 
 pub fn interpolation_idw_kdtrees(
-    measuring_points: &Vec<(usize, usize)>,
-    matrix: &Vec<Vec<f64>>,
+    measuring_points: &[(usize, usize)],
+    matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
 ) -> Vec<Vec<f64>> {
-    let no_data = match geotiff.no_data { Some(val) => val, None => f64::MAX };
+    let no_data = geotiff.no_data.unwrap_or(f64::MAX);
     let mut result = vec![vec![0.0; geotiff.width]; geotiff.height];
 
     let (kdtree, values, _indices) = build_kdtree(measuring_points, matrix, no_data);
@@ -125,7 +125,7 @@ pub fn interpolation_idw_kdtrees(
 //  Eliminación gaussiana con pivoteo parcial
 //  Resuelve el sistema  A · x = b
 //  Retorna Some(x) o None si la matriz es singular
-fn gaussian_elimination(mat_a: &Vec<Vec<f64>>, vec_b: &Vec<f64>) -> Option<Vec<f64>> {
+fn gaussian_elimination(mat_a: &[Vec<f64>], vec_b: &[f64]) -> Option<Vec<f64>> {
     
 
     let n = vec_b.len();
@@ -156,6 +156,7 @@ fn gaussian_elimination(mat_a: &Vec<Vec<f64>>, vec_b: &Vec<f64>) -> Option<Vec<f
         }
 
         // Normalizar fila del pivote
+        #[allow(clippy::needless_range_loop)]
         for j in col..=n {
             aug[col][j] /= pivot;
         }
@@ -164,6 +165,7 @@ fn gaussian_elimination(mat_a: &Vec<Vec<f64>>, vec_b: &Vec<f64>) -> Option<Vec<f
         for row in 0..n {
             if row == col { continue; }
             let factor = aug[row][col];
+            #[allow(clippy::needless_range_loop)]
             for j in col..=n {
                 aug[row][j] -= factor * aug[col][j];
             }
@@ -179,9 +181,9 @@ fn gaussian_elimination(mat_a: &Vec<Vec<f64>>, vec_b: &Vec<f64>) -> Option<Vec<f
 }
 
 fn build_semivariogram_system(
-    neighbours: &Vec<NearestNeighbour<f64, u64>>,
-    indices: &Vec<usize>,
-    measuring_points: &Vec<(usize, usize)>,
+    neighbours: &[NearestNeighbour<f64, u64>],
+    indices: &[usize],
+    measuring_points: &[(usize, usize)],
 ) -> (Vec<Vec<f64>>, Vec<f64>) {
     let n = neighbours.len();
 
@@ -218,10 +220,10 @@ fn build_semivariogram_system(
 }
 
 fn compute_kriging(
-    neighbours: &Vec<NearestNeighbour<f64, u64>>,
-    values: &Vec<f64>,
-    indices: &Vec<usize>,
-    measuring_points: &Vec<(usize, usize)>,
+    neighbours: &[NearestNeighbour<f64, u64>],
+    values: &[f64],
+    indices: &[usize],
+    measuring_points: &[(usize, usize)],
 ) -> f64 {
     let n = neighbours.len();
     let (mat_a, vec_b) = build_semivariogram_system(neighbours, indices, measuring_points);
@@ -241,11 +243,11 @@ fn compute_kriging(
 }
 
 pub fn interpolation_kriging(
-    measuring_points: &Vec<(usize, usize)>,
-    matrix: &Vec<Vec<f64>>,
+    measuring_points: &[(usize, usize)],
+    matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
 ) -> Vec<Vec<f64>> {
-    let no_data = match geotiff.no_data { Some(val) => val, None => f64::MAX };
+    let no_data = geotiff.no_data.unwrap_or(f64::MAX);
     let mut result = vec![vec![0.0; geotiff.width]; geotiff.height];
 
     let (kdtree, values, indices) = build_kdtree(measuring_points, matrix, no_data);

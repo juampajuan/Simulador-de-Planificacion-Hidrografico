@@ -2,8 +2,10 @@ use gdal::{Dataset, raster::Buffer};
 
 use crate::structs::depth_matrix::DepthMatrix;
 
+type LoadGeotiffResult = Result<(Buffer<f64>, usize, usize, Option<f64>, f64, f64), gdal::errors::GdalError>;
+
 // Carga los metadatos del geotiff en un Buffer y los retorna
-fn load_geotiff(path: &str) -> Result<(Buffer<f64>,usize,usize, Option<f64>,f64,f64), gdal::errors::GdalError>{
+fn load_geotiff(path: &str) -> LoadGeotiffResult{
 
 
     let dataset = Dataset::open(path)?;
@@ -47,7 +49,7 @@ fn buffer_to_matrix(buffer: Buffer<f64>, cols: usize ) -> Vec<Vec<f64>>{
             row = Vec::<f64>::new();
         }
 
-        iterator = iterator + 1;
+        iterator += 1;
     }
 
     matrix

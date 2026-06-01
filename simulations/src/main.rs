@@ -86,7 +86,7 @@ fn main() {
     }
 
     let interpolacion = processing::interpolation::interpolate(
-        processing::interpolation::InterpolationMethod::IDW,
+        processing::interpolation::InterpolationMethod::Idw,
         &points_to_measure,
         &measurements_ideal,
         &matrix,
