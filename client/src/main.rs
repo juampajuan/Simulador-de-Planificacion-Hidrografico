@@ -2,6 +2,7 @@ mod router;
 mod pages;
 mod components;
 mod requests;
+mod blob_client;
 
 use yew::prelude::*;
 
