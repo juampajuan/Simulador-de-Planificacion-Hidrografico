@@ -40,7 +40,7 @@ const INERTIAL_ANGLE_STD_DEG: f64 = 3.0;
 
 
 /// Suma la distancia real recorrida por todo el path (en metros).
-pub fn total_path_distance(path: &Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
+pub fn total_path_distance(path: &[(usize, usize)], matrix: &DepthMatrix) -> f64 {
     let mut total = 0.0;
     for i in 0..path.len().saturating_sub(1) {
         total += calculate_distance_between_points(&path[i], &path[i + 1], matrix);
@@ -52,44 +52,44 @@ pub fn total_path_distance(path: &Vec<(usize, usize)>, matrix: &DepthMatrix) -> 
 fn calculate_tide_levels(
     n: usize,
     params: &StudentMeasuringParameters,
-    path: &Vec<(usize, usize)>,
+    path: &[(usize, usize)],
     matrix: &DepthMatrix,
 ) -> Option<Vec<f64>> {
     if params.uses_mathegapher {
         return None;
     }
-
+ 
     let boat_speed = match params.boat {
         common::Boat::W { speed } => speed,
         common::Boat::Y { speed } => speed,
     };
-
+ 
     let total_distance_m = total_path_distance(path, matrix);
     let duration_hours = total_distance_m / (boat_speed * 3600.0);
-
+ 
     let levels = (0..n)
         .map(|i| {
             let t = if n > 1 { (i as f64 / (n - 1) as f64) * duration_hours } else { 0.0 };
             TIDE_AMPLITUDE * (2.0 * std::f64::consts::PI * t / TIDE_PERIOD_H + TIDE_PHASE).sin()
         })
         .collect();
-
+ 
     Some(levels)
 }
-
+ 
 // ------------------------------------------------------------
 //  Aplicación de errores
 // ------------------------------------------------------------
-
-pub fn apply_errors(
+ 
+pub fn apply_disturbances(
     mediciones: Vec<((usize, usize), f64)>,
-    path: &Vec<(usize, usize)>,
+    path: &[(usize, usize)],
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
 ) -> Vec<((usize, usize), Option<f64>)> {
     let echo = &params.echo_sounder_parameters;
     let tide_levels = calculate_tide_levels(mediciones.len(), params, path, matrix);
-
+ 
     mediciones.into_iter().enumerate().map(|(i, (punto, z_ideal))| {
         // 1. Sensor inercial
         let (punto, z_ideal) = if params.uses_inertial_sensor {
@@ -97,34 +97,34 @@ pub fn apply_errors(
         } else {
             apply_inertial_sensor_error(punto, matrix)
         };
-
+ 
         // 2. Velocidad del sonido
         let mut z = if params.uses_sound_profiler {
             z_ideal
         } else {
-            apply_velocity_error(z_ideal, echo.echosounder_velocity as f64)
+            apply_sound_velocity_noise(z_ideal, echo.echosounder_velocity as f64)
         };
-
+ 
         // 3. Marea
         z = apply_tide_error(z, tide_levels.as_ref(), i);
-
+ 
         // 4. Potencia
-        let z = apply_potency_error(z, echo.transmited_potency, echo.absortion_coefficient, echo.uses_high_frecuency);
-
+        let z = apply_potency_noise(z, echo.transmited_potency, echo.absortion_coefficient, echo.uses_high_frecuency);
+ 
         // 5. Ganancia
-        let z = apply_gain_error(z, echo.gain as f64, echo.uses_high_frecuency);
-
+        let z = apply_gain_noise(z, echo.gain as f64, echo.uses_high_frecuency);
+ 
         // 6. Filtro de límites
         let z = apply_limits_filter(z, echo.min_limit, echo.max_limit);
-
+ 
         (punto, z)
     }).collect()
 }
-
+ 
 // ------------------------------------------------------------
 //  Funciones de error individuales
 // ------------------------------------------------------------
-
+ 
 /// Sin sensor inercial: el barco se inclina (roll + pitch gaussiano σ=3°).
 /// El haz ilumina un punto desplazado pero se asigna a la coordenada vertical.
 fn apply_inertial_sensor_error(
@@ -136,39 +136,40 @@ fn apply_inertial_sensor_error(
     } else {
         return (punto, matrix.data[punto.1][punto.0]);
     };
-
+ 
     let mut rng = rand::rng();
     let theta_x = normal.sample(&mut rng).to_radians();
     let theta_y = normal.sample(&mut rng).to_radians();
-
+ 
     let z_ref = matrix.data[punto.1][punto.0];
     if z_ref <= 0.0 {
         return (punto, z_ref);
     }
-
+ 
     let dx = (z_ref * theta_x.tan() / matrix.size_x).round() as i64;
     let dy = (z_ref * theta_y.tan() / matrix.size_y).round() as i64;
-
+ 
     let x_des = (punto.0 as i64 + dx).clamp(0, matrix.width as i64 - 1) as usize;
     let y_des = (punto.1 as i64 + dy).clamp(0, matrix.height as i64 - 1) as usize;
-
+ 
     (punto, matrix.data[y_des][x_des])
 }
-
-fn apply_velocity_error(z_real: f64, v_alumno: f64) -> f64 {
+ 
+fn apply_sound_velocity_noise(z_real: f64, v_alumno: f64) -> f64 {
     z_real * (v_alumno / SOUND_VELOCITY)
 }
-
+ 
 fn apply_tide_error(z_real: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
     match tide_levels {
         Some(levels) => z_real - levels[index],
         None => z_real,
     }
 }
-
-/// - Potencia insuficiente: señal no llega al receptor → None
+ 
+/// Error por potencia transmitida.
+/// - Potencia insuficiente: señal no llega al receptor -> None
 /// - Potencia excesiva: falsos ecos con probabilidad proporcional al exceso
-fn apply_potency_error(
+fn apply_potency_noise(
     z: f64,
     transmited_potency: f64,
     absortion_coefficient: f64,
@@ -179,15 +180,15 @@ fn apply_potency_error(
     } else {
         (LOW_FREQ_RX_THRESHOLD, LOW_FREQ_SAT_THRESHOLD)
     };
-
+ 
     let tl = 20.0 * z.log10() + absortion_coefficient * z;
     let p_recibida = transmited_potency - 2.0 * tl;
-
+ 
     // Señal demasiado débil
     if p_recibida < rx_threshold {
         return None;
     }
-
+ 
     // Potencia excesiva: falsos ecos superficiales
     if transmited_potency > sat_threshold {
         let exceso = transmited_potency - sat_threshold;
@@ -196,28 +197,28 @@ fn apply_potency_error(
             return Some(z * random::<f64>());
         }
     }
-
+ 
     Some(z)
 }
-
-
-/// - Ganancia baja: eco redondeado → sondaje mayor al real (hasta MAX_LOW_GAIN_ERROR)
+ 
+/// Error por ganancia del receptor.
+/// - Ganancia baja: eco redondeado -> sondaje mayor al real (hasta MAX_LOW_GAIN_ERROR)
 /// - Ganancia normal: sin error
-/// - Ganancia alta: amplifica ruido → falsos ecos con probabilidad proporcional al exceso
-fn apply_gain_error(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Option<f64> {
+/// - Ganancia alta: amplifica ruido -> falsos ecos con probabilidad proporcional al exceso
+fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Option<f64> {
     let z = z?;
-
+ 
     let (gain_low, gain_high) = if uses_high_frecuency {
         (HIGH_FREQ_GAIN_LOW, HIGH_FREQ_GAIN_HIGH)
     } else {
         (LOW_FREQ_GAIN_LOW, LOW_FREQ_GAIN_HIGH)
     };
-
+ 
     if gain < gain_low {
         // Ganancia baja: error proporcional al déficit, máximo MAX_LOW_GAIN_ERROR
         let factor = 1.0 - (gain / gain_low); // 0 en el límite, 1 en gain=0
         Some(z + factor * MAX_LOW_GAIN_ERROR)
-
+ 
     } else if gain > gain_high {
         // Ganancia alta: falso eco con probabilidad proporcional al exceso
         let exceso = gain - gain_high;
@@ -227,12 +228,12 @@ fn apply_gain_error(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Opt
         } else {
             Some(z)
         }
-
+ 
     } else {
         Some(z)
     }
 }
-
+ 
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
     z.and_then(|p| {
         if p >= min_limit && p <= max_limit { Some(p) } else { None }

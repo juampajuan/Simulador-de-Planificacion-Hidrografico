@@ -2,12 +2,13 @@ use gdal::{Dataset, raster::Buffer};
 
 use crate::structs::depth_matrix::DepthMatrix;
 
-fn load_geotiff(path: &str) -> Result<(Buffer<f64>,usize,usize, Option<f64>,f64,f64), gdal::errors::GdalError>{
+type LoadGeotiffResult = Result<(Buffer<f64>, usize, usize, Option<f64>, f64, f64), gdal::errors::GdalError>;
 
-    // Loads geoTIFF metadata into a Buffer Type. Then returns it.
+// Carga los metadatos del geotiff en un Buffer y los retorna
+fn load_geotiff(path: &str) -> LoadGeotiffResult{
+
 
     let dataset = Dataset::open(path)?;
-
     let geo_transform = dataset.geo_transform()?;
     
     // Extraemos las resoluciones (metros por píxel)
@@ -31,6 +32,7 @@ fn load_geotiff(path: &str) -> Result<(Buffer<f64>,usize,usize, Option<f64>,f64,
     
 }
 
+/// Saca los datos de profundidades del buffer y los guarda en una matriz (vector de vectores f64)
 fn buffer_to_matrix(buffer: Buffer<f64>, cols: usize ) -> Vec<Vec<f64>>{
 
     let mut matrix: Vec<Vec<f64>> = Vec::new();
@@ -47,16 +49,15 @@ fn buffer_to_matrix(buffer: Buffer<f64>, cols: usize ) -> Vec<Vec<f64>>{
             row = Vec::<f64>::new();
         }
 
-        iterator = iterator + 1;
+        iterator += 1;
     }
 
     matrix
 }
 
+/// procesa geoTIFF y devuelve una estructura DepthMatrix con toda la metadata del archivo necesaria para la simulacion
 pub fn processing_geotiff(path: &str) -> Result<DepthMatrix, gdal::errors::GdalError>{
     
-    // process geoTIFF and return a DepthMatrix Type with all the metadata of the file
-
     let (buffer,cols, rows,no_data_value,size_x,size_y) = load_geotiff(path)?;
 
     let matrix: Vec<Vec<f64>> =  buffer_to_matrix(buffer, cols);
@@ -67,7 +68,7 @@ pub fn processing_geotiff(path: &str) -> Result<DepthMatrix, gdal::errors::GdalE
         width: cols,
         height: rows,
         no_data: no_data_value,
-        size_x: size_x,
-        size_y: size_y}
+        size_x,
+        size_y}
     )
 }
