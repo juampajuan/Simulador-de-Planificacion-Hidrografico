@@ -1,17 +1,11 @@
 use yew::prelude::*; 
-use wasm_bindgen_futures::spawn_local;
-use gloo_net::http::Request;
 use serde::Serialize;
-use web_sys::{Url, Blob};
-use js_sys::{Uint8Array, Array};
+use crate::blob_client::send_blob_request;
+use crate::parser::{parse_path_parameters, parse_echosounder_parameters};
 
-// --- IMPORTANTE: Usamos los tipos de la verdad única ---
 use common::{
     StudentMeasuringParameters, 
-    EchosounderParameters, 
     Boat, 
-    PathParameters, 
-    GnssType,
     EcosondaMode,
 };
 
@@ -37,10 +31,9 @@ pub struct EchoState {
     pub uses_sound_profiler: bool,
     pub uses_inertial_sensor: bool,
     pub uses_high_frecuency: bool,
-    pub mode: EcosondaMode, // Usamos el enum de common
+    pub mode: EcosondaMode,
 }
 
-// Implementamos un constructor en lugar de Default para evitar el error rustc(E0117)
 impl EchoState {
     pub fn new() -> Self {
         Self {
@@ -57,12 +50,10 @@ impl EchoState {
             uses_sound_profiler: true,
             uses_inertial_sensor: false,
             uses_high_frecuency: true,
-            mode: EcosondaMode::Monohaz, // Variante simple
+            mode: EcosondaMode::Monohaz,
         }
     }
 }
-
-// --- GENERACIÓN DE RECORRIDO ---
 
 pub fn trigger_path_generation(
     state: PathState, 
@@ -71,31 +62,20 @@ pub fn trigger_path_generation(
     loading: UseStateHandle<bool>
 ) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
-    mensaje.set("Generando recorrido".to_string());
-    loading.set(true);
 
-    // Mapeo a Common: Convertimos Strings a Tipos Reales y Enums
-    let params = PathParameters {
-        separacion: state.separacion.parse().unwrap_or(0.0),
-        azimut: state.azimut.parse().unwrap_or(0.0),
-        gnss_type: match state.gnss_type.as_str() {
-            "Fase" => GnssType::PhaseCorrection,
-            "DGPS" => GnssType::DGPSCorrection,
-            _ => GnssType::NoCorrection,
-        },
+    let params = match parse_path_parameters(&state) {
+        Ok(p) => p,
+        Err(err_msg) => {
+            mensaje.set(err_msg);
+            return;
+        }
     };
 
-    spawn_local(async move {
-        if let Some(res) = post_json("http://localhost:3000/api/v1/create_path", &params, mensaje.clone()).await {
-            let url = response_to_image_url(res).await;
-            update_image_state(image_url, url);
-            loading.set(false);
-            mensaje.set("Recorrido generado".to_string());
-        }
-    });
-}
+    mensaje.set("Generando recorrido...".to_string());
+    loading.set(true);
 
-// --- EJECUCIÓN DE SIMULACIÓN ---
+    send_blob_request("http://localhost:3000/api/v1/create_path", &params, mensaje, image_url, loading);
+}
 
 pub fn run_simulation(
     state: EchoState, 
@@ -103,80 +83,28 @@ pub fn run_simulation(
     image_url: UseStateHandle<Option<String>>,
     loading: UseStateHandle<bool>
 ) {
-    mensaje.set("Simulando medición".to_string());
+    let echo_params = match parse_echosounder_parameters(&state) {
+        Ok(p) => p,
+        Err(err_msg) => {
+            mensaje.set(err_msg);
+            return;
+        }
+    };
+
+    mensaje.set("Simulando medición...".to_string());
     loading.set(true);
     
-    // Mapeo a Common: Construimos la estructura anidada y los Enums con variantes
-    let boat_speed = 1.0; // Valor base o parseado si lo agregas al UI
-
+    let boat_speed = 1.0; 
     let params = StudentMeasuringParameters {
         uses_mathegapher: state.uses_mathegapher,
         uses_sound_profiler: state.uses_sound_profiler,
         uses_inertial_sensor: state.uses_inertial_sensor,
-        // Aquí resolvemos el error "expected struct variant"
         boat: match state.boat.as_str() {
             "Y" => Boat::Y { speed: boat_speed },
             _ => Boat::W { speed: boat_speed },
         },
-        echo_sounder_parameters: EchosounderParameters {
-            mode: state.mode,
-            angle: 0.0, // Valor base
-            absortion_coefficient: 0.0, // Valor base
-            max_limit: state.max_limit.parse().unwrap_or(0.0),
-            min_limit: state.min_limit.parse().unwrap_or(0.0),
-            pulse_repetition_interval: state.pulse_repetition_interval.parse().unwrap_or(0.0),
-            pulse_length: state.pulse_length.parse().unwrap_or(0),
-            uses_high_frecuency: state.uses_high_frecuency,
-            transmited_potency: state.transmited_potency.parse().unwrap_or(0.0),
-            gain: state.gain.parse().unwrap_or(0.0),
-            echosounder_velocity: state.echosounder_velocity.parse().unwrap_or(0),
-            threshold: state.umbral.parse().unwrap_or(0.0),
-        },
+        echo_sounder_parameters: echo_params,
     };
 
-    spawn_local(async move {
-        if let Some(res) = post_json("http://localhost:3000/api/v1/run_simulation", &params, mensaje.clone()).await {
-            let url = response_to_image_url(res).await;
-            update_image_state(image_url, url);
-            loading.set(false);
-            mensaje.set("Simulación completada".to_string());
-        }
-    });
-}
-
-// --- HELPERS (Sin cambios, pero ahora reciben tipos de Common) ---
-
-async fn post_json<T: Serialize>(url: &str, data: &T, mensaje: UseStateHandle<String>) -> Option<gloo_net::http::Response> {
-    let body = serde_json::to_string(data).ok()?;
-    match Request::post(url)
-        .header("Content-Type", "application/json")
-        .body(body)
-        .unwrap()
-        .send()
-        .await 
-    {
-        Ok(res) if res.status() == 200 => Some(res),
-        Ok(res) => { 
-            mensaje.set(format!("Error {}: Datos incompatibles", res.status())); 
-            None 
-        },
-        _ => { 
-            mensaje.set("Error de conexión".to_string()); 
-            None 
-        }
-    }
-}
-
-async fn response_to_image_url(res: gloo_net::http::Response) -> String {
-    let bytes = res.binary().await.unwrap();
-    let array = Array::of1(&Uint8Array::from(bytes.as_slice()).buffer());
-    let blob = Blob::new_with_u8_array_sequence(&array).unwrap();
-    Url::create_object_url_with_blob(&blob).unwrap()
-}
-
-fn update_image_state(handle: UseStateHandle<Option<String>>, new_url: String) {
-    if let Some(old_url) = (*handle).clone() {
-        let _ = Url::revoke_object_url(&old_url);
-    }
-    handle.set(Some(new_url));
+    send_blob_request("http://localhost:3000/api/v1/run_simulation", &params, mensaje, image_url, loading);
 }
