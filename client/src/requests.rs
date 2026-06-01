@@ -1,13 +1,11 @@
 use yew::prelude::*; 
 use serde::Serialize;
 use crate::blob_client::send_blob_request;
+use crate::parser::{parse_path_parameters, parse_echosounder_parameters};
 
 use common::{
     StudentMeasuringParameters, 
-    EchosounderParameters, 
     Boat, 
-    PathParameters, 
-    GnssType,
     EcosondaMode,
 };
 
@@ -64,19 +62,17 @@ pub fn trigger_path_generation(
     loading: UseStateHandle<bool>
 ) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
-    
+
+    let params = match parse_path_parameters(&state) {
+        Ok(p) => p,
+        Err(err_msg) => {
+            mensaje.set(err_msg);
+            return;
+        }
+    };
+
     mensaje.set("Generando recorrido...".to_string());
     loading.set(true);
-
-    let params = PathParameters {
-        separacion: state.separacion.parse().unwrap_or(0.0),
-        azimut: state.azimut.parse().unwrap_or(0.0),
-        gnss_type: match state.gnss_type.as_str() {
-            "Fase" => GnssType::PhaseCorrection,
-            "DGPS" => GnssType::DGPSCorrection,
-            _ => GnssType::NoCorrection,
-        },
-    };
 
     send_blob_request("http://localhost:3000/api/v1/create_path", &params, mensaje, image_url, loading);
 }
@@ -87,11 +83,18 @@ pub fn run_simulation(
     image_url: UseStateHandle<Option<String>>,
     loading: UseStateHandle<bool>
 ) {
+    let echo_params = match parse_echosounder_parameters(&state) {
+        Ok(p) => p,
+        Err(err_msg) => {
+            mensaje.set(err_msg);
+            return;
+        }
+    };
+
     mensaje.set("Simulando medición...".to_string());
     loading.set(true);
     
     let boat_speed = 1.0; 
-
     let params = StudentMeasuringParameters {
         uses_mathegapher: state.uses_mathegapher,
         uses_sound_profiler: state.uses_sound_profiler,
@@ -100,20 +103,7 @@ pub fn run_simulation(
             "Y" => Boat::Y { speed: boat_speed },
             _ => Boat::W { speed: boat_speed },
         },
-        echo_sounder_parameters: EchosounderParameters {
-            mode: state.mode,
-            angle: 0.0,
-            absortion_coefficient: 0.0,
-            max_limit: state.max_limit.parse().unwrap_or(0.0),
-            min_limit: state.min_limit.parse().unwrap_or(0.0),
-            pulse_repetition_interval: state.pulse_repetition_interval.parse().unwrap_or(0.0),
-            pulse_length: state.pulse_length.parse().unwrap_or(0),
-            uses_high_frecuency: state.uses_high_frecuency,
-            transmited_potency: state.transmited_potency.parse().unwrap_or(0.0),
-            gain: state.gain.parse().unwrap_or(0.0),
-            echosounder_velocity: state.echosounder_velocity.parse().unwrap_or(0),
-            threshold: state.umbral.parse().unwrap_or(0.0),
-        },
+        echo_sounder_parameters: echo_params,
     };
 
     send_blob_request("http://localhost:3000/api/v1/run_simulation", &params, mensaje, image_url, loading);

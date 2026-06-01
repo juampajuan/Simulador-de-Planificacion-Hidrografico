@@ -3,6 +3,7 @@ mod pages;
 mod components;
 mod requests;
 mod blob_client;
+mod parser;
 
 use yew::prelude::*;
 

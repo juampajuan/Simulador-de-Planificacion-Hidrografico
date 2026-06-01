@@ -35,7 +35,14 @@ pub fn send_blob_request<T: Serialize>(
     };
 
     // se lanza la request usando la API Fetch de JS a través de web-sys
-    let window = web_sys::window().unwrap();
+    let window = match web_sys::window() {
+        Some(w) => w,
+        None => {
+            mensaje.set("Error crítico: No se detectó el entorno del navegador".to_string());
+            loading.set(false);
+            return;
+        }
+    };
     let request_promise = window.fetch_with_request(&request);
 
     // creamos los 3 closures para manejar la respuesta, los bytes y los errores, respectivamente.
@@ -44,6 +51,7 @@ pub fn send_blob_request<T: Serialize>(
     let on_error = create_error_closure(mensaje, loading);
 
     // Ejecutamos el pipeline en JS
+    // Y se ataja cualquier error obtenido en los closures.
     let _ = execute_promise_chain(&request_promise, &on_response, &on_bytes_ready, &on_error);
 
     // cedemos el control de la memoria a JavaScript de forma definitiva
@@ -71,9 +79,23 @@ fn create_response_closure(
     loading: UseStateHandle<bool>
 ) -> Closure<dyn FnMut(JsValue) -> Result<JsValue, JsValue>> {
     Closure::wrap(Box::new(move |res: JsValue| -> Result<JsValue, JsValue> {
-        let response: Response = res.dyn_into().unwrap();
+        let response: Response = match res.dyn_into() {
+            Ok(r) => r,
+            Err(_) => {
+                mensaje.set("Error procesando la respuesta del servidor".to_string());
+                loading.set(false);
+                return Err(JsValue::from_str("No se pudo convertir a Response"));
+            }
+        };
         if response.status() == 200 {
-            Ok(response.array_buffer().unwrap().into())
+            match response.array_buffer() {
+                Ok(promise) => Ok(promise.into()),
+                Err(_) => {
+                    mensaje.set("Error al inicializar la descarga de datos".to_string());
+                    loading.set(false);
+                    Err(JsValue::from_str("No se pudo obtener el ArrayBuffer"))
+                }
+            }
         } else {
             mensaje.set(format!("Error del servidor: {}", response.status()));
             loading.set(false);
