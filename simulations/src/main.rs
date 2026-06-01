@@ -68,7 +68,7 @@ fn main() {
         .map(|&p| (p, measurements_ideal[p.1][p.0]))
         .collect();
 
-    let mediciones_observadas = processing::measuring_errors::apply_errors(
+    let mediciones_observadas = processing::measuring::apply_disturbances(
         mediciones_ideales,
         &path,
         &params,
@@ -87,8 +87,8 @@ fn main() {
 
     let interpolacion = processing::interpolation::interpolate(
         processing::interpolation::InterpolationMethod::IDW,
-        &points_validos,
-        &measurements_final,
+        &points_to_measure,
+        &measurements_ideal,
         &matrix,
     );
 

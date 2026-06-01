@@ -66,7 +66,7 @@ pub fn processing_geotiff(path: &str) -> Result<DepthMatrix, gdal::errors::GdalE
         width: cols,
         height: rows,
         no_data: no_data_value,
-        size_x: size_x,
-        size_y: size_y}
+        size_x,
+        size_y}
     )
 }
