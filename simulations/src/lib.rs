@@ -42,8 +42,6 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
         GnssType::PhaseCorrection => {1.0},
     };
 
-    println!("{}", max_offset);
-
     // Usar el struck path_params acá para generar ruta.
     generate_route(matrix, path_params.azimut, path_params.separacion, max_offset)
 

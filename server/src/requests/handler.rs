@@ -1,7 +1,7 @@
 use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
-use crate::structs::filecache::{FileCache, DepthMatrix};
+use crate::structs::filecache::{FileCache};
 use crate::requests::endpoints::{webpage, simulation, errors};
 use tiny_http::Response;
 
@@ -18,25 +18,17 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> Req
 
             (Method::Options, "/create_path" | "/run_simulation" ) => {
 
-                let response = Response::empty(200)
-                    .with_header(
-                        tiny_http::Header::from_bytes(
-                            "Access-Control-Allow-Origin",
-                            "*"
-                        ).unwrap()
-                    )
-                    .with_header(
-                        tiny_http::Header::from_bytes(
-                            "Access-Control-Allow-Methods",
-                            "POST, GET, OPTIONS"
-                        ).unwrap()
-                    )
-                    .with_header(
-                        tiny_http::Header::from_bytes(
-                            "Access-Control-Allow-Headers",
-                            "Content-Type"
-                        ).unwrap()
-                    );
+                let mut response = Response::empty(200);
+
+                if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"*") {
+                    response = response.with_header(h);
+                }
+                if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, GET, OPTIONS") {
+                    response = response.with_header(h);
+                }
+                if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Headers", b"Content-Type") {
+                    response = response.with_header(h);
+                }
 
                 (response.boxed(), 200)
             }

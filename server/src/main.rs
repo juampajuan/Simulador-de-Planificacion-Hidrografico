@@ -9,7 +9,7 @@ use threads::creators::{create_request_thread};
 mod structs;
 use structs::filecache::{FileCache};
 mod db;
-use db::engine::DBEngine;
+// use db::engine::DBEngine;
 
 fn main() {
 
@@ -45,7 +45,7 @@ fn main() {
     println!("Server iniciado en puerto: {}", settings.port);
 
     for request in server.incoming_requests() {
-        let settings_clone = Arc::clone(&settings);
+        // let settings_clone = Arc::clone(&settings);
         let cache_clone = Arc::clone(&cache);
         create_request_thread(request, cache_clone);
     }
