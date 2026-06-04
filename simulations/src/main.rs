@@ -39,7 +39,7 @@ fn main() {
     echo.create_echosounder();
 
     let params = StudentMeasuringParameters {
-        uses_mathegapher: true,
+        uses_mareograph: true,
         uses_sound_profiler: true,
         uses_inertial_sensor: true,
         echo_sounder_parameters: echo,
