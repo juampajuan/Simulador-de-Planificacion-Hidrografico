@@ -7,6 +7,11 @@ use crate::requests::endpoints::errors;
 use common::{StudentMeasuringParameters, PathParameters};
 
 const TIF_ID: &str = "Darsena_20cm_v2.tif";
+#[derive(serde::Deserialize)]
+pub struct FullSimulationRequest {
+    pub echo_parameters: StudentMeasuringParameters,
+    pub path_parameters: PathParameters,
+}
 
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
     // Parseo y obtencion de pathParameters
@@ -39,35 +44,47 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
     (response.boxed(), 200)
 }
 
+
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
-    // Parseo y obtencion de studentMeasuringParameters
-    let data: StudentMeasuringParameters = match parse_json_body(request) {
+    let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
         Err(err) => return errors::server_error(format!("Bad Request: {}", err)),
     };
 
-    // recuperamos la matriz y el path calculados previamente
     let mut lock = match cache.lock() {
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner()
     };
-    
-    let cached_item = match lock.get(TIF_ID) {
-        Some(item) => item,
-        // Si no se encuentra, usamos el not_found de tu compañero
-        None => return errors::not_found(),
+
+    let (matrix, path) = match lock.get(TIF_ID) {
+        Some(item) => (item.matrix.clone(), item.last_path.clone()),
+        None => {
+            println!("Caché vacío. No existe el TIF en el cache...");
+            
+            let generated_matrix = match simulations::create_depth_matrix(TIF_ID) {
+                Ok(m) => m,
+                Err(_) => return errors::server_error("Error crítico procesando TIF".to_string()),
+            };
+            
+            let generated_path = simulations::create_path(
+                &generated_matrix, 
+                data.path_parameters.azimut, 
+                data.path_parameters.separacion, 
+                data.path_parameters.gnss_type
+            );
+
+            lock.update_path(TIF_ID.to_string(), generated_matrix.clone(), generated_path.clone());
+            
+            (generated_matrix, generated_path)
+        }
     };
 
-    let matrix = &cached_item.matrix;
-    let path = &cached_item.last_path; 
-
     if path.is_empty() {
-        return errors::server_error("Bad Request: Path vacío".to_string());
+        return errors::server_error("Error: El Path sigue estando vacío".to_string());
     }
     
-    // hacemos la interpolacion y la imagen de la simulacion
-    let interpolation = simulations::run_simulation(matrix, path, data);
-    let rgb_image = simulations::create_simulation_image(matrix, &interpolation);
+    let interpolation = simulations::run_simulation(&matrix, &path, data.echo_parameters);
+    let rgb_image = simulations::create_simulation_image(&matrix, &interpolation);
 
     let response = create_png_response(rgb_image);
     

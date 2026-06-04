@@ -55,7 +55,7 @@ fn calculate_tide_levels(
     path: &[(usize, usize)],
     matrix: &DepthMatrix,
 ) -> Option<Vec<f64>> {
-    if params.uses_mathegapher {
+    if params.uses_mareograph {
         return None;
     }
  

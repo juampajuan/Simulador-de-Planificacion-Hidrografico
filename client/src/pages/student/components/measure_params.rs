@@ -1,14 +1,15 @@
 use yew::prelude::*;
 use web_sys::HtmlInputElement;
 use common::EcosondaMode;
-use crate::{components::subtitle::Subtitle, requests::{EchoState, run_simulation}};
+use crate::{components::subtitle::Subtitle, requests::{EchoState,PathState, run_simulation}};
 use lucide_yew::{Radio, Ship};
 
 #[derive(Properties, PartialEq)]
 pub struct MeasuresProps {
     pub mensaje: UseStateHandle<String>,
     pub image_url: UseStateHandle<Option<String>>,
-    pub loading: UseStateHandle<bool>
+    pub loading: UseStateHandle<bool>,
+    pub path_state: UseStateHandle<PathState>,
 }
 
 #[function_component(MeasuresParams)]
@@ -17,6 +18,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     let mensaje = props.mensaje.clone();
     let image_url = props.image_url.clone();
     let loading = props.loading.clone();
+    let path_state = props.path_state.clone();
     
     let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white";
 
@@ -35,7 +37,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                     let input: HtmlInputElement = e.target_unchecked_into();
                     let mut s = (*state).clone();
                     match id { 
-                        "m" => s.uses_mathegapher = input.checked(), 
+                        "m" => s.uses_mareograph = input.checked(), 
                         "s" => s.uses_sound_profiler = input.checked(), 
                         "i" => s.uses_inertial_sensor = input.checked(),
                         "f" => s.uses_high_frecuency = input.checked(),
@@ -52,7 +54,6 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     } else {
         ""
     };
-
 
     html! {
         <div class={classes!("space-y-3", disabled_buttons)}>
@@ -72,7 +73,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                     }})}
                 />
                 <div class="grid grid-cols-1 gap-1 mt-2">
-                    {render_check("Uso de monógrafo", state.uses_mathegapher, "m")}
+                    {render_check("Uso de mareógrafo", state.uses_mareograph, "m")}
                     {render_check("Uso de perfilador de sonido", state.uses_sound_profiler, "s")}
                     {render_check("Uso de sensor inercial", state.uses_inertial_sensor, "i")}
                 </div>
@@ -90,7 +91,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                         class={format!("flex-1 p-2 text-[10px] font-bold rounded {}", if state.mode == EcosondaMode::Monohaz { "bg-cyan-200 text-black" } else { "text-white" })}
                         onclick={Callback::from({let state = state.clone(); move |_| {
                             let mut s = (*state).clone();
-                            s.mode = EcosondaMode::Monohaz; // Simple y prolijo
+                            s.mode = EcosondaMode::Monohaz;
                             state.set(s);
                         }})}
                     >{"MONOHAZ"}</button>
@@ -163,7 +164,9 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                         let state = state.clone();
                         let mensaje = mensaje.clone();
                         let image_url = image_url.clone();
-                        move |_| run_simulation((*state).clone(), mensaje.clone(), image_url.clone(), loading.clone())
+                        let loading = loading.clone();
+                        let path_state = path_state.clone();
+                        move |_| run_simulation((*state).clone(), (*path_state).clone(), mensaje.clone(), image_url.clone(), loading.clone())
                     })} 
                     class="uppercase text-center disabled:opacity-30 bg-cyan-200 p-3 text-black font-bold w-full hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100"
                 >

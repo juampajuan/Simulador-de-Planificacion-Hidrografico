@@ -73,7 +73,7 @@ pub struct EchosounderParameters {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct StudentMeasuringParameters {
-    pub uses_mathegapher: bool,
+    pub uses_mareograph: bool,
     pub uses_sound_profiler: bool,
     pub uses_inertial_sensor: bool,
     pub echo_sounder_parameters: EchosounderParameters,

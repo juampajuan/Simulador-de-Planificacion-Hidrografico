@@ -7,6 +7,7 @@ use common::{
     StudentMeasuringParameters, 
     Boat, 
     EcosondaMode,
+    PathParameters
 };
 
 #[derive(Default, Clone, PartialEq, Serialize)]
@@ -27,7 +28,7 @@ pub struct EchoState {
     pub gain: String,
     pub echosounder_velocity: String,
     pub umbral: String,
-    pub uses_mathegapher: bool,
+    pub uses_mareograph: bool,
     pub uses_sound_profiler: bool,
     pub uses_inertial_sensor: bool,
     pub uses_high_frecuency: bool,
@@ -46,13 +47,19 @@ impl EchoState {
             gain: "0".to_string(),
             echosounder_velocity: "1450".to_string(),
             umbral: "0.1".to_string(),
-            uses_mathegapher: false,
+            uses_mareograph: false,
             uses_sound_profiler: true,
             uses_inertial_sensor: false,
             uses_high_frecuency: true,
             mode: EcosondaMode::Monohaz,
         }
     }
+}
+
+#[derive(serde::Serialize)]
+pub struct FullSimulationRequest {
+    pub echo_parameters: StudentMeasuringParameters,
+    pub path_parameters: PathParameters,
 }
 
 pub fn trigger_path_generation(
@@ -78,33 +85,39 @@ pub fn trigger_path_generation(
 }
 
 pub fn run_simulation(
-    state: EchoState, 
+    echo_state: EchoState, 
+    path_state: PathState,
     mensaje: UseStateHandle<String>,
     image_url: UseStateHandle<Option<String>>,
     loading: UseStateHandle<bool>
 ) {
-    let echo_params = match parse_echosounder_parameters(&state) {
+    let echo_params = match parse_echosounder_parameters(&echo_state) {
         Ok(p) => p,
-        Err(err_msg) => {
-            mensaje.set(err_msg);
-            return;
-        }
+        Err(err) => { mensaje.set(err); return; }
+    };
+
+    let path_params = match parse_path_parameters(&path_state) {
+        Ok(p) => p,
+        Err(err) => { mensaje.set(err); return; }
     };
 
     mensaje.set("Simulando medición...".to_string());
     loading.set(true);
     
     let boat_speed = 1.0; 
-    let params = StudentMeasuringParameters {
-        uses_mathegapher: state.uses_mathegapher,
-        uses_sound_profiler: state.uses_sound_profiler,
-        uses_inertial_sensor: state.uses_inertial_sensor,
-        boat: match state.boat.as_str() {
-            "Y" => Boat::Y { speed: boat_speed },
-            _ => Boat::W { speed: boat_speed },
+    let simulation_params = FullSimulationRequest {
+        echo_parameters: StudentMeasuringParameters {
+            uses_mareograph: echo_state.uses_mareograph,
+            uses_sound_profiler: echo_state.uses_sound_profiler,
+            uses_inertial_sensor: echo_state.uses_inertial_sensor,
+            boat: match echo_state.boat.as_str() {
+                "Y" => Boat::Y { speed: boat_speed },
+                _ => Boat::W { speed: boat_speed },
+            },
+            echo_sounder_parameters: echo_params,
         },
-        echo_sounder_parameters: echo_params,
+        path_parameters: path_params, // por si el cache del back no ofrece el path.
     };
 
-    send_blob_request("http://localhost:3000/api/v1/run_simulation", &params, mensaje, image_url, loading);
+    send_blob_request("http://localhost:3000/api/v1/run_simulation", &simulation_params, mensaje, image_url, loading);
 }
