@@ -1,11 +1,11 @@
 use yew::prelude::*; 
 use serde::Serialize;
 use crate::blob_client::send_blob_request;
-use crate::parser::{parse_path_parameters, parse_echosounder_parameters};
+use crate::parser::{parse_path_parameters, parse_echosounder_parameters, parse_transport_parameters};
 
 use common::{
     StudentMeasuringParameters, 
-    Boat, 
+    Transport,
     EcosondaMode,
     PathParameters
 };
@@ -19,7 +19,8 @@ pub struct PathState {
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct EchoState {
-    pub boat: String,
+    pub transport: Transport,
+    pub speed: String,
     pub max_limit: String,
     pub min_limit: String,
     pub pulse_repetition_interval: String,
@@ -37,8 +38,9 @@ pub struct EchoState {
 
 impl EchoState {
     pub fn new() -> Self {
-        Self {
-            boat: "W".to_string(),
+        Self { // Por ahora dejamos valores por defecto (editables desde UI), pero los dejo asi es mas comodo para el desarrollo.
+            transport: Transport::Ship,
+            speed: "1.0".to_string(),
             max_limit: "100".to_string(),
             min_limit: "0".to_string(),
             pulse_repetition_interval: "100".to_string(),
@@ -48,7 +50,7 @@ impl EchoState {
             echosounder_velocity: "1450".to_string(),
             umbral: "0.1".to_string(),
             uses_mareograph: false,
-            uses_sound_profiler: true,
+            uses_sound_profiler: false,
             uses_inertial_sensor: false,
             uses_high_frecuency: true,
             mode: EcosondaMode::Monohaz,
@@ -101,19 +103,17 @@ pub fn run_simulation(
         Err(err) => { mensaje.set(err); return; }
     };
 
+    let transport_params = match parse_transport_parameters(&echo_state) {
+        Ok(t) => t,
+        Err(e) => { mensaje.set(e); return; }
+    };
+
     mensaje.set("Simulando medición...".to_string());
     loading.set(true);
-    
-    let boat_speed = 1.0; 
+
     let simulation_params = FullSimulationRequest {
         echo_parameters: StudentMeasuringParameters {
-            uses_mareograph: echo_state.uses_mareograph,
-            uses_sound_profiler: echo_state.uses_sound_profiler,
-            uses_inertial_sensor: echo_state.uses_inertial_sensor,
-            boat: match echo_state.boat.as_str() {
-                "Y" => Boat::Y { speed: boat_speed },
-                _ => Boat::W { speed: boat_speed },
-            },
+            transport_parameters: transport_params,
             echo_sounder_parameters: echo_params,
         },
         path_parameters: path_params, // por si el cache del back no ofrece el path.

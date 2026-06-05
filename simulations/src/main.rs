@@ -1,7 +1,7 @@
 mod processing;
 mod structs;
 
-use common::{Boat, EcosondaMode, EchosounderParameters, StudentMeasuringParameters};
+use common::{Transport, EcosondaMode, EchosounderParameters, StudentMeasuringParameters, TransportParameters};
 use structs::student_measuring_parameters::EchosounderLogic;
 
 fn main() {
@@ -39,17 +39,17 @@ fn main() {
     echo.create_echosounder();
 
     let params = StudentMeasuringParameters {
-        uses_mareograph: true,
-        uses_sound_profiler: true,
-        uses_inertial_sensor: true,
         echo_sounder_parameters: echo,
-        boat: Boat::W { speed: 3.0 },  //m/s
+        transport_parameters: TransportParameters {
+            transport: Transport::Ship,
+            speed: 1.0,
+            uses_mareograph: false,
+            uses_sound_profiler: true,
+            uses_inertial_sensor: false,
+        },
     };
 
-    let boat_speed = match params.boat {
-        common::Boat::W { speed } => speed,
-        common::Boat::Y { speed } => speed,
-    };
+    let boat_speed = params.transport_parameters.speed;
     let distance_between_points =boat_speed * echo.pulse_repetition_interval/1000.0;
     // --- Puntos de medición ---
     let points_to_measure = processing::measuring::find_measuring_points(&path, distance_between_points, &matrix);

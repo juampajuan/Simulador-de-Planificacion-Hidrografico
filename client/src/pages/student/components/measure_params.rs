@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use web_sys::HtmlInputElement;
 use common::EcosondaMode;
+use common::Transport;
 use crate::{components::subtitle::Subtitle, requests::{EchoState,PathState, run_simulation}};
 use lucide_yew::{Radio, Ship};
 
@@ -22,7 +23,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     
     let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white";
 
-    let is_form_complete = !state.boat.trim().is_empty() && 
+    let is_form_complete = 
         [
             &state.min_limit, &state.max_limit, &state.pulse_repetition_interval, 
             &state.pulse_length, &state.transmited_potency, &state.gain, 
@@ -64,14 +65,66 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                     }}
                 />
  
-                <input type="text" placeholder="W o Y" class={input_cls} 
-                    value={state.boat.clone()}
-                    oninput={Callback::from({let state = state.clone(); move |e: InputEvent| {
-                        let mut s = (*state).clone();
-                        s.boat = e.target_unchecked_into::<HtmlInputElement>().value();
-                        state.set(s);
-                    }})}
-                />
+                <div class="flex gap-2 p-1 bg-zinc-700 rounded border border-white/15">
+                    <button 
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if state.transport == Transport::Ship { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
+                        onclick={Callback::from({let state = state.clone(); move |_| {
+                            let mut s = (*state).clone();
+                            s.transport = Transport::Ship;
+                            state.set(s);
+                        }})}
+                    >
+                        {"BARCO"}
+                    </button>
+                    
+                    <button 
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if state.transport == Transport::Boat { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
+                        onclick={Callback::from({let state = state.clone(); move |_| {
+                            let mut s = (*state).clone();
+                            s.transport = Transport::Boat;
+                            state.set(s);
+                        }})}
+                    >
+                        {"BOTE"}
+                    </button>
+
+                    <button 
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if state.transport == Transport::Launch { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
+                        onclick={Callback::from({let state = state.clone(); move |_| {
+                            let mut s = (*state).clone();
+                            s.transport = Transport::Launch;
+                            state.set(s);
+                        }})}
+                    >
+                        {"LANCHA"}
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs text-white/40 ml-1">{"Velocidad de la embarcación (m/s)"}</span>
+                    <input 
+                        type="number" 
+                        step="0.1"
+                        placeholder="1.0"
+                        class={input_cls} 
+                        value={state.speed.clone()}
+                        oninput={Callback::from({let state = state.clone(); move |e: InputEvent| {
+                            let mut s = (*state).clone();
+                            s.speed = e.target_unchecked_into::<HtmlInputElement>().value();
+                            state.set(s);
+                        }})}
+                    />
+                </div>
+
                 <div class="grid grid-cols-1 gap-1 mt-2">
                     {render_check("Uso de mareógrafo", state.uses_mareograph, "m")}
                     {render_check("Uso de perfilador de sonido", state.uses_sound_profiler, "s")}
@@ -88,29 +141,62 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                  
                 <div class="flex gap-2 p-1 bg-zinc-700 rounded border border-white/15">
                     <button 
-                        class={format!("flex-1 p-2 text-[10px] font-bold rounded {}", if state.mode == EcosondaMode::Monohaz { "bg-cyan-200 text-black" } else { "text-white" })}
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if state.mode == EcosondaMode::Monohaz { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
                         onclick={Callback::from({let state = state.clone(); move |_| {
                             let mut s = (*state).clone();
                             s.mode = EcosondaMode::Monohaz;
                             state.set(s);
                         }})}
-                    >{"MONOHAZ"}</button>
+                    >
+                        {"MONOHAZ"}
+                    </button>
                     
                     <button 
-                        class={format!("flex-1 p-2 text-[10px] font-bold rounded {}", if state.mode == EcosondaMode::Multihaz { "bg-cyan-200 text-black" } else { "text-white" })}
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if state.mode == EcosondaMode::Multihaz { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
                         onclick={Callback::from({let state = state.clone(); move |_| {
                             let mut s = (*state).clone();
                             s.mode = EcosondaMode::Multihaz;
                             state.set(s);
                         }})}
-                    >{"MULTIHAZ"}</button>
+                    >
+                        {"MULTIHAZ"}
+                    </button>
                 </div>
                
-                <div class="p-2 bg-zinc-700 rounded border border-white/15">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-white">{"Frecuencia de Trabajo"}</span>
-                        {render_check(if state.uses_high_frecuency { "ALTA" } else { "BAJA" }, state.uses_high_frecuency, "f")}
-                    </div>
+                <div class="flex gap-2 p-1 bg-zinc-700 rounded border border-white/15">
+                    <button 
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if state.uses_high_frecuency { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
+                        onclick={Callback::from({let state = state.clone(); move |_| {
+                            let mut s = (*state).clone();
+                            s.uses_high_frecuency = true;
+                            state.set(s);
+                        }})}
+                    >
+                        {"FRECUENCIA ALTA"}
+                    </button>
+                    
+                    <button 
+                        type="button"
+                        class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            if !state.uses_high_frecuency { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
+                        )}
+                        onclick={Callback::from({let state = state.clone(); move |_| {
+                            let mut s = (*state).clone();
+                            s.uses_high_frecuency = false;
+                            state.set(s);
+                        }})}
+                    >
+                        {"FRECUENCIA BAJA"}
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
