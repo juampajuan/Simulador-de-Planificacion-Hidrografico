@@ -48,24 +48,24 @@ pub fn change_password(
 }
 
 
-pub fn get_professor_id_by_id(
+pub fn get_professor_id_by_username(
     db: &DBEngine,
-    professor_id: i64,
-) -> Result<Option<usize>, sqlite::Error> {
+    username: &str,
+) -> Result<Option<i64>, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
         SELECT id
         FROM professors
-        WHERE id = ?
+        WHERE username = ?
         "
     )?;
 
-    statement.bind((1, professor_id))?;
+    statement.bind((1, username))?;
 
     if let sqlite::State::Row = statement.next()? {
         Ok(Some(
-            statement.read::<i64, _>("id")? as usize
+            statement.read::<i64, _>("id")?
         ))
     } else {
         Ok(None)

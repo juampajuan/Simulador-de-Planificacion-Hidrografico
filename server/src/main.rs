@@ -23,14 +23,6 @@ fn main() {
         }
     };
 
-    // let db = match DBEngine::new(&settings.db_name) {
-    //     Ok(db) => db,
-    //     Err(err) => {
-    //         println!("{}", err);
-    //         return;
-    //     }
-    // };
-
     // Generamos el struct para hacer de cache con los geotiffs cargados.
     let geotiff_cache = FileCache::new(settings.cache_amount);
     let cache = Arc::new(Mutex::new(geotiff_cache));
@@ -49,9 +41,9 @@ fn main() {
     threads.push(create_cli_thread(settings.port));
 
     for request in server.incoming_requests() {
-        // let settings_clone = Arc::clone(&settings);
+        let settings_clone = Arc::clone(&settings);
         let cache_clone = Arc::clone(&cache);
-        threads.push(create_request_thread(request, cache_clone));
+        threads.push(create_request_thread(request, cache_clone, settings_clone));
     }
 
     for thread in threads {

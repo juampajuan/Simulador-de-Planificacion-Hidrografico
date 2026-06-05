@@ -24,3 +24,15 @@ pub fn server_error(msg: String) -> HandlerResult {
 
     (response.boxed(), 500)
 }
+
+pub fn normal_response(msg: String, code: i32) -> HandlerResult {
+    let mut response = Response::from_string(msg)
+        .with_status_code(code);
+
+    // Agregamos CORS
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"*") {
+        response = response.with_header(h);
+    }
+
+    (response.boxed(), code as u16)
+}
