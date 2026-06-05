@@ -55,14 +55,11 @@ fn calculate_tide_levels(
     path: &[(usize, usize)],
     matrix: &DepthMatrix,
 ) -> Option<Vec<f64>> {
-    if params.uses_mathegapher {
+    if params.transport_parameters.uses_mareograph {
         return None;
     }
  
-    let boat_speed = match params.boat {
-        common::Boat::W { speed } => speed,
-        common::Boat::Y { speed } => speed,
-    };
+    let boat_speed = params.transport_parameters.speed;
  
     let total_distance_m = total_path_distance(path, matrix);
     let duration_hours = total_distance_m / (boat_speed * 3600.0);
@@ -92,14 +89,14 @@ pub fn apply_disturbances(
  
     mediciones.into_iter().enumerate().map(|(i, (punto, z_ideal))| {
         // 1. Sensor inercial
-        let (punto, z_ideal) = if params.uses_inertial_sensor {
+        let (punto, z_ideal) = if params.transport_parameters.uses_inertial_sensor {
             (punto, z_ideal)
         } else {
             apply_inertial_sensor_error(punto, matrix)
         };
  
         // 2. Velocidad del sonido
-        let mut z = if params.uses_sound_profiler {
+        let mut z = if params.transport_parameters.uses_sound_profiler {
             z_ideal
         } else {
             apply_sound_velocity_noise(z_ideal, echo.echosounder_velocity as f64)

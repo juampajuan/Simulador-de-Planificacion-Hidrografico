@@ -8,9 +8,7 @@ use lucide_yew::Route;
 
 #[derive(Properties, PartialEq)]
 pub struct PathProps {
-    pub separacion: UseStateHandle<String>,
-    pub azimut: UseStateHandle<String>,
-    pub gnss_type: UseStateHandle<String>,
+    pub path_state: UseStateHandle<PathState>,
     pub mensaje: UseStateHandle<String>,
     pub image_url: UseStateHandle<Option<String>>,
     pub loading: UseStateHandle<bool>
@@ -58,16 +56,17 @@ pub fn path_params(props: &PathProps) -> Html {
                     disabled={*props.loading}
                     placeholder="10"
                     class={input_cls}
-                    value={(*props.separacion).clone()}
+                    value={(*props.path_state).separacion.clone()}
                     onchange={{
-                        let s_handle = props.separacion.clone();
+                        let s_handle = props.path_state.clone();
 
                         Callback::from(move |e: Event| {
                             let val = e
                                 .target_unchecked_into::<HtmlInputElement>()
                                 .value();
-
-                            s_handle.set(val);
+                            let mut nuevo_estado = (*s_handle).clone();
+                            nuevo_estado.separacion = val;
+                            s_handle.set(nuevo_estado);
                         })
                     }}
                 />
@@ -83,16 +82,18 @@ pub fn path_params(props: &PathProps) -> Html {
                     disabled={*props.loading}
                     placeholder="45"
                     class={input_cls}
-                    value={(*props.azimut).clone()}
+                    value={(*props.path_state).azimut.clone()}
                     onchange={{
-                        let a_handle = props.azimut.clone();
+                        let a_handle = props.path_state.clone();
 
                         Callback::from(move |e: Event| {
                             let val = e
                                 .target_unchecked_into::<HtmlInputElement>()
                                 .value();
 
-                            a_handle.set(val);
+                            let mut nuevo_estado = (*a_handle).clone();
+                            nuevo_estado.azimut = val;
+                            a_handle.set(nuevo_estado);
                         })
                     }}
                 />
@@ -107,14 +108,16 @@ pub fn path_params(props: &PathProps) -> Html {
                     class={input_cls}
                     disabled={*props.loading}
                     onchange={{
-                        let g_handle = props.gnss_type.clone();
+                        let g_handle = props.path_state.clone();
 
                         Callback::from(move |e: Event| {
                             let val = e
                                 .target_unchecked_into::<HtmlSelectElement>()
                                 .value();
 
-                            g_handle.set(val);
+                            let mut nuevo_estado = (*g_handle).clone();
+                            nuevo_estado.gnss_type = val;
+                            g_handle.set(nuevo_estado);
                         })
                     }}
                 >
@@ -128,7 +131,7 @@ pub fn path_params(props: &PathProps) -> Html {
                         .map(|opt| html! {
                             <option
                                 value={*opt}
-                                selected={*props.gnss_type == *opt}
+                                selected={(*props.path_state).gnss_type == *opt}
                             >
                                 { opt }
                             </option>
@@ -144,15 +147,15 @@ pub fn path_params(props: &PathProps) -> Html {
                     onclick={{
                         let trigger = trigger.clone();
 
-                        let s = props.separacion.clone();
-                        let a = props.azimut.clone();
-                        let g = props.gnss_type.clone();
+                        let s = props.path_state.clone();
+                        let a = props.path_state.clone();
+                        let g = props.path_state.clone();
 
                         Callback::from(move |_| {
                             trigger(
-                                (*s).clone(),
-                                (*a).clone(),
-                                (*g).clone(),
+                                (*s).separacion.clone(),
+                                (*a).azimut.clone(),
+                                (*g).gnss_type.clone(),
                             );
                         })
                     }}

@@ -55,10 +55,7 @@ pub fn run_simulation(
 
     println!("Simulando...");
 
-    let boat_speed = match params.boat {
-        common::Boat::W { speed } => speed,
-        common::Boat::Y { speed } => speed,
-    };
+    let boat_speed = params.transport_parameters.speed;
 
     let distance_between_points = boat_speed*params.echo_sounder_parameters.pulse_repetition_interval/1000.0;
 
