@@ -2,7 +2,7 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{webpage, simulation, errors};
+use crate::requests::endpoints::{auth, errors, simulation, webpage};
 use tiny_http::Response;
 
 const API_V1: &str = "/api/v1";
@@ -38,6 +38,16 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> Req
 
             (Method::Post, "/run_simulation") =>
                 simulation::run_simulation(&mut request, cache),
+
+            // Auth requests methods.
+            (Method::Post, "/auth/create_professor_user") =>
+                auth::create_professor(&mut request),
+
+            (Method::Post, "/auth/change_professor_pass") =>
+                auth::change_pass(&mut request),
+
+            (Method::Post, "/auth/login") =>
+                auth::change_pass(&mut request),
 
             _ => errors::not_found(),
         }
