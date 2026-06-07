@@ -95,3 +95,6 @@ input[type="number"] {
 } 
 
 
+.no-interaction {
+    pointer-events: none;
+}

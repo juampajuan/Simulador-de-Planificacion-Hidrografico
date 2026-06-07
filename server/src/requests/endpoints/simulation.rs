@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::requests::http_helper::{parse_json_body, create_png_response};
-use crate::requests::endpoints::errors;
+use crate::requests::endpoints::generic;
 use common::{StudentMeasuringParameters, PathParameters};
 
 const TIF_ID: &str = "Darsena_20cm_v2.tif";
@@ -19,13 +19,13 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
     // Parseo y obtencion de pathParameters
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return errors::server_error(format!("Bad Request: {}", err)),
+        Err(err) => return generic::server_error(format!("Bad Request: {}", err)),
     };
 
     // Creacion de matriz de profundidad con simulations
     let matrix = match simulations::create_depth_matrix(TIF_ID) {
         Ok(m) => m,
-        Err(_) => return errors::server_error("Error processing TIF (500)".to_string()),
+        Err(_) => return generic::server_error("Error processing TIF (500)".to_string()),
     };
 
     let path = simulations::create_path(&matrix, data.path_parameters.azimut, data.path_parameters.separacion, data.path_parameters.gnss_type);
@@ -50,7 +50,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return errors::server_error(format!("Bad Request: {}", err)),
+        Err(err) => return generic::server_error(format!("Bad Request: {}", err)),
     };
 
     let mut lock = match cache.lock() {
@@ -65,7 +65,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Ha
             
             let generated_matrix = match simulations::create_depth_matrix(TIF_ID) {
                 Ok(m) => m,
-                Err(_) => return errors::server_error("Error crítico procesando TIF".to_string()),
+                Err(_) => return generic::server_error("Error crítico procesando TIF".to_string()),
             };
             
             let generated_path = simulations::create_path(
@@ -82,12 +82,12 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Ha
     };
 
     if path.is_empty() {
-        return errors::server_error("Error: El Path sigue estando vacío".to_string());
+        return generic::server_error("Error: El Path sigue estando vacío".to_string());
     }
 
     let echo_parameters = match data.echo_parameters {
         Some(params) => params,
-        None => return errors::server_error("Faltan parámetros de ecosonda".to_string()),
+        None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
     };
     
     let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters);
