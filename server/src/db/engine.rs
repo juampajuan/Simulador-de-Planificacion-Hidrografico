@@ -7,7 +7,7 @@ pub struct DBEngine {
 impl DBEngine {
 
     pub fn new(
-        name: String
+        name: &String
     ) -> Result<Self, sqlite::Error> {
 
         let connection = sqlite::open(name)?;

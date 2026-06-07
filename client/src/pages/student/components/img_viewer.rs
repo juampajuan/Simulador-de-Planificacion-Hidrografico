@@ -20,6 +20,20 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 rounded-md dot-grid relative dark:dot-grid-dark
             "
         >
+
+            // <div class="absolute w-full h-full scale-110 opacity-60 no-interaction">
+            //     <iframe width="100%" height="100%" allow="geolocation" src="https://api.maptiler.com/maps/dataviz-v4/?key=EVEAYM1Cx9nGoDR5OVX6#16.7/-34.59543331/-58.36668597"></iframe>
+            //     // winter-v4
+            //     // backdrop
+            // </div>
+
+            <div class="flex
+                items-center
+                justify-center
+                h-full w-full overflow-hidden
+                p-8
+            ">
+
             {
                 if let Some(url) = image_url {
                     html! {
@@ -41,7 +55,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
             { 
                 if loading {
                     html! {
-                        <div class="flex flex-col absolute top-0 backdrop-blur left-0 dark:bg-black/50 w-full h-full justify-center items-center">
+                        <div class="flex flex-col absolute top-0 z-[100] backdrop-blur left-0 dark:bg-black/50 w-full h-full justify-center items-center">
                             <div class="loader2"/>
                             <h2 class="dark:text-cyan-200 font-bold text-center p-5">
                                 { mensaje }
@@ -52,6 +66,8 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                     html! {}
                 }
             }
+            </div>
+
         </div>
     }
 }

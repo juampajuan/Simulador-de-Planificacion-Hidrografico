@@ -1,34 +1,56 @@
 use sqlite::State;
-
 use crate::db::engine::DBEngine;
 
 // Esto se podria mover a los structs. Y va a haber para cada tipo
 pub struct Student {
     pub code: String,
     pub name: String,
+    pub id: i64,
+    pub project_id: i64
 }
 
 pub fn create_student(
     db: &DBEngine,
     code: &str,
-    name: &str
+    name: &str,
+    project_id: i64,
+    professor_id: i64,
 ) -> Result<(), sqlite::Error> {
 
     let mut statement = db.run_query(
         "
-        INSERT INTO students(code, name)
-        VALUES(?, ?)
+        INSERT INTO students(code, name, project_id, professor_id)
+        VALUES(?, ?, ?, ?)
         "
     )?;
 
     statement.bind((1, code))?;
     statement.bind((2, name))?;
-
+    statement.bind((3, project_id))?;
+    statement.bind((4, professor_id))?;
     statement.next()?;
 
     Ok(())
 }
 
+pub fn delete_student(
+    db: &DBEngine,
+    id: i64
+) -> Result<Option<()>, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        DELETE FROM students
+        WHERE id = ?;
+        "
+    )?;
+
+    statement.bind((1, id))?;
+    statement.next()?;
+
+    Ok(None)
+}
+    
 pub fn get_student_by_code(
     db: &DBEngine,
     code: &str
@@ -49,6 +71,8 @@ pub fn get_student_by_code(
         let student = Student {
             code: statement.read::<String, _>("code")?,
             name: statement.read::<String, _>("name")?,
+            id: statement.read::<i64, _>("id")?,
+            project_id: statement.read::<i64, _>("project_id")?,
         };
 
         return Ok(Some(student));
@@ -57,6 +81,33 @@ pub fn get_student_by_code(
     Ok(None)
 }
 
+pub fn get_students_for_professor(
+    db: &DBEngine,
+    professor_id: usize,
+) -> Result<Vec<Student>, sqlite::Error> {
+    let query = "
+        SELECT id, name, code, project_id
+        FROM students
+        WHERE professor_id = ?
+    ";
+
+    let mut statement = db.run_query(query)?;
+
+    statement.bind((1, professor_id as i64))?;
+
+    let mut students = Vec::new();
+
+    while let State::Row = statement.next()? {
+        students.push(Student {
+            id: statement.read::<i64, _>("id")?,
+            name: statement.read::<String, _>("name")?,
+            code: statement.read::<String, _>("code")?,
+            project_id: statement.read::<i64, _>("project_id")?,
+        });
+    }
+
+    Ok(students)
+}
 
 // Demo de uso
 // use db::queries::student::{Student, create_student, get_student_by_code};

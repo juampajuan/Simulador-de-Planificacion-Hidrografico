@@ -2,7 +2,8 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{webpage, simulation, errors};
+use crate::requests::endpoints::{auth, generic, simulation, webpage};
+use crate::db::engine::DBEngine;
 use tiny_http::Response;
 
 const API_V1: &str = "/api/v1";
@@ -10,7 +11,15 @@ const API_V1: &str = "/api/v1";
 /// Recibe todas las requests y llama al metodo que corresponde
 // Cada metodo, devuelve una response
 // Que luego es enviada por el sender y logueada
-pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> RequestLog {
+pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Option<DBEngine>) -> RequestLog {
+
+    let db = match db {
+        Some(db) => db,
+        None => {
+            let result = generic::server_error("No se pudo iniciar la db".to_string());
+            return response_sender(request, result)
+        }
+    };
 
     let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
 
@@ -39,7 +48,17 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>) -> Req
             (Method::Post, "/run_simulation") =>
                 simulation::run_simulation(&mut request, cache),
 
-            _ => errors::not_found(),
+            // Auth requests methods.
+            (Method::Post, "/auth/create_professor_user") =>
+                auth::create_professor(&mut request, db),
+
+            (Method::Post, "/auth/change_professor_pass") =>
+                auth::change_pass(&mut request, db),
+
+            (Method::Post, "/auth/login") =>
+                auth::login(&mut request, db),
+
+            _ => generic::not_found(),
         }
 
     } else {

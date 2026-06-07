@@ -586,6 +586,10 @@ video {
   z-index: 50;
 }
 
+.z-\[100\] {
+  z-index: 100;
+}
+
 .mb-8 {
   margin-bottom: 2rem;
 }
@@ -646,6 +650,12 @@ video {
   flex: 1 1 0%;
 }
 
+.scale-110 {
+  --tw-scale-x: 1.1;
+  --tw-scale-y: 1.1;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
 .cursor-pointer {
   cursor: pointer;
 }
@@ -702,6 +712,16 @@ video {
   margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
 }
 
+.divide-x > :not([hidden]) ~ :not([hidden]) {
+  --tw-divide-x-reverse: 0;
+  border-right-width: calc(1px * var(--tw-divide-x-reverse));
+  border-left-width: calc(1px * calc(1 - var(--tw-divide-x-reverse)));
+}
+
+.divide-white\/20 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(255 255 255 / 0.2);
+}
+
 .overflow-hidden {
   overflow: hidden;
 }
@@ -736,6 +756,10 @@ video {
 
 .border-b {
   border-bottom-width: 1px;
+}
+
+.border-t {
+  border-top-width: 1px;
 }
 
 .border-white\/15 {
@@ -804,6 +828,10 @@ video {
   padding: 1.25rem;
 }
 
+.p-6 {
+  padding: 1.5rem;
+}
+
 .p-8 {
   padding: 2rem;
 }
@@ -833,6 +861,10 @@ video {
 
 .pt-2 {
   padding-top: 0.5rem;
+}
+
+.pt-3 {
+  padding-top: 0.75rem;
 }
 
 .text-center {
@@ -902,6 +934,10 @@ video {
 
 .text-white\/40 {
   color: rgb(255 255 255 / 0.4);
+}
+
+.opacity-60 {
+  opacity: 0.6;
 }
 
 .shadow-xl {
@@ -1046,6 +1082,10 @@ input[type="number"] {
   }
 }
 
+.no-interaction {
+  pointer-events: none;
+}
+
 .hover\:bg-black\/10:hover {
   background-color: rgb(0 0 0 / 0.1);
 }
@@ -1112,6 +1152,11 @@ input[type="number"] {
   background-color: rgb(24 24 27 / var(--tw-bg-opacity, 1));
 }
 
+.dark\:text-cyan-100:is(.dark *) {
+  --tw-text-opacity: 1;
+  color: rgb(207 250 254 / var(--tw-text-opacity, 1));
+}
+
 .dark\:text-cyan-200:is(.dark *) {
   --tw-text-opacity: 1;
   color: rgb(165 243 252 / var(--tw-text-opacity, 1));
@@ -1122,14 +1167,13 @@ input[type="number"] {
   color: rgb(103 232 249 / var(--tw-text-opacity, 1));
 }
 
-.dark\:text-cyan-50:is(.dark *) {
-  --tw-text-opacity: 1;
-  color: rgb(236 254 255 / var(--tw-text-opacity, 1));
-}
-
 .dark\:text-white:is(.dark *) {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.dark\:text-white\/90:is(.dark *) {
+  color: rgb(255 255 255 / 0.9);
 }
 
 .dark\:hover\:bg-white\/10:hover:is(.dark *) {
@@ -1151,6 +1195,4 @@ input[type="number"] {
 
 .\[\&_input\]\:opacity-50 input {
   opacity: 0.5;
-} 
-
-
+}
