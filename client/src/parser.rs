@@ -1,5 +1,5 @@
 use common::{EchosounderParameters, PathParameters, GnssType, TransportParameters};
-use crate::requests::{PathState, EchoState};
+use crate::structs::state::{PathState, EchoState};
 
 pub fn parse_path_parameters(state: &PathState) -> Result<PathParameters, String> {
     let separacion = state.separacion.parse::<f64>()
@@ -9,8 +9,8 @@ pub fn parse_path_parameters(state: &PathState) -> Result<PathParameters, String
         .map_err(|_| "Error: El azimut debe ser un número válido".to_string())?;
 
     let gnss_type = match state.gnss_type.as_str() {
-        "Fase" => GnssType::PhaseCorrection,
-        "DGPS" => GnssType::DGPSCorrection,
+        "Corrección de Fase" => GnssType::PhaseCorrection,
+        "Corrección DGPS" => GnssType::DGPSCorrection,
         _ => GnssType::NoCorrection,
     };
 

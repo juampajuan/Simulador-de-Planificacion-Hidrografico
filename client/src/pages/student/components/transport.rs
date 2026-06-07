@@ -2,7 +2,7 @@ use yew::prelude::*;
 use web_sys::HtmlInputElement;
 use common::Transport;
 use lucide_yew::Ship;
-use crate::{components::subtitle::Subtitle, requests::EchoState};
+use crate::{components::subtitle::Subtitle, structs::state::EchoState};
 
 #[derive(Properties, PartialEq)]
 pub struct TransportParamsProps {
