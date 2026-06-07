@@ -1,4 +1,4 @@
-use common::{EchosounderParameters, PathParameters, GnssType};
+use common::{EchosounderParameters, PathParameters, GnssType, TransportParameters};
 use crate::requests::{PathState, EchoState};
 
 pub fn parse_path_parameters(state: &PathState) -> Result<PathParameters, String> {
@@ -55,5 +55,18 @@ pub fn parse_echosounder_parameters(state: &EchoState) -> Result<EchosounderPara
         gain,
         echosounder_velocity,
         threshold,
+    })
+}
+
+pub fn parse_transport_parameters(state: &EchoState) -> Result<TransportParameters, String> {
+    let speed = state.speed.parse::<f64>()
+        .map_err(|_| "Error: La velocidad de la embarcación debe ser un número válido".to_string())?;
+
+    Ok(TransportParameters {
+        transport: state.transport,
+        speed,
+        uses_mareograph: state.uses_mareograph,
+        uses_sound_profiler: state.uses_sound_profiler,
+        uses_inertial_sensor: state.uses_inertial_sensor,
     })
 }

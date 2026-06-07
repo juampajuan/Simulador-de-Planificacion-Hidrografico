@@ -5,6 +5,7 @@ use self::components::img_viewer::IMGviewer;
 use self::components::parameters_cont::ParamCont;
 use self::components::path_params::PathParams;
 use self::components::measure_params::MeasuresParams;
+use crate::requests::PathState;
 
 #[function_component(StudentPage)]
 pub fn student_page() -> Html {
@@ -12,28 +13,23 @@ pub fn student_page() -> Html {
     let image_url = use_state(|| None::<String>);
     let loading = use_state(|| false);
     
-    // Estados para PathParams
-    let separacion = use_state(|| "".to_string());
-    let azimut = use_state(|| "".to_string());
-    let gnss_type = use_state(|| "".to_string());
+    let path_state = use_state(PathState::default);
 
     html! {
-        <Root title={"Simulador Hidrográfico"}>
+        <Root title={"Simulador de Planificación Hidrográfico"}>
             <ParamCont>
                 <PathParams 
-                    separacion={separacion} 
-                    azimut={azimut} 
-                    gnss_type={gnss_type}
+                    path_state={path_state.clone()}
                     mensaje={mensaje.clone()} 
                     image_url={image_url.clone()} 
                     loading={loading.clone()} 
                 />
                 
-                // Pasamos los handles para que la simulación pueda escribir en ellos
                 <MeasuresParams 
                     mensaje={mensaje.clone()} 
                     image_url={image_url.clone()} 
                     loading={loading.clone()} 
+                    path_state={path_state.clone()}
                 /> 
             </ParamCont>
 
