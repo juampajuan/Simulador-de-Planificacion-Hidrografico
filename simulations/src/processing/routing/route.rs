@@ -1,16 +1,15 @@
 use crate::structs::depth_matrix::DepthMatrix;
-//use super::gnss::apply_gnss_noise_segmented;
+use super::gnss::apply_gnss_noise_segmented;
 
 pub fn generate_route(
     matrix: &DepthMatrix,
     azimuth_deg: f64,
     separation_meters: f64,
-    _max_offset_meters_: f64,
+    max_offset_meters: f64,
 ) -> Vec<(usize, usize)> {
     let geometry = RouteGeometry::new(matrix, azimuth_deg, separation_meters);
-    let (path, _segments_) = build_path(matrix, &geometry);
-    //apply_gnss_noise_segmented(&path, &segments, matrix, max_offset_meters)
-    path
+    let (path, segments) = build_path(matrix, &geometry);
+    apply_gnss_noise_segmented(&path, &segments, matrix, max_offset_meters)
 }
 
 // ------------------------------------------------------------

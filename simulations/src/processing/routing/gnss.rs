@@ -36,6 +36,14 @@ pub fn apply_gnss_noise_segmented(
         let len_meters = calculate_distance_between_points(start_point, end_point, matrix);
         if len_meters == 0.0 { continue; }
 
+        // El desvío máximo real se acota según la longitud del segmento.
+        // - `max_fraction`: el desvío nunca supera el 15% de la longitud del tramo,
+        //   evitando quiebres absurdos en conexiones cortas.
+        let max_fraction = 0.15;
+        let effective_max = max_offset_meters
+            .min(len_meters * max_fraction)
+            .min(max_offset_meters * (len_meters / (len_meters + max_offset_meters * 5.0)).sqrt());
+
         let dx_m = (end_point.0 as f64 - start_point.0 as f64) * matrix.size_x;
         let dy_m = (end_point.1 as f64 - start_point.1 as f64) * matrix.size_y;
 
@@ -45,7 +53,7 @@ pub fn apply_gnss_noise_segmented(
 
         let harmonics: Vec<(f64, f64)> = (1..=4)
             .map(|k| {
-                let amplitude = max_offset_meters / k as f64;
+                let amplitude = effective_max / k as f64;
                 let phase: f64 = rng.random::<f64>() * std::f64::consts::TAU;
                 (amplitude, phase)
             })
@@ -65,7 +73,7 @@ pub fn apply_gnss_noise_segmented(
                 })
                 .sum();
 
-            let offset_m = (raw / max_possible) * max_offset_meters * t.sin();
+            let offset_m = (raw / max_possible) * effective_max * t.sin();
 
             let nx = path[idx].0 as f64 + perp_x_px * offset_m;
             let ny = path[idx].1 as f64 + perp_y_px * offset_m;
