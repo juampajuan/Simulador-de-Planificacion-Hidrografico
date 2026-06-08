@@ -53,7 +53,7 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix, threshol
             let pixel_val = matrix.data[y][x];
             let pixel_time = pixel_val / SOUND_VELOCITY;
 
-            if Some(pixel_val) != matrix.no_data && pixel_time <= threshold && (pixel_val > measure || measure == 0.0) {
+            if Some(pixel_val) != matrix.no_data && pixel_time <= threshold && (pixel_val < measure || measure == 0.0) {
                 measure = pixel_val;
             }
         }
