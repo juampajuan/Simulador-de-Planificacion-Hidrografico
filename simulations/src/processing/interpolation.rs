@@ -1,6 +1,7 @@
 use kiddo::KdTree;
 use kiddo::SquaredEuclidean;
 use kiddo::NearestNeighbour;
+use spade::{DelaunayTriangulation, FloatTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
 use crate::structs::depth_matrix::DepthMatrix;
 
 // ------------------------------------------------------------
@@ -11,6 +12,7 @@ use crate::structs::depth_matrix::DepthMatrix;
 pub enum InterpolationMethod {
     Idw,
     Kriging,
+    Tin,
 }
 
 pub fn interpolate(
@@ -22,6 +24,7 @@ pub fn interpolate(
     match method {
         InterpolationMethod::Idw     => interpolation_idw_kdtrees(measuring_points, matrix, geotiff),
         InterpolationMethod::Kriging => interpolation_kriging(measuring_points, matrix, geotiff),
+        InterpolationMethod::Tin     => interpolation_tin(measuring_points, matrix, geotiff),
     }
 }
 
@@ -73,7 +76,7 @@ fn compute_idw(
             return val;
         }
 
-        let weight = 1.0 / dist.powf(2.0);
+        let weight = 1.0 / dist.powf(1.0);
         weighted_sum += val * weight;
         weight_total += weight;
     }
@@ -283,4 +286,169 @@ pub fn interpolation_kriging(
     }
 
     result
+}
+// ------------------------------------------------------------
+//  TIN — Triangulated Irregular Network
+//
+//  Estrategia:
+//  1. Construir una triangulación de Delaunay con los puntos medidos.
+//  2. Para cada píxel dentro del convex hull → interpolación baricéntrica
+//     usando FloatTriangulation::barycentric_interpolation de spade.
+//  3. Para píxeles fuera del convex hull → fallback IDW con los 4
+//     vecinos más cercanos (evita dejar zonas en negro en los bordes).
+// ------------------------------------------------------------
+
+/// Vértice TIN: posición (x, y) en píxeles + profundidad z almacenada
+/// como dato adjunto.
+#[derive(Clone, Copy, Debug)]
+struct TinVertex {
+    position: Point2<f64>,
+    depth:    f64,
+}
+
+impl HasPosition for TinVertex {
+    type Scalar = f64;
+    fn position(&self) -> Point2<f64> {
+        self.position
+    }
+}
+
+use std::thread;
+
+// ... (Las importaciones y la inicialización de TIN se mantienen igual) ...
+
+pub fn interpolation_tin(
+    measuring_points: &[(usize, usize)],
+    matrix: &[Vec<f64>],
+    geotiff: &DepthMatrix,
+) -> Vec<Vec<f64>> {
+    let no_data = geotiff.no_data.unwrap_or(f64::MAX);
+    let mut result = vec![vec![0.0_f64; geotiff.width]; geotiff.height];
+
+    let (kdtree, depth_values, indices) = build_kdtree(measuring_points, matrix, no_data);
+
+    if depth_values.is_empty() {
+        return result;
+    }
+
+    let mut triangulation: DelaunayTriangulation<TinVertex> = DelaunayTriangulation::new();
+    for (i, &idx) in indices.iter().enumerate() {
+        let point = measuring_points[idx];
+        let vertex = TinVertex {
+            position: Point2::new(point.0 as f64, point.1 as f64),
+            depth: depth_values[i],
+        };
+        let _ = triangulation.insert(vertex);
+    }
+
+    if triangulation.num_inner_faces() == 0 {
+        return interpolation_kriging(measuring_points, matrix, geotiff);
+    }
+
+    let kriging_neighbors = 16; 
+
+    // --- 3. Interpolar cada píxel con std::thread ---------------------
+    
+    // Obtenemos la cantidad de hilos lógicos disponibles en la CPU (o 4 por defecto)
+    let num_threads = thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+    
+    // Calculamos cuántas filas procesará cada hilo
+    let rows_per_thread = (geotiff.height + num_threads - 1) / num_threads;
+
+    // Abrimos un "scope" para garantizar que los hilos mueran antes de que retorne la función
+    thread::scope(|s| {
+        
+        // .chunks_mut() es la clave: divide la matriz en bloques independientes 
+        // de filas para que cada hilo pueda escribir sin usar Mutex.
+        for (thread_id, chunk) in result.chunks_mut(rows_per_thread).enumerate() {
+            
+            // Calculamos en qué fila global arranca este bloque
+            let start_row = thread_id * rows_per_thread;
+
+            // Prestamos las variables al scope (necesario para el closure del hilo)
+            let kdtree_ref = &kdtree;
+            let depth_values_ref = &depth_values;
+            let indices_ref = &indices;
+            let triangulation_ref = &triangulation;
+            
+            // Creamos el Builder con un nombre, como en la diapositiva
+            let builder = thread::Builder::new()
+                .name(format!("kriging_worker_{}", thread_id));
+
+            // Usamos spawn_scoped en lugar de spawn regular
+            builder.spawn_scoped(s, move || {
+                
+                // Iteramos sobre el bloque de filas que le tocó a este hilo
+                for (local_j, row) in chunk.iter_mut().enumerate() {
+                    let global_j = start_row + local_j; // Reconstruimos la coordenada 'Y' real
+
+                    for i in 0..geotiff.width {
+                        if geotiff.data[global_j][i] == no_data {
+                            row[i] = no_data;
+                            continue;
+                        }
+                        if matrix[global_j][i] != 0.0 {
+                            row[i] = matrix[global_j][i];
+                            continue;
+                        }
+
+                        let query = Point2::new(i as f64, global_j as f64);
+
+                        match triangulation_ref.locate(query) {
+                            PositionInTriangulation::OutsideOfConvexHull(_)
+                            | PositionInTriangulation::NoTriangulation => {
+                                row[i] = kriging_fallback(
+                                    kdtree_ref, depth_values_ref, indices_ref, measuring_points, 
+                                    i as f64, global_j as f64, kriging_neighbors
+                                );
+                            }
+                            _ => {
+                                if let Some(z) = triangulation_ref
+                                    .natural_neighbor()
+                                    .interpolate(|v| v.data().depth, query) {
+                                    row[i] = z;
+                                } else {
+                                    row[i] = kriging_fallback(
+                                        kdtree_ref, depth_values_ref, indices_ref, measuring_points, 
+                                        i as f64, global_j as f64, kriging_neighbors
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }).unwrap();
+        }
+    });
+
+    result
+
+    
+}
+
+// --- Helpers -----------------------------------------------
+
+/// Kriging local con los k vecinos más cercanos.
+/// Reemplaza al idw_fallback para suavizar los bordes y evitar el "efecto estrella".
+fn kriging_fallback(
+    kdtree: &KdTree<f64, 2>,
+    values: &[f64],
+    indices: &[usize],
+    measuring_points: &[(usize, usize)],
+    x: f64,
+    y: f64,
+    k: usize,
+) -> f64 {
+    let neighbours = kdtree.nearest_n::<SquaredEuclidean>(&[x, y], k);
+    
+    if neighbours.is_empty() {
+        return 0.0;
+    }
+    
+    // Si caemos exactamente sobre un punto medido, evitamos invertir la matriz
+    if neighbours[0].distance == 0.0 {
+        return values[neighbours[0].item as usize];
+    }
+    
+    compute_kriging(&neighbours, values, indices, measuring_points)
 }
