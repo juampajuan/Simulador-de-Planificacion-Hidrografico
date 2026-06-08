@@ -2,7 +2,7 @@ use yew::prelude::*;
 use web_sys::HtmlInputElement;
 use common::EcosondaMode;
 use lucide_yew::Radio;
-use crate::{components::subtitle::Subtitle, requests::EchoState};
+use crate::{components::subtitle::Subtitle, structs::state::EchoState};
 
 #[derive(Properties, PartialEq)]
 pub struct EchosounderProps {
@@ -76,9 +76,9 @@ pub fn echosounder_params(props: &EchosounderProps) -> Html {
 
             <div class="grid grid-cols-2 gap-3">
                 {for vec![
-                    ("min_limit", "P. Mínima"), ("max_limit", "P. Máxima"), 
-                    ("intervalo", "Intervalo Pulso"), ("velocidad", "V. Sonido"), 
-                    ("longitud", "Longitud Pulso"), ("potencia", "Potencia"), 
+                    ("min_limit", "Profundidad Mínima"), ("max_limit", "Profundidad Máxima"), 
+                    ("intervalo", "Intervalo de repetición del pulso"), ("velocidad", "Velocidad del sonido"), 
+                    ("longitud", "Longitud del pulso"), ("potencia", "Potencia"), 
                     ("ganancia", "Ganancia"), ("umbral", "Umbral")
                 ].into_iter().map(|(id, l)| {
                     let state = state.clone();
