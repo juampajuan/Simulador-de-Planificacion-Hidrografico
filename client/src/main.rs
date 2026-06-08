@@ -1,9 +1,9 @@
 mod router;
 mod pages;
 mod components;
-mod requests;
-mod blob_client;
+mod services;
 mod parser;
+mod structs;
 
 use yew::prelude::*;
 
