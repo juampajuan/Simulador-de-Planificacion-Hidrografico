@@ -28,7 +28,7 @@ fn main() {
         absortion_coefficient: 0.0,
         max_limit: 100.0,
         min_limit: 0.0,
-        pulse_repetition_interval: 15000.0,
+        pulse_repetition_interval: 100.0,
         pulse_length: 1,
         uses_high_frecuency: true,
         transmited_potency: 220.0,

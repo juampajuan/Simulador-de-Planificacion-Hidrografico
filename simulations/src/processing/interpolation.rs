@@ -3,6 +3,7 @@ use kiddo::SquaredEuclidean;
 use kiddo::NearestNeighbour;
 use spade::{DelaunayTriangulation, FloatTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
 use crate::structs::depth_matrix::DepthMatrix;
+use rand::RngExt;
 
 // ------------------------------------------------------------
 //  Tipos y enum público
@@ -21,11 +22,171 @@ pub fn interpolate(
     matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
 ) -> Vec<Vec<f64>> {
+    let (new_points, new_matrix) = reduce_measuring_points(measuring_points, matrix, geotiff, 75);
+
     match method {
-        InterpolationMethod::Idw     => interpolation_idw_kdtrees(measuring_points, matrix, geotiff),
-        InterpolationMethod::Kriging => interpolation_kriging(measuring_points, matrix, geotiff),
-        InterpolationMethod::Tin     => interpolation_tin(measuring_points, matrix, geotiff),
+        InterpolationMethod::Idw     => interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff),
+        InterpolationMethod::Kriging => interpolation_kriging(&new_points, &new_matrix, geotiff),
+        InterpolationMethod::Tin     => interpolation_tin(&new_points, &new_matrix, geotiff),
     }
+}
+
+// ------------------------------------------------------------
+//  Reducción de puntos medidos por celdas
+//
+//  Divide la grilla en celdas de `cell_size` × `cell_size` píxeles.
+//  Por cada celda:
+//    1. Recopila en orden temporal los puntos válidos que caen dentro.
+//    2. Los separa en tramos usando un umbral de distancia automático:
+//       si la distancia entre dos puntos consecutivos supera 3× la
+//       mediana del espaciado global, se considera una pasada nueva.
+//    3. Por cada tramo, toma el punto del medio como posición
+//       representativa y calcula el promedio ponderado por distancia
+//       a ese punto.
+//    4. Genera un punto en new_points por cada tramo encontrado.
+//
+//  Retorna (new_points, new_matrix)
+// ------------------------------------------------------------
+
+/// Calcula la mediana del espaciado entre puntos consecutivos del recorrido.
+/// Se usa como referencia para detectar saltos entre pasadas distintas.
+fn median_consecutive_spacing(measuring_points: &[(usize, usize)]) -> f64 {
+    if measuring_points.len() < 2 {
+        return f64::MAX;
+    }
+
+    let mut spacings: Vec<f64> = measuring_points
+        .windows(2)
+        .map(|pair| {
+            let dx = pair[1].0 as f64 - pair[0].0 as f64;
+            let dy = pair[1].1 as f64 - pair[0].1 as f64;
+            (dx * dx + dy * dy).sqrt()
+        })
+        .collect();
+
+    spacings.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    spacings[spacings.len() / 2]
+}
+
+/// Dado un tramo (slice de puntos en orden temporal), calcula el promedio
+/// ponderado por distancia al punto del medio y devuelve (posición, valor).
+fn representative_point_for_segment(
+    segment: &[(usize, usize)],
+    matrix: &[Vec<f64>],
+) -> (usize, usize, f64) {
+    // Elegimos un índice aleatorio dentro del tramo en vez del centro fijo,
+    // para que los puntos representativos de piernas adyacentes no queden
+    // alineados y no formen líneas visibles en la interpolación.
+    let random_index = rand::rng().random_range(0..segment.len());
+    let (middle_x, middle_y) = segment[random_index];
+
+    let mut weighted_sum = 0.0_f64;
+    let mut weight_total = 0.0_f64;
+
+    for &(px, py) in segment {
+        let depth = matrix[py][px];
+
+        let dx   = px as f64 - middle_x as f64;
+        let dy   = py as f64 - middle_y as f64;
+        let dist = (dx * dx + dy * dy).sqrt();
+
+        if dist == 0.0 {
+            // El punto coincide con el punto medio: peso infinito,
+            // usamos su valor directo y descartamos el resto.
+            weighted_sum = depth;
+            weight_total = 1.0;
+        } else {
+            let weight = 1.0 / dist;
+            weighted_sum += depth * weight;
+            weight_total += weight;
+        }
+    }
+
+    (middle_x, middle_y, weighted_sum / weight_total)
+}
+
+fn reduce_measuring_points(
+    measuring_points: &[(usize, usize)],
+    matrix: &[Vec<f64>],
+    geotiff: &DepthMatrix,
+    cell_size: usize,
+) -> (Vec<(usize, usize)>, Vec<Vec<f64>>) {
+    let no_data = geotiff.no_data.unwrap_or(f64::MAX);
+    let height  = geotiff.height;
+    let width   = geotiff.width;
+
+    let mut new_matrix: Vec<Vec<f64>> = vec![vec![0.0; width]; height];
+    let mut new_points: Vec<(usize, usize)> = Vec::new();
+
+    // Umbral para detectar saltos entre pasadas distintas del zigzag:
+    // si dos puntos consecutivos dentro de una celda están más de 3×
+    // la mediana del espaciado global, son pasadas distintas.
+    let median_spacing  = median_consecutive_spacing(measuring_points);
+    let gap_threshold   = median_spacing * 3.0;
+
+    // Número de celdas en cada dimensión
+    let n_cells_y = (height + cell_size - 1) / cell_size;
+    let n_cells_x = (width  + cell_size - 1) / cell_size;
+
+    for cell_row in 0..n_cells_y {
+        for cell_col in 0..n_cells_x {
+            // Límites de la celda (clipeados al borde del raster)
+            let y0 = cell_row * cell_size;
+            let x0 = cell_col * cell_size;
+            let y1 = (y0 + cell_size).min(height);
+            let x1 = (x0 + cell_size).min(width);
+
+            // Recopilar en orden temporal los puntos válidos de esta celda.
+            let points_in_cell: Vec<(usize, usize)> = measuring_points
+                .iter()
+                .filter(|&&(px, py)| {
+                    px >= x0 && px < x1 && py >= y0 && py < y1
+                        && matrix[py][px] != 0.0
+                        && matrix[py][px] != no_data
+                })
+                .copied()
+                .collect();
+
+            if points_in_cell.is_empty() {
+                continue;
+            }
+
+            // Separar los puntos en tramos: cada vez que la distancia entre
+            // dos puntos consecutivos supera gap_threshold, empieza un tramo nuevo.
+            let mut current_segment: Vec<(usize, usize)> = vec![points_in_cell[0]];
+
+            for consecutive_pair in points_in_cell.windows(2) {
+                let (prev_x, prev_y) = consecutive_pair[0];
+                let (next_x, next_y) = consecutive_pair[1];
+
+                let dx           = next_x as f64 - prev_x as f64;
+                let dy           = next_y as f64 - prev_y as f64;
+                let gap_distance = (dx * dx + dy * dy).sqrt();
+
+                if gap_distance > gap_threshold {
+                    // Salto grande: el tramo actual termina aquí, lo procesamos
+                    // y empezamos uno nuevo con el punto siguiente.
+                    let (rep_x, rep_y, rep_depth) =
+                        representative_point_for_segment(&current_segment, matrix);
+                    new_matrix[rep_y][rep_x] = rep_depth;
+                    new_points.push((rep_x, rep_y));
+
+                    current_segment = vec![*consecutive_pair.last().unwrap()];
+                } else {
+                    // Distancia normal: el punto pertenece al mismo tramo.
+                    current_segment.push((next_x, next_y));
+                }
+            }
+
+            // Procesar el último tramo (o el único, si no hubo saltos).
+            let (rep_x, rep_y, rep_depth) =
+                representative_point_for_segment(&current_segment, matrix);
+            new_matrix[rep_y][rep_x] = rep_depth;
+            new_points.push((rep_x, rep_y));
+        }
+    }
+
+    (new_points, new_matrix)
 }
 
 // ------------------------------------------------------------
@@ -313,10 +474,6 @@ impl HasPosition for TinVertex {
     }
 }
 
-use std::thread;
-
-// ... (Las importaciones y la inicialización de TIN se mantienen igual) ...
-
 pub fn interpolation_tin(
     measuring_points: &[(usize, usize)],
     matrix: &[Vec<f64>],
@@ -345,85 +502,47 @@ pub fn interpolation_tin(
         return interpolation_kriging(measuring_points, matrix, geotiff);
     }
 
-    let kriging_neighbors = 16; 
+    let kriging_neighbors = 16;
 
-    // --- 3. Interpolar cada píxel con std::thread ---------------------
-    
-    // Obtenemos la cantidad de hilos lógicos disponibles en la CPU (o 4 por defecto)
-    let num_threads = thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
-    
-    // Calculamos cuántas filas procesará cada hilo
-    let rows_per_thread = (geotiff.height + num_threads - 1) / num_threads;
+    for j in 0..geotiff.height {
+        for i in 0..geotiff.width {
+            if geotiff.data[j][i] == no_data {
+                result[j][i] = no_data;
+                continue;
+            }
+            if matrix[j][i] != 0.0 {
+                result[j][i] = matrix[j][i];
+                continue;
+            }
 
-    // Abrimos un "scope" para garantizar que los hilos mueran antes de que retorne la función
-    thread::scope(|s| {
-        
-        // .chunks_mut() es la clave: divide la matriz en bloques independientes 
-        // de filas para que cada hilo pueda escribir sin usar Mutex.
-        for (thread_id, chunk) in result.chunks_mut(rows_per_thread).enumerate() {
-            
-            // Calculamos en qué fila global arranca este bloque
-            let start_row = thread_id * rows_per_thread;
+            let query = Point2::new(i as f64, j as f64);
 
-            // Prestamos las variables al scope (necesario para el closure del hilo)
-            let kdtree_ref = &kdtree;
-            let depth_values_ref = &depth_values;
-            let indices_ref = &indices;
-            let triangulation_ref = &triangulation;
-            
-            // Creamos el Builder con un nombre, como en la diapositiva
-            let builder = thread::Builder::new()
-                .name(format!("kriging_worker_{}", thread_id));
-
-            // Usamos spawn_scoped en lugar de spawn regular
-            builder.spawn_scoped(s, move || {
-                
-                // Iteramos sobre el bloque de filas que le tocó a este hilo
-                for (local_j, row) in chunk.iter_mut().enumerate() {
-                    let global_j = start_row + local_j; // Reconstruimos la coordenada 'Y' real
-
-                    for i in 0..geotiff.width {
-                        if geotiff.data[global_j][i] == no_data {
-                            row[i] = no_data;
-                            continue;
-                        }
-                        if matrix[global_j][i] != 0.0 {
-                            row[i] = matrix[global_j][i];
-                            continue;
-                        }
-
-                        let query = Point2::new(i as f64, global_j as f64);
-
-                        match triangulation_ref.locate(query) {
-                            PositionInTriangulation::OutsideOfConvexHull(_)
-                            | PositionInTriangulation::NoTriangulation => {
-                                row[i] = kriging_fallback(
-                                    kdtree_ref, depth_values_ref, indices_ref, measuring_points, 
-                                    i as f64, global_j as f64, kriging_neighbors
-                                );
-                            }
-                            _ => {
-                                if let Some(z) = triangulation_ref
-                                    .natural_neighbor()
-                                    .interpolate(|v| v.data().depth, query) {
-                                    row[i] = z;
-                                } else {
-                                    row[i] = kriging_fallback(
-                                        kdtree_ref, depth_values_ref, indices_ref, measuring_points, 
-                                        i as f64, global_j as f64, kriging_neighbors
-                                    );
-                                }
-                            }
-                        }
+            match triangulation.locate(query) {
+                PositionInTriangulation::OutsideOfConvexHull(_)
+                | PositionInTriangulation::NoTriangulation => {
+                    result[j][i] = kriging_fallback(
+                        &kdtree, &depth_values, &indices, measuring_points,
+                        i as f64, j as f64, kriging_neighbors,
+                    );
+                }
+                _ => {
+                    if let Some(z) = triangulation
+                        .natural_neighbor()
+                        .interpolate(|v| v.data().depth, query)
+                    {
+                        result[j][i] = z;
+                    } else {
+                        result[j][i] = kriging_fallback(
+                            &kdtree, &depth_values, &indices, measuring_points,
+                            i as f64, j as f64, kriging_neighbors,
+                        );
                     }
                 }
-            }).unwrap();
+            }
         }
-    });
+    }
 
     result
-
-    
 }
 
 // --- Helpers -----------------------------------------------
