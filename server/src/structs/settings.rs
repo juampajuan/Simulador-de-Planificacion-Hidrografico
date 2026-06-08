@@ -12,7 +12,8 @@ pub enum ConfigValue {
 // Si no lo puede generar, no arranca la aplicacion
 pub struct Settings {
     pub port: i32,
-    pub cache_amount: usize
+    pub cache_amount: usize,
+    pub db_name: String
 }
 
 
@@ -24,6 +25,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
         Ok(Settings {
             port: get_int(&config, "PORT")?,
             cache_amount: get_usize(&config, "CACHE_ITEMS_MAX")?,
+            db_name: get_string(&config, "DB_NAME")?,
         })
     }
 }

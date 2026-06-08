@@ -2,7 +2,7 @@ use tiny_http::{Header, Response, Request};
 use crate::structs::request::{HandlerResult};
 use std::fs::File;
 use std::path::PathBuf;
-use super::errors::{not_found, server_error};
+use super::generic::{not_found, server_error};
 
 fn content_type(path: &str) -> &'static str {
     if path.ends_with(".html") {
