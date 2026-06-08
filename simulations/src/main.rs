@@ -16,7 +16,7 @@ fn main() {
     // --- Recorrido ---
     let path = processing::routing::generate_route(
         &matrix,
-        90.0,  // azimut
+        120.0,  // azimut
         10.0,  // separación en metros
         1.0,   // offset GNSS
     );

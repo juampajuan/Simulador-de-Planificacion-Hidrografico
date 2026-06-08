@@ -474,6 +474,7 @@ impl HasPosition for TinVertex {
     }
 }
 
+
 pub fn interpolation_tin(
     measuring_points: &[(usize, usize)],
     matrix: &[Vec<f64>],
@@ -489,6 +490,7 @@ pub fn interpolation_tin(
     }
 
     let mut triangulation: DelaunayTriangulation<TinVertex> = DelaunayTriangulation::new();
+
     for (i, &idx) in indices.iter().enumerate() {
         let point = measuring_points[idx];
         let vertex = TinVertex {
@@ -516,27 +518,21 @@ pub fn interpolation_tin(
             }
 
             let query = Point2::new(i as f64, j as f64);
-
+            
             match triangulation.locate(query) {
-                PositionInTriangulation::OutsideOfConvexHull(_)
-                | PositionInTriangulation::NoTriangulation => {
-                    result[j][i] = kriging_fallback(
-                        &kdtree, &depth_values, &indices, measuring_points,
-                        i as f64, j as f64, kriging_neighbors,
-                    );
+                PositionInTriangulation::OutsideOfConvexHull(_) => {
+            
+                    result[j][i] = no_data;
+
                 }
                 _ => {
                     if let Some(z) = triangulation
                         .natural_neighbor()
                         .interpolate(|v| v.data().depth, query)
                     {
+
                         result[j][i] = z;
-                    } else {
-                        result[j][i] = kriging_fallback(
-                            &kdtree, &depth_values, &indices, measuring_points,
-                            i as f64, j as f64, kriging_neighbors,
-                        );
-                    }
+                    } 
                 }
             }
         }
@@ -545,29 +541,3 @@ pub fn interpolation_tin(
     result
 }
 
-// --- Helpers -----------------------------------------------
-
-/// Kriging local con los k vecinos más cercanos.
-/// Reemplaza al idw_fallback para suavizar los bordes y evitar el "efecto estrella".
-fn kriging_fallback(
-    kdtree: &KdTree<f64, 2>,
-    values: &[f64],
-    indices: &[usize],
-    measuring_points: &[(usize, usize)],
-    x: f64,
-    y: f64,
-    k: usize,
-) -> f64 {
-    let neighbours = kdtree.nearest_n::<SquaredEuclidean>(&[x, y], k);
-    
-    if neighbours.is_empty() {
-        return 0.0;
-    }
-    
-    // Si caemos exactamente sobre un punto medido, evitamos invertir la matriz
-    if neighbours[0].distance == 0.0 {
-        return values[neighbours[0].item as usize];
-    }
-    
-    compute_kriging(&neighbours, values, indices, measuring_points)
-}
