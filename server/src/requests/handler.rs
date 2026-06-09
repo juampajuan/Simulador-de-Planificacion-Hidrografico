@@ -58,6 +58,9 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
             (Method::Post, "/auth/login") =>
                 auth::login(&mut request, db),
 
+            (Method::Post, "/auth/close_all") =>
+                auth::close_all(&mut request, db),
+
             _ => generic::not_found(),
         }
 

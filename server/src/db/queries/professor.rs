@@ -1,5 +1,6 @@
 use sqlite::State;
 use crate::db::engine::DBEngine;
+use crate::db::encrypt::{hash_password, verify_password};
 
 pub fn create_professor(
     db: &DBEngine,
@@ -67,6 +68,36 @@ pub fn get_professor_id_by_username(
         Ok(Some(
             statement.read::<i64, _>("id")?
         ))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn verify_professor_credentials(
+    db: &DBEngine,
+    username: &str,
+    password: &str,
+) -> Result<Option<i64>, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        SELECT id, password_hash
+        FROM professors
+        WHERE username = ?
+        "
+    )?;
+
+    statement.bind((1, username))?;
+
+    if let sqlite::State::Row = statement.next()? {
+        let id = statement.read::<i64, _>("id")?;
+        let password_hash = statement.read::<String, _>("password_hash")?;
+
+        if verify_password(password, &password_hash) {
+            Ok(Some(id))
+        } else {
+            Ok(None)
+        }
     } else {
         Ok(None)
     }

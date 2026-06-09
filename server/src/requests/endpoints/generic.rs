@@ -25,7 +25,7 @@ pub fn server_error(msg: String) -> HandlerResult {
     (response.boxed(), 500)
 }
 
-pub fn normal_response(msg: String, code: i32) -> HandlerResult {
+pub fn string_response(msg: String, code: i32) -> HandlerResult {
     let mut response = Response::from_string(msg)
         .with_status_code(code);
 
