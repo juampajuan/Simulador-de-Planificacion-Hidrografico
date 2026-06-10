@@ -73,3 +73,21 @@ pub fn delete_all_tokens(
 
     Ok(())
 }
+
+pub fn delete_token(
+    db: &DBEngine,
+    token: &str,
+) -> Result<(), sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        DELETE FROM auth_tokens
+        WHERE token = ?
+        "
+    )?;
+
+    statement.bind((1, token))?;
+    statement.next()?;
+
+    Ok(())
+}

@@ -45,7 +45,6 @@ pub fn create_professor(request: &mut Request, db: DBEngine) -> HandlerResult {
     string_response("Usuario creado correctamente".to_string(), 200)
 }
 
-
 pub fn change_pass(request: &mut Request, db: DBEngine) -> HandlerResult {
 
     if !is_local_request(&request) {
@@ -122,6 +121,28 @@ pub fn close_all(request: &mut Request, db: DBEngine) -> HandlerResult {
     string_response("Todos las sesiones fueron cerradas.".to_string(), 200)
 }
 
+pub fn close_session(request: &mut Request, db: DBEngine) -> HandlerResult {
+
+    let auth_token = match get_cookie(request, "auth_token") {
+        Some(token) => token,
+        None => {
+            return string_response(
+                "No hay sesión activa.".to_string(),
+                401
+            );
+        }
+    };
+
+    if let Err(_) = auth::delete_token(&db, &auth_token) {
+        return server_error("Internal error.".to_string());
+    }
+
+    return string_response(
+                "Sesión cerrada.".to_string(),
+                200
+    );
+} 
+
 fn check_password(pass: &str) -> bool {
     let has_upper = pass.chars().any(|c| c.is_uppercase());
     let has_number = pass.chars().any(|c| c.is_numeric());
@@ -152,4 +173,25 @@ fn create_auth_cookie(
 fn generate_token() -> String {
     let bytes: [u8; 32] = rand :: rng().random();
     hex::encode(bytes)
+}
+
+pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
+    let cookie_header = request
+        .headers()
+        .iter()
+        .find(|h| h.field.equiv("Cookie"))?;
+
+    cookie_header
+        .value
+        .as_str()
+        .split(';')
+        .find_map(|cookie| {
+            let (key, value) = cookie.trim().split_once('=')?;
+
+            if key == name {
+                Some(value.to_string())
+            } else {
+                None
+            }
+        })
 }
