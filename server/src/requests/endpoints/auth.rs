@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use super::generic::{not_found, server_error, string_response};
 use crate::db::engine::DBEngine;
 use serde_json::Value;
+use rand::Rng;
 
 #[derive(serde::Deserialize)]
 pub struct AuthData {
@@ -93,13 +94,13 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
         Err(_) => return server_error("Internal error.".to_string())
     };
 
-    let token = "asdadadadadad";
+    let token = generate_token();
 
-    if let Err(_) = auth::create_token(&db, professor_id, token, 7) {
+    if let Err(_) = auth::create_token(&db, professor_id, &token, 7) {
         return server_error("Internal error.".to_string());
     }
 
-    let cookie = match create_auth_cookie(token) {
+    let cookie = match create_auth_cookie(&token) {
         Ok(cookie) => cookie,
         Err(_) => return server_error("Internal error.".to_string()),
     };
@@ -146,4 +147,9 @@ fn create_auth_cookie(
 
     Header::from_bytes("Set-Cookie", cookie)
         .map_err(|_| ())
+}
+
+fn generate_token() -> String {
+    let bytes: [u8; 32] = rand :: rng().random();
+    hex::encode(bytes)
 }

@@ -11,6 +11,7 @@ mod structs;
 use structs::filecache::{FileCache};
 mod db;
 use db::engine::DBEngine;
+use db::queries::professor;
 
 fn main() {
 
@@ -27,8 +28,13 @@ fn main() {
     // En un scope, ya que cada thread genera su conexion.
     let err = {
         match DBEngine::new(&settings.db_name) {
-            Ok(_) => None,
-            Err(err) => Some(err),
+            Ok(db) => {
+                match professor::sync_admin_password(&db, &settings.admin_pass) {
+                    Ok(()) => None,
+                    Err(err) => Some(err),
+                }
+            }
+            Err(err) => Some(err.into()),
         }
     };
 
