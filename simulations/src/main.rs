@@ -16,7 +16,7 @@ fn main() {
     // --- Recorrido ---
     let path = processing::routing::generate_route(
         &matrix,
-        40.0,  // azimut
+        120.0,  // azimut
         10.0,  // separación en metros
         1.0,   // offset GNSS
     );
@@ -86,7 +86,7 @@ fn main() {
     }
 
     let interpolacion = processing::interpolation::interpolate(
-        processing::interpolation::InterpolationMethod::Idw,
+        processing::interpolation::InterpolationMethod::Tin,
         &points_to_measure,
         &measurements_ideal,
         &matrix,

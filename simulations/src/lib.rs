@@ -92,7 +92,7 @@ pub fn run_simulation(
         }
     }
 
-    interpolate(InterpolationMethod::Idw, &points_validos, &measurements_final, matrix)
+    interpolate(InterpolationMethod::Tin, &points_validos, &measurements_final, matrix, distance_between_points)
 }
 
 pub fn create_path_image(

@@ -122,7 +122,7 @@ fn get_points_perpendicular_to_this(
 
 fn calculate_covered_radius(current_point: &(usize, usize), angle_deg: f64, matrix: &DepthMatrix) -> f64 {
     let z = matrix.data[current_point.1][current_point.0];
-    let a = z * (angle_deg).tan();
+    let a = z * (angle_deg.to_radians()/2.0).tan();
     a.abs()
 }
 
