@@ -79,7 +79,6 @@ pub fn run_simulation(
 
     let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix);
 
-
     interpolate(InterpolationMethod::Idw, mediciones_observadas, matrix, distance_between_points)
 }
 

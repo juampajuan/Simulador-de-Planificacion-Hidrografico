@@ -32,9 +32,11 @@ pub fn interpolate(
 
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
-            let (measuring_points, matrix_with_measured_points) = create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff);
+            //let (measuring_points, matrix_with_measured_points) = create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff);
             
-            reduce_measuring_points(&measuring_points, &matrix_with_measured_points, geotiff, cell_size)
+            //reduce_measuring_points(&measuring_points, &matrix_with_measured_points, geotiff, cell_size)
+
+            create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff)
         },
     
         MeasurementsTypeWithError::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
@@ -153,25 +155,8 @@ fn representative_point_for_segment(
 
     let (middle_x, middle_y) = segment[chosen_index];
 
-    let mut weighted_sum = 0.0_f64;
-    let mut weight_total = 0.0_f64;
 
-    for &(px, py) in segment {
-        let depth = matrix[py][px];
-
-        let dx   = px as f64 - middle_x as f64;
-        let dy   = py as f64 - middle_y as f64;
-        let dist = (dx * dx + dy * dy).sqrt();
-
-        // Si es el punto representativo su distancia es 0, le damos peso 1.
-        // Al resto se les aplica 1/dist normalmente.
-        let weight = if dist == 0.0 { 1.0 } else { 1.0 / dist };
-
-        weighted_sum += depth * weight;
-        weight_total += weight;
-    }
-
-    (middle_x, middle_y, weighted_sum / weight_total)
+    (middle_x, middle_y, matrix[middle_y][middle_x])
 }
 
 fn reduce_measuring_points(

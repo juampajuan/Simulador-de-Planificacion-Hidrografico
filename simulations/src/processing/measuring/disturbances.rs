@@ -180,7 +180,7 @@ fn apply_sound_velocity_noise(z_real: f64, v_alumno: f64) -> f64 {
  
 fn apply_tide_error(z_real: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
     match tide_levels {
-        Some(levels) => z_real - levels[index],
+        Some(levels) => z_real + levels[index],
         None => z_real,
     }
 }
@@ -202,7 +202,7 @@ fn apply_potency_noise(
  
     let tl = 20.0 * z.log10() + absortion_coefficient * z;
     let p_recibida = transmited_potency - 2.0 * tl;
- 
+    
     // Señal demasiado débil
     if p_recibida < rx_threshold {
         return None;
@@ -232,7 +232,7 @@ fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Opt
     } else {
         (LOW_FREQ_GAIN_LOW, LOW_FREQ_GAIN_HIGH)
     };
- 
+
     if gain < gain_low {
         // Ganancia baja: error proporcional al déficit, máximo MAX_LOW_GAIN_ERROR
         let factor = 1.0 - (gain / gain_low); // 0 en el límite, 1 en gain=0
