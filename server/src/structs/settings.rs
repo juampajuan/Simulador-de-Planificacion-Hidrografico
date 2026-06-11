@@ -17,7 +17,7 @@ pub struct Settings {
     pub port: i32,
     pub cache_amount: usize,
     pub db_name: String,
-    
+    pub admin_pass: String,
     pub azimut_min: f64,
     pub azimut_max: f64,
     pub separation_min: f64,
@@ -43,7 +43,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             port: get_int(&config, "PORT")?,
             cache_amount: get_usize(&config, "CACHE_ITEMS_MAX")?,
             db_name: get_string(&config, "DB_NAME")?,
-
+            admin_pass: get_string(&config, "ADMIN_PASS")?,
             azimut_min: get_float(&config, "AZIMUT_MIN")?,
             azimut_max: get_float(&config, "AZIMUT_MAX")?,
             separation_min: get_float(&config, "SEPARATION_MIN")?,
