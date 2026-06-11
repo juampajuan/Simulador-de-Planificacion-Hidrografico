@@ -1,7 +1,10 @@
 use yew::prelude::*;
+use crate::services::utils::get_local_storage;
+
 use super::title::Title;
 use super::darkmode_btn::DarkModeButton;
 use lucide_yew::{LogOut, Waves};
+use yew_router::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct RootProps {
@@ -25,7 +28,7 @@ pub fn root(props: &RootProps) -> Html {
             duration-300
         ">
             // Esto es la navbar, luego va a estar el nombre del grupo y un logout.
-            <div class="pt-2 px-3 flex justify-between items-center">
+            <div class="pt-2 px-3 flex justify-between items-center h-14">
                 <div>
                     <Title text={&props.title} 
                         icon={html! {
@@ -35,12 +38,7 @@ pub fn root(props: &RootProps) -> Html {
                 </div>
                 <div class="flex gap-2 items-center">
                     <DarkModeButton />
-                    <div class="flex pl-3 gap-3 p-1 items-center rounded-full dark:text-white bg-black/10 dark:bg-white/10">
-                        <p class="text-sm">{"Grupo 21"}</p>
-                        <button class="hover:text-white rounded-full p-2 hover:bg-red-400">
-                            <LogOut size=18/>
-                        </button>
-                    </div>
+                    <UserButton/>
                 </div>
             </div>
 
@@ -49,5 +47,28 @@ pub fn root(props: &RootProps) -> Html {
                 { for props.children.iter() }
             </section>
         </main>
+    }
+}
+
+#[function_component(UserButton)]
+pub fn user_button() -> Html {
+    let location = use_location();
+    let token = get_local_storage("group_or_user_name").unwrap_or_default();
+
+    let is_login = location
+        .as_ref()
+        .is_some_and(|l| l.path() == "/login");
+
+    if is_login {
+        html! {}
+    } else {
+        html! {
+            <div class="flex pl-3 gap-3 p-1 items-center rounded-full dark:text-white bg-black/10 dark:bg-white/10">
+                <p class="text-sm">{token}</p>
+                <button class="hover:text-white rounded-full p-2 hover:bg-red-400">
+                    <LogOut size={18}/>
+                </button>
+            </div>
+        }
     }
 }

@@ -1,7 +1,8 @@
 use crate::requests;
 use super::print;
+use std::env;
 
-pub fn menu(host:&str) {
+pub fn menu(host:&str, pass: &str) {
 
     let input = match print::input("> ") {
         Ok(input) => input,
@@ -28,6 +29,13 @@ pub fn menu(host:&str) {
             }
         }
 
+        ["closeall"] => {
+            match requests::close_all(host) {
+                Ok(response) => println!("{}", response),
+                Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
+            }
+        }
+
         ["help"] | ["h"] | ["HELP"] | ["H"] => {
             print::print_help();
         }
@@ -37,4 +45,20 @@ pub fn menu(host:&str) {
         }
     }
     
+}
+
+pub fn get_args() -> Option<(String, String)> {
+    let mut args = env::args().skip(1);
+
+    let host = args.next()?;
+    let password = args.next()?;
+    Some((format_host(&host), password))
+}
+
+fn format_host(url: &str) -> String {
+    if url.starts_with("http://") || url.starts_with("https://") {
+        url.to_string()
+    } else {
+        format!("http://{}", url)
+    }
 }

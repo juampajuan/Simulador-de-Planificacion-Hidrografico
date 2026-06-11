@@ -49,3 +49,17 @@ pub fn change_pass(
     let text = response.text()?;
     Ok(text)
 }
+
+pub fn close_all(
+    host: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+
+    let client = reqwest::blocking::Client::new();
+
+    let response = client
+        .post(format!("{}/api/v1/auth/close_all", host))
+        .send()?;
+
+    let text = response.text()?;
+    Ok(text)
+}

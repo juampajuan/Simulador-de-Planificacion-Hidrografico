@@ -13,7 +13,8 @@ pub enum ConfigValue {
 pub struct Settings {
     pub port: i32,
     pub cache_amount: usize,
-    pub db_name: String
+    pub db_name: String,
+    pub admin_pass: String
 }
 
 
@@ -26,6 +27,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             port: get_int(&config, "PORT")?,
             cache_amount: get_usize(&config, "CACHE_ITEMS_MAX")?,
             db_name: get_string(&config, "DB_NAME")?,
+            admin_pass: get_string(&config, "ADMIN_PASS")?,
         })
     }
 }

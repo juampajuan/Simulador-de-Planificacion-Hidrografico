@@ -2,9 +2,15 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 use crate::pages::{
-    student::StudentPage,
+    admin::sections::{
+        projects::AdminProjects,
+        students::AdminStudents,
+        config::AdminConfig
+    },
+    admin::AdminLayout,
+    login::LoginPage,
     not_found::NotFound,
-    login::LoginPage
+    student::StudentPage,
 };
 
 #[derive(Clone, Routable, PartialEq)]
@@ -12,24 +18,62 @@ pub enum Route {
     #[at("/")]
     Student,
 
-    #[at("/auth")]
-    LoginPage,
+    #[at("/login")]
+    Login,
+
+    #[at("/admin")]
+    AdminProjects,
+
+    #[at("/admin/students")]
+    AdminStudents,
+
+    #[at("/admin/settings")]
+    AdminConfig,
 
     #[not_found]
     #[at("/404")]
     NotFound,
 }
 
+fn switch(route: Route) -> Html {
+    match route {
+        Route::Student => html! {
+            <StudentPage />
+        },
+
+        Route::Login => html! {
+            <LoginPage />
+        },
+
+        Route::AdminStudents => html! {
+            <AdminLayout>
+                <AdminStudents />
+            </AdminLayout>
+        },
+
+        Route::AdminProjects => html! {
+            <AdminLayout>
+                <AdminProjects />
+            </AdminLayout>
+        },
+
+        Route::AdminConfig => html! {
+            <AdminLayout>
+                <AdminConfig />
+            </AdminLayout>
+        },
+
+        Route::NotFound => html! {
+            <NotFound />
+        },
+    }
+}
+
 #[function_component(AppRouter)]
 pub fn app_router() -> Html {
     html! {
         <BrowserRouter>
-            <Switch<Route> render={|route| match route {
-                Route::Student => html! { <StudentPage /> },
-                Route::NotFound => html! { <NotFound /> },
-                Route::LoginPage => html! { <LoginPage /> },
-                // Route::StudentLogin => html! { .... },
-            }} />
+            <Switch<Route> render={switch} />
         </BrowserRouter>
     }
 }
