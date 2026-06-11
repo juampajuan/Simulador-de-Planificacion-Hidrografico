@@ -5,10 +5,10 @@ pub fn find_measuring_points(
     distance_between_points: f64,
     matrix: &DepthMatrix,
 ) -> Vec<(usize, usize)> {
-    let distance_between_points_scaled = calculate_effective_measurement_distance(
-        &distance_between_points,
-        &matrix.size_x,
-    );
+    // let distance_between_points_scaled = calculate_effective_measurement_distance(
+    //     &distance_between_points,
+    //     &matrix.size_x,
+    // );
 
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
     let mut current_point = &path[0];
@@ -20,8 +20,8 @@ pub fn find_measuring_points(
         let current_distance = calculate_distance_between_points(current_point, next_point, matrix);
         distance_progress += current_distance;
 
-        if distance_progress >= distance_between_points_scaled {
-            distance_progress -= distance_between_points_scaled;
+        if distance_progress >= distance_between_points {
+            distance_progress -= distance_between_points;
             measuring_points.push(*next_point);
         }
         current_point = next_point;
