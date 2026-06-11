@@ -10,6 +10,15 @@ pub fn init(
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             is_admin INTEGER NOT NULL DEFAULT 0
+
+            price_boat REAL NOT NULL,
+            price_launch REAL NOT NULL, 
+            price_ship REAL NOT NULL,
+            price_echosounder_monohaz REAL NOT NULL,
+            price_echosounder_multihaz REAL NOT NULL,
+            price_sensor_sound_profiler REAL NOT NULL,
+            price_sensor_mareograph REAL NOT NULL,
+            price_sensor_inertial REAL NOT NULL,
         );
 
         CREATE TABLE IF NOT EXISTS projects (
@@ -17,7 +26,13 @@ pub fn init(
             name TEXT NOT NULL,
             description TEXT,
             filename TEXT NOT NULL,
-            -- Me tienen que informar sobre que variables van aca.
+            
+            attempts_limit INTEGER NOT NULL,
+            weather TEXT NOT NULL,
+            seabed_hardness TEXT NOT NULL,
+            budget REAL NOT NULL,
+            geotiff_min_depth REAL NOT NULL,
+            geotiff_max_depth REAL NOT NULL,
 
             professor_id INTEGER NOT NULL,
             FOREIGN KEY (professor_id)

@@ -1,6 +1,5 @@
 // Asi se puede usar en servar.
 pub mod structs;
-use kiddo::fixed::distance;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::{processing::measuring::apply_disturbances, structs::student_measuring_parameters::EchosounderLogic};
