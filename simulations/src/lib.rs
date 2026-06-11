@@ -2,7 +2,7 @@
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
-use crate::{processing::measuring::apply_disturbances, structs::student_measuring_parameters::EchosounderLogic};
+use crate::{processing::measuring::apply_disturbances, structs::{measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
 use image::{RgbImage};
 
 use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
@@ -67,32 +67,20 @@ pub fn run_simulation(
 
     params.echo_sounder_parameters.create_echosounder();
 
-    let measurements_ideal = match params.echo_sounder_parameters.mode {
+    //Vec<((usize,usize), f64)>
+    let measurements_points: MeasurementsType = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
-            get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
+            get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure)
         },
         EcosondaMode::Multihaz => {
-            get_measures(MeasureMode::Perpendicular { step_distance: 2.5 }, matrix, &points_to_measure, params.echo_sounder_parameters.threshold)
+            get_measures(MeasureMode::Perpendicular {}, matrix, &points_to_measure)
         },
     };
 
-    let mediciones_ideales: Vec<((usize, usize), f64)> = points_to_measure
-        .iter()
-        .map(|&p| (p, measurements_ideal[p.1][p.0]))
-        .collect();
+    let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix);
 
-    let mediciones_observadas = apply_disturbances(mediciones_ideales, students_path, &params, matrix);
 
-    let mut measurements_final = vec![vec![0.0f64; matrix.width]; matrix.height];
-    let mut points_validos: Vec<(usize, usize)> = Vec::new();
-    for (punto, z_obs) in &mediciones_observadas {
-        if let Some(z) = z_obs {
-            measurements_final[punto.1][punto.0] = *z;
-            points_validos.push(*punto);
-        }
-    }
-
-    interpolate(InterpolationMethod::Tin, &points_validos, &measurements_final, matrix, distance_between_points)
+    interpolate(InterpolationMethod::Idw, mediciones_observadas, matrix, distance_between_points)
 }
 
 pub fn create_path_image(

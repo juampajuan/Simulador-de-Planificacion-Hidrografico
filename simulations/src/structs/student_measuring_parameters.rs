@@ -51,6 +51,7 @@ impl EchosounderLogic for EchosounderParameters {
 
 
 fn calculate_angle_and_absortion_coefficient(uses_high_frecuency: bool) -> (f64, f64) {
+
     let (frecuencia, diametro, alfa) = if uses_high_frecuency {
         (HIGH_FREQ_HZ, HIGH_FREQ_DIAMETER, HIGH_FREQ_ALPHA)
     } else {
