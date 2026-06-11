@@ -78,5 +78,15 @@ fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<
         return Ok(());
     }
 
+    if let Ok(number) = value.parse::<f64>() {
+
+        config.insert(
+            key,
+            ConfigValue::Float(number)
+        );
+
+        return Ok(());
+    }
+
     Err(format!("Archivo Corrupto"))
 }

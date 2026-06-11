@@ -4,6 +4,7 @@ use crate::{
     services::requests::trigger_path_generation,
     structs::state::{PathState, SimulationUiState},
 };
+use crate::structs::limits::ConfigLimits;
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use lucide_yew::Route;
 
@@ -11,6 +12,7 @@ use lucide_yew::Route;
 pub struct PathProps {
     pub path_state: UseStateHandle<PathState>,
     pub ui_state: SimulationUiState,
+    pub limits: UseStateHandle<ConfigLimits>,
 }
 
 #[function_component(PathParams)]
@@ -20,9 +22,10 @@ pub fn path_params(props: &PathProps) -> Html {
 
     let ui_state_clone = props.ui_state.clone();
     let path_state_clone = props.path_state.clone();
+    let limits_clone = props.limits.clone();
 
     let on_visualize_click = Callback::from(move |_| {
-        trigger_path_generation(&*path_state_clone, ui_state_clone.clone());
+        trigger_path_generation(&*path_state_clone, ui_state_clone.clone(), &*limits_clone);
     });
 
     html! {
@@ -122,7 +125,7 @@ pub fn path_params(props: &PathProps) -> Html {
                 <button
                     disabled={*props.ui_state.loading}
                     class="text-center w-48 disabled:opacity-30 bg-cyan-200 p-2 px-6 text-black text-sm font-bold hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100"
-                    onclick={on_visualize_click} // 💡 Asignamos el Callback directo, super prolijo
+                    onclick={on_visualize_click} 
                 >
                     {"Visualizar recorrido"}
                 </button>

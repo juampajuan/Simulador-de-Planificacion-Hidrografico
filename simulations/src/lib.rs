@@ -1,5 +1,6 @@
 // Asi se puede usar en servar.
 pub mod structs;
+use kiddo::fixed::distance;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::{processing::measuring::apply_disturbances, structs::student_measuring_parameters::EchosounderLogic};
@@ -56,8 +57,8 @@ pub fn run_simulation(
     println!("Simulando...");
 
     let boat_speed = params.transport_parameters.speed;
-
-    let distance_between_points = boat_speed*params.echo_sounder_parameters.pulse_repetition_interval/1000.0;
+    // pulse_repetition_interval en hz, pero necesito la distancia entre puntos, entonces lo paso a segundos y lo multiplico por la velocidad del barco.
+    let distance_between_points = boat_speed * params.echo_sounder_parameters.pulse_repetition_interval.recip();
 
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,

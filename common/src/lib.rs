@@ -34,13 +34,12 @@ pub struct EchosounderParameters {
     pub absortion_coefficient: f64,
     pub max_limit: f64,
     pub min_limit: f64,
-    pub pulse_repetition_interval: f64, // ms
-    pub pulse_length: usize,
+    pub pulse_repetition_interval: f64, // Hz, en simulation lo convertimos a segundos.
     pub uses_high_frecuency: bool,
     pub transmited_potency: f64,
     pub gain: f32,
-    pub echosounder_velocity: usize,
     pub threshold: f64,
+    pub sound_speed: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]

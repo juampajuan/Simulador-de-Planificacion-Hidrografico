@@ -1,68 +1,23 @@
 use yew::prelude::UseStateHandle;
-use serde::Serialize;
+use serde::de::DeserializeOwned;
 use web_sys::{Url, Blob, Request, RequestInit, RequestMode, Response};
 use js_sys::{Uint8Array, Array, Function, Reflect};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-/// envía una petición POST con JSON y procesa la respuesta binaria (Blob) 
-/// mapeando los resultados directamente a los estados de Yew.
-pub fn send_blob_request<T: Serialize>(
-    url: &str, 
-    data: &T, 
-    mensaje: UseStateHandle<String>,
-    image_url: UseStateHandle<Option<String>>,
-    loading: UseStateHandle<bool>
-) {
-    // se prepara el json
-    let body_str = match serde_json::to_string(data) {
-        Ok(s) => s,
-        Err(_) => {
-            mensaje.set("Error de serialización".to_string());
-            loading.set(false);
-            return;
-        }
-    };
-
-    // se construye la request
-    let request = match build_native_request(url, &body_str) {
-        Ok(r) => r,
-        Err(_) => {
-            mensaje.set("Error creando request".to_string());
-            loading.set(false);
-            return;
-        }
-    };
-
-    // se lanza la request usando la API Fetch de JS a través de web-sys
-    let window = match web_sys::window() {
-        Some(w) => w,
+pub fn get_window_fetch(mensaje: &UseStateHandle<String>, loading: &UseStateHandle<bool>) -> Option<web_sys::Window> {
+    match web_sys::window() {
+        Some(w) => Some(w),
         None => {
             mensaje.set("Error crítico: No se detectó el entorno del navegador".to_string());
             loading.set(false);
-            return;
+            None
         }
-    };
-    let request_promise = window.fetch_with_request(&request);
-
-    // creamos los 3 closures para manejar la respuesta, los bytes y los errores, respectivamente.
-    let on_response = create_response_closure(mensaje.clone(), loading.clone());
-    let on_bytes_ready = create_bytes_closure(mensaje.clone(), image_url, loading.clone());
-    let on_error = create_error_closure(mensaje, loading);
-
-    // Ejecutamos el pipeline en JS
-    // Y se ataja cualquier error obtenido en los closures.
-    let _ = execute_promise_chain(&request_promise, &on_response, &on_bytes_ready, &on_error);
-
-    // cedemos el control de la memoria a JavaScript de forma definitiva
-    // se dejan vivos estos closures por si llega la respuesta.
-    on_response.forget();
-    on_bytes_ready.forget();
-    on_error.forget();
+    }
 }
 
 // Construye un objeto Request con método POST, CORS y cuerpo JSON.
-fn build_native_request(url: &str, body: &str) -> Result<Request, JsValue> {
+pub fn build_native_post_request(url: &str, body: &str) -> Result<Request, JsValue> {
     let opts = RequestInit::new();
     opts.set_method("POST");
     opts.set_mode(RequestMode::Cors);
@@ -74,9 +29,10 @@ fn build_native_request(url: &str, body: &str) -> Result<Request, JsValue> {
 }
 
 // el closure de la respuesta. Se encarga de verificar el status y extraer el ArrayBuffer del cuerpo.
-fn create_response_closure(
+pub fn create_response_closure(
     mensaje: UseStateHandle<String>, 
-    loading: UseStateHandle<bool>
+    loading: UseStateHandle<bool>,
+    is_blob: bool 
 ) -> Closure<dyn FnMut(JsValue) -> Result<JsValue, JsValue>> {
     Closure::wrap(Box::new(move |res: JsValue| -> Result<JsValue, JsValue> {
         let response: Response = match res.dyn_into() {
@@ -88,13 +44,10 @@ fn create_response_closure(
             }
         };
         if response.status() == 200 {
-            match response.array_buffer() {
-                Ok(promise) => Ok(promise.into()),
-                Err(_) => {
-                    mensaje.set("Error al inicializar la descarga de datos".to_string());
-                    loading.set(false);
-                    Err(JsValue::from_str("No se pudo obtener el ArrayBuffer"))
-                }
+            if is_blob {
+                response.array_buffer().map(|p| p.into()).map_err(|_| JsValue::from_str("No ArrayBuffer"))
+            } else {
+                response.text().map(|p| p.into()).map_err(|_| JsValue::from_str("No Text"))
             }
         } else {
             mensaje.set(format!("Error del servidor: {}", response.status()));
@@ -106,7 +59,7 @@ fn create_response_closure(
 
 // despues el closure que recibe el ArrayBuffer, lo convierte a Blob, genera una URL y la asigna al estado de Yew para mostrar la imagen.
 // array -> -> blob -> url -> estado de Yew
-fn create_bytes_closure(
+pub fn create_bytes_closure(
     mensaje: UseStateHandle<String>, 
     image_url: UseStateHandle<Option<String>>,
     loading: UseStateHandle<bool>
@@ -129,8 +82,31 @@ fn create_bytes_closure(
     }) as Box<dyn FnMut(JsValue) -> JsValue>)
 }
 
+// recibe el string json, lo deserializa al tipo esperado y lo asigna al estado de Yew.
+pub fn create_json_closure<R: DeserializeOwned + 'static>(
+    state_handle: UseStateHandle<R>,
+    mensaje: UseStateHandle<String>, 
+    loading: UseStateHandle<bool>
+) -> Closure<dyn FnMut(JsValue) -> JsValue> {
+    Closure::wrap(Box::new(move |text_val: JsValue| -> JsValue {
+        if let Some(json_str) = text_val.as_string() {
+            match serde_json::from_str::<R>(&json_str) {
+                Ok(parsed_data) => {
+                    state_handle.set(parsed_data);
+                    mensaje.set("Seleccione parámetros para el recorrido".to_string());
+                },
+                Err(_) => {
+                    mensaje.set("Error al deserializar la respuesta del sistema".to_string());
+                }
+            }
+        }
+        loading.set(false);
+        JsValue::UNDEFINED
+    }) as Box<dyn FnMut(JsValue) -> JsValue>)
+}
+
 // el closure del error
-fn create_error_closure(
+pub fn create_error_closure(
     mensaje: UseStateHandle<String>, 
     loading: UseStateHandle<bool>
 ) -> Closure<dyn FnMut(JsValue)> {
@@ -141,7 +117,7 @@ fn create_error_closure(
 }
 
 // encadena las promises ejecutando los closures.
-fn execute_promise_chain(
+pub fn execute_promise_chain(
     root_promise: &JsValue,
     cb_resp: &Closure<dyn FnMut(JsValue) -> Result<JsValue, JsValue>>,
     cb_bytes: &Closure<dyn FnMut(JsValue) -> JsValue>,

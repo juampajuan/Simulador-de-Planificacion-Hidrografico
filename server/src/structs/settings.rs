@@ -1,19 +1,36 @@
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 
 // Los tipos de datos que se aceptan en el config
 pub enum ConfigValue {
-    String((String)),
+    String(String),
     Int(i32), 
+    Float(f64),
 }
 
 // Las distintas configs.
 // Se deben agregar a mano.
 // Con esto evitamos un match cada vez que necesitas leerlas.
 // Si no lo puede generar, no arranca la aplicacion
+#[derive(Serialize, Deserialize)]
 pub struct Settings {
     pub port: i32,
     pub cache_amount: usize,
-    pub db_name: String
+    pub db_name: String,
+    
+    pub azimut_min: f64,
+    pub azimut_max: f64,
+    pub separation_min: f64,
+    pub transport_speed_min: f64,
+    pub transport_speed_max: f64,
+    pub echo_depth_min: f64,
+    pub echo_depth_max: f64,
+    pub echo_pulse_min: f64,
+    pub echo_pulse_max: f64,
+    pub echo_umbral_min: f64,
+    pub echo_umbral_max: f64,
+    pub sound_speed_min: f64,
+    pub sound_speed_max: f64,
 }
 
 
@@ -26,6 +43,20 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             port: get_int(&config, "PORT")?,
             cache_amount: get_usize(&config, "CACHE_ITEMS_MAX")?,
             db_name: get_string(&config, "DB_NAME")?,
+
+            azimut_min: get_float(&config, "AZIMUT_MIN")?,
+            azimut_max: get_float(&config, "AZIMUT_MAX")?,
+            separation_min: get_float(&config, "SEPARATION_MIN")?,
+            transport_speed_min: get_float(&config, "TRANSPORT_SPEED_MIN")?,
+            transport_speed_max: get_float(&config, "TRANSPORT_SPEED_MAX")?,
+            echo_depth_min: get_float(&config, "ECHO_DEPTH_MIN")?,
+            echo_depth_max: get_float(&config, "ECHO_DEPTH_MAX")?,
+            echo_pulse_min: get_float(&config, "ECHO_PULSE_MIN")?,
+            echo_pulse_max: get_float(&config, "ECHO_PULSE_MAX")?,
+            echo_umbral_min: get_float(&config, "ECHO_UMBRAL_MIN")?,
+            echo_umbral_max: get_float(&config, "ECHO_UMBRAL_MAX")?,
+            sound_speed_min: get_float(&config, "SOUND_SPEED_MIN")?,
+            sound_speed_max: get_float(&config, "SOUND_SPEED_MAX")?,
         })
     }
 }
@@ -59,6 +90,17 @@ fn get_string(
     match config.get(key) {
         Some(ConfigValue::String(v)) => Ok(v.clone()),
         Some(_) => Err(format!("'{key}' no es un string")),
+        None => Err(format!("Falta '{key}'")),
+    }
+}
+
+fn get_float(
+    config: &HashMap<String, ConfigValue>,
+    key: &str,
+) -> Result<f64, String> {
+    match config.get(key) {
+        Some(ConfigValue::Float(v)) => Ok(*v),
+        Some(_) => Err(format!("'{key}' no es un float")),
         None => Err(format!("Falta '{key}'")),
     }
 }
