@@ -3,8 +3,7 @@ pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::{processing::measuring::apply_disturbances, structs::{measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
-use image::{RgbImage};
-
+use image::{RgbImage, RgbaImage};
 use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 
 mod processing;
@@ -85,13 +84,13 @@ pub fn run_simulation(
 pub fn create_path_image(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
-)-> RgbImage  {
+)-> RgbaImage  {
     println!("Generando PNG ...");
 
     makepng_with_matrix_and_path(matrix,path)
 }
 
-pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbImage {
+pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbaImage {
     println!("Generando PNG ...");
 
     makepng_with_matrix_and_interpolation(student_interpolation, matrix)
