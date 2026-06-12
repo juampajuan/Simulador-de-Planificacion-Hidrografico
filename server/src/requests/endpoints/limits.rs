@@ -5,6 +5,7 @@ use std::sync::{Arc};
 
 
 pub fn get_limits(settings: Arc<Settings>) -> HandlerResult {
+    // TODO: NONO, aca esta la pass del admin. MINIMO sacar eso.
     let response = match serde_json::to_string(&*settings) {
         Ok(json) => json,
         Err(_) => return server_error("Error serializing limits data".to_string()),

@@ -1,13 +1,13 @@
 use sqlite::State;
 use crate::db::engine::DBEngine;
+use serde::Serialize;
 
-#[derive(Debug)]
+#[derive(Serialize)]
 pub struct Project {
     pub id: usize,
     pub name: String,
     pub description: Option<String>,
-    pub filename: String,
-    pub professor_id: usize,
+    pub filename: String, 
 }
 
 pub fn create_project(
@@ -60,12 +60,40 @@ pub fn get_all_by_professor_id(
             id: statement.read::<i64, _>("id")? as usize,
             name: statement.read::<String, _>("name")?,
             description: statement.read::<Option<String>, _>("description")?,
-            filename: statement.read::<String, _>("filename")?,
-            professor_id: statement.read::<i64, _>("professor_id")? as usize,
+            filename: statement.read::<String, _>("filename")?, 
         });
     }
 
     Ok(projects)
+}
+
+
+pub fn get_project_by_id(
+    db: &DBEngine,
+    id: i64,
+) -> Result<Project, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        SELECT id, name, description, filename, professor_id
+        FROM projects
+        WHERE id = ?
+        "
+    )?;
+
+    statement.bind((1, id))?;
+
+    if let sqlite::State::Row = statement.next()? {
+        Ok(Project {
+            id: statement.read::<i64, _>("id")? as usize,
+            name: statement.read::<String, _>("name")?,
+            description: statement.read::<Option<String>, _>("description")?,
+            filename: statement.read::<String, _>("filename")?, 
+        })
+    } else {
+        unreachable!()
+    }
+
 }
 
 pub fn delete_project_by_id(

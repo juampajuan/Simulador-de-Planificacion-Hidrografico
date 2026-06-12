@@ -1,4 +1,5 @@
 use tiny_http::{Header, Response, Request};
+use crate::db::queries::auth::{TokenOwner, get_user_by_token};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
 use crate::db::encrypt::{hash_password, verify_password};
@@ -228,4 +229,32 @@ pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
                 None
             }
         })
+}
+
+
+// Estos se usan para chequear al inicio de las request, si esta logueado.
+pub fn check_profesor_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+
+    let Some(token) = get_cookie(request, "auth_token") else {
+        return None;
+    };
+
+    match get_user_by_token(&db, &token) {
+        Ok(Some(TokenOwner::Professor(id))) => Some(id),
+        _ => None,
+    }
+
+}
+
+pub fn check_student_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+
+    let Some(token) = get_cookie(request, "auth_token") else {
+        return None;
+    };
+
+    match get_user_by_token(&db, &token) {
+        Ok(Some(TokenOwner::Student(id))) => Some(id),
+        _ => None,
+    }
+
 }
