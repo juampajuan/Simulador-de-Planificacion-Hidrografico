@@ -9,16 +9,16 @@ pub fn init(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            is_admin INTEGER NOT NULL DEFAULT 0
+            is_admin INTEGER NOT NULL DEFAULT 0,
 
-            price_boat REAL NOT NULL,
-            price_launch REAL NOT NULL, 
-            price_ship REAL NOT NULL,
-            price_echosounder_monohaz REAL NOT NULL,
-            price_echosounder_multihaz REAL NOT NULL,
-            price_sensor_sound_profiler REAL NOT NULL,
-            price_sensor_mareograph REAL NOT NULL,
-            price_sensor_inertial REAL NOT NULL,
+            price_boat REAL NOT NULL DEFAULT 0.0,
+            price_launch REAL NOT NULL DEFAULT 0.0, 
+            price_ship REAL NOT NULL DEFAULT 0.0,
+            price_echosounder_monohaz REAL NOT NULL DEFAULT 0.0,
+            price_echosounder_multihaz REAL NOT NULL DEFAULT 0.0,
+            price_sensor_sound_profiler REAL NOT NULL DEFAULT 0.0,
+            price_sensor_mareograph REAL NOT NULL DEFAULT 0.0,
+            price_sensor_inertial REAL NOT NULL DEFAULT 0.0
         );
 
         CREATE TABLE IF NOT EXISTS projects (
