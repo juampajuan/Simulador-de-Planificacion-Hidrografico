@@ -1,5 +1,7 @@
 use std::io::{self, Write};
 
+// TODO: Colores como constantes
+
 pub fn print_banner() {
     let space = 32 as char;
 
@@ -34,6 +36,11 @@ pub fn print_help() {
             "Cambiar contraseña de usuario.",
             "newpass",
             "<username> <newpass>"
+        ),
+        (
+            "Cerrar todas las sesiones.",
+            "closeall",
+            ""
         ),
     ];
 

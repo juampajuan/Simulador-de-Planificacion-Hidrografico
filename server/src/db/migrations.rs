@@ -4,12 +4,21 @@ pub fn init(
     db: &DBEngine
 ) -> Result<(), sqlite::Error> {
 
-    db.connection.execute(
-        "
+    db.connection.execute("
         CREATE TABLE IF NOT EXISTS professors (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
+            password_hash TEXT NOT NULL,
+            is_admin INTEGER NOT NULL DEFAULT 0,
+
+            price_boat REAL NOT NULL DEFAULT 0.0,
+            price_launch REAL NOT NULL DEFAULT 0.0, 
+            price_ship REAL NOT NULL DEFAULT 0.0,
+            price_echosounder_monohaz REAL NOT NULL DEFAULT 0.0,
+            price_echosounder_multihaz REAL NOT NULL DEFAULT 0.0,
+            price_sensor_sound_profiler REAL NOT NULL DEFAULT 0.0,
+            price_sensor_mareograph REAL NOT NULL DEFAULT 0.0,
+            price_sensor_inertial REAL NOT NULL DEFAULT 0.0
         );
 
         CREATE TABLE IF NOT EXISTS projects (
@@ -17,7 +26,13 @@ pub fn init(
             name TEXT NOT NULL,
             description TEXT,
             filename TEXT NOT NULL,
-            -- Me tienen que informar sobre que variables van aca.
+            
+            attempts_limit INTEGER NOT NULL,
+            weather TEXT NOT NULL,
+            seabed_hardness TEXT NOT NULL,
+            budget REAL NOT NULL,
+            geotiff_min_depth REAL NOT NULL,
+            geotiff_max_depth REAL NOT NULL,
 
             professor_id INTEGER NOT NULL,
             FOREIGN KEY (professor_id)
@@ -28,7 +43,7 @@ pub fn init(
         CREATE TABLE IF NOT EXISTS students (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            code CHAR(4) NOT NULL,
+            code TEXT UNIQUE NOT NULL,
 
             professor_id INTEGER NOT NULL,
             project_id INTEGER NOT NULL, 
@@ -54,8 +69,13 @@ pub fn init(
                 REFERENCES professors(id)
                 ON DELETE CASCADE
         ); 
-        "
-    )?;
+
+        INSERT INTO professors (username, password_hash, is_admin)
+        VALUES ('admin', '$2b$12$df1235sa8sf8kffddnasnb9qpnpoiznaswq2', 1)
+        ON CONFLICT (username) DO NOTHING;
+
+        -- TODO: Los indices.
+    ")?;
 
     Ok(())
 }

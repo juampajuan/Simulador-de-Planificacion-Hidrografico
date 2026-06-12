@@ -1,5 +1,6 @@
 use sqlite::State;
 use crate::db::engine::DBEngine;
+use crate::db::encrypt::{hash_password, verify_password};
 
 pub fn create_professor(
     db: &DBEngine,
@@ -47,6 +48,19 @@ pub fn change_password(
     Ok(())
 }
 
+pub fn change_password_by_username(
+    db: &DBEngine,
+    username: &str,
+    new_password_hash: &str,
+) -> Result<(), sqlite::Error> {
+    let professor_id = get_professor_id_by_username(db, username)?
+        .ok_or_else(|| sqlite::Error {
+            code: None,
+            message: Some("Professor not found".to_string()),
+        })?;
+
+    change_password(db, professor_id, new_password_hash)
+}
 
 pub fn get_professor_id_by_username(
     db: &DBEngine,
@@ -70,4 +84,65 @@ pub fn get_professor_id_by_username(
     } else {
         Ok(None)
     }
+}
+
+pub fn verify_professor_credentials(
+    db: &DBEngine,
+    username: &str,
+    password: &str,
+) -> Result<Option<i64>, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        SELECT id, password_hash
+        FROM professors
+        WHERE username = ?
+        "
+    )?;
+
+    statement.bind((1, username))?;
+
+    if let sqlite::State::Row = statement.next()? {
+        let id = statement.read::<i64, _>("id")?;
+        let password_hash = statement.read::<String, _>("password_hash")?;
+
+        if verify_password(password, &password_hash) {
+            Ok(Some(id))
+        } else {
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn sync_admin_password(
+    db: &DBEngine,
+    admin_password: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut statement = db.run_query(
+        "
+        SELECT password_hash
+        FROM professors
+        WHERE username = 'admin'
+        "
+    )?;
+
+    let current_hash = if let sqlite::State::Row = statement.next()? {
+        Some(statement.read::<String, _>("password_hash")?)
+    } else {
+        None
+    };
+
+    let needs_update = match current_hash {
+        Some(hash) => !verify_password(admin_password, &hash),
+        None => true,
+    };
+
+    if needs_update {
+        let new_hash = hash_password(admin_password)?;
+        change_password_by_username(db, "admin", &new_hash)?;
+    }
+
+    Ok(())
 }

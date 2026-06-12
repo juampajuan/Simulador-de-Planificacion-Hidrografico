@@ -10,7 +10,8 @@ use threads::creators::{create_request_thread, create_cli_thread};
 mod structs;
 use structs::filecache::{FileCache};
 mod db;
-// use db::engine::DBEngine;
+use db::engine::DBEngine;
+use db::queries::professor;
 
 fn main() {
 
@@ -23,9 +24,28 @@ fn main() {
         }
     };
 
+    // Para asegurar que exista y las migraciones se apliquen.
+    // En un scope, ya que cada thread genera su conexion.
+    let err = {
+        match DBEngine::new(&settings.db_name) {
+            Ok(db) => {
+                match professor::sync_admin_password(&db, &settings.admin_pass) {
+                    Ok(()) => None,
+                    Err(err) => Some(err),
+                }
+            }
+            Err(err) => Some(err.into()),
+        }
+    };
+
+    if let Some(err) = err {
+        eprintln!("Error inicializando la DB: {err}");
+        return;
+    }
+
     // Generamos el struct para hacer de cache con los geotiffs cargados.
-    let geotiff_cache = FileCache::new(settings.cache_amount);
-    let cache = Arc::new(Mutex::new(geotiff_cache));
+    let file_cache = FileCache::new(settings.cache_amount);
+    let cache = Arc::new(Mutex::new(file_cache));
 
     let server = match create_server(settings.port) {
         Ok(server) => server,

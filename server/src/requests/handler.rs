@@ -2,16 +2,17 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{auth, generic, simulation, webpage};
+use crate::requests::endpoints::{auth, generic, simulation, webpage, limits};
 use crate::db::engine::DBEngine;
 use tiny_http::Response;
+use crate::structs::settings::Settings;
 
 const API_V1: &str = "/api/v1";
 
 /// Recibe todas las requests y llama al metodo que corresponde
 // Cada metodo, devuelve una response
 // Que luego es enviada por el sender y logueada
-pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Option<DBEngine>) -> RequestLog {
+pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Option<DBEngine>, settings: Arc<Settings>) -> RequestLog {
 
     let db = match db {
         Some(db) => db,
@@ -25,7 +26,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
         match (request.method(), api_path) {
 
-            (Method::Options, "/create_path" | "/run_simulation" ) => {
+            (Method::Options, "/create_path" | "/run_simulation" | "/limits" ) => {
 
                 let mut response = Response::empty(200);
 
@@ -48,6 +49,9 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
             (Method::Post, "/run_simulation") =>
                 simulation::run_simulation(&mut request, cache),
 
+            (Method::Get, "/limits") =>
+                limits::get_limits(settings),
+
             // Auth requests methods.
             (Method::Post, "/auth/create_professor_user") =>
                 auth::create_professor(&mut request, db),
@@ -57,6 +61,12 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
             (Method::Post, "/auth/login") =>
                 auth::login(&mut request, db),
+
+            (Method::Post, "/auth/close_session") =>
+                auth::close_session(&mut request, db),
+
+            (Method::Post, "/auth/close_all") =>
+                auth::close_all(&mut request, db),
 
             _ => generic::not_found(),
         }

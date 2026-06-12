@@ -14,7 +14,7 @@ pub fn create_request_thread(request: Request, cache: Arc<Mutex<FileCache>>, set
             Err(err) => None
         };
 
-        let log = handle_request(request, cache, db);
+        let log = handle_request(request, cache, db, settings);
         log.print();
     })
 }
