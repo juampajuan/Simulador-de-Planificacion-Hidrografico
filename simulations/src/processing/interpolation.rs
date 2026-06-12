@@ -4,6 +4,7 @@ use kiddo::NearestNeighbour;
 use spade::{DelaunayTriangulation, FloatTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::structs::measurement_type::MeasurementsTypeWithError;
+use crate::processing::gdal_grid_interp::{interpolation_gdal_grid, GdalGridMethod};
 
 // ------------------------------------------------------------
 //  Tipos y enum público
@@ -14,6 +15,11 @@ pub enum InterpolationMethod {
     Idw,
     Kriging,
     Tin,
+    /// Interpola usando gdal_grid como backend en vez de las
+    /// implementaciones propias. El IDW con smoothing > 0 elimina
+    /// las franjas del recorrido sin necesidad de reduce_measuring_points.
+    /// Requiere gdal-bin instalado (gdal_grid en el PATH).
+    GdalGrid(GdalGridMethod),
 }
 
 pub fn interpolate(
@@ -32,9 +38,9 @@ pub fn interpolate(
 
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
-            //let (measuring_points, matrix_with_measured_points) = create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff);
-            
-            //reduce_measuring_points(&measuring_points, &matrix_with_measured_points, geotiff, cell_size)
+            //let (points, matrix_with_measured_points) = create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff);
+
+            //reduce_measuring_points(&points, &matrix_with_measured_points, geotiff, cell_size)
 
             create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff)
         },
@@ -70,11 +76,21 @@ pub fn interpolate(
         },
     };
 
-    println!("ARRANCO A INTERPOLAR RECIEN AHORA");
     match method {
         InterpolationMethod::Idw     => interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff),
         InterpolationMethod::Kriging => interpolation_kriging(&new_points, &new_matrix, geotiff),
         InterpolationMethod::Tin     => interpolation_tin(&new_points, &new_matrix, geotiff),
+        InterpolationMethod::GdalGrid(grid_method) => {
+            match interpolation_gdal_grid(&new_points, &new_matrix, geotiff, grid_method) {
+                Ok(result) => result,
+                Err(e) => {
+                    // Si gdal_grid no está disponible o falla, caemos
+                    // a TIN para no romper la simulación.
+                    println!("gdal_grid falló ({e}), usando TIN como fallback");
+                    interpolation_tin(&new_points, &new_matrix, geotiff)
+                }
+            }
+        }
     }
 }
 
@@ -566,4 +582,3 @@ pub fn interpolation_tin(
 
     result
 }
-

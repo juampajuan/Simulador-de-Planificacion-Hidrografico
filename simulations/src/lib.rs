@@ -79,7 +79,7 @@ pub fn run_simulation(
 
     let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix);
 
-    interpolate(InterpolationMethod::Idw, mediciones_observadas, matrix, distance_between_points)
+    interpolate(InterpolationMethod::GdalGrid(processing::gdal_grid_interp::GdalGridMethod::Linear), mediciones_observadas, matrix, distance_between_points)
 }
 
 pub fn create_path_image(
