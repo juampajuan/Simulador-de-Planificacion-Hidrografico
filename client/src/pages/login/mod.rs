@@ -167,10 +167,11 @@ pub fn login_page() -> Html {
             ">
                 <div class="
                     bg-cyan-100
-                    dark:bg-zinc-900
+                    dark:bg-slate-950
                     border
                     border-white/20
                     rounded-md
+                    shadow-xl
                 ">
                     <div class="p-6 border-b border-white/20 space-y-2">
                         <Title text={"Acceso al simulador"} />
