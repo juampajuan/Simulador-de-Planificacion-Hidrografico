@@ -36,30 +36,20 @@ pub fn get_measures(
             let mut left_group: Vec<((usize, usize), f64)> = Vec::new();
 
             for next_point in measure_points {
-                let group = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), matrix);
-                if let Some(val) = group[1] {
-                    resulting_measures.push(val);
-                }
-                if let Some(val) = group[0] {
-                    left_group.push(val);
-                }
-                if let Some(val) = group[2] {
-                    right_group.push(val);
-                }
+                let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), matrix);
+
+                resulting_measures.extend(center);
+                left_group.extend(left);
+                right_group.extend(right);
+
                 previous_point = Some(current_point);
                 current_point = next_point;
             }
 
-            let last_group = get_points_perpendicular_to_this(previous_point, current_point, None, matrix);
-            if let Some(val) = last_group[1] {
-                resulting_measures.push(val);
-            }
-            if let Some(val) = last_group[0] {
-                left_group.push(val);
-            }
-            if let Some(val) = last_group[2] {
-                right_group.push(val);
-            }
+            let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, matrix);
+            resulting_measures.extend(center);
+            left_group.extend(left);
+            right_group.extend(right);
             MeasurementsType::Multihaz { central_measurments: (resulting_measures), paralel_measurment_1: (left_group), paralel_measurment_2: (right_group) }
         }
     }
@@ -87,7 +77,7 @@ fn get_points_perpendicular_to_this(
     current_point: &(usize, usize),
     next_point: Option<&(usize, usize)>,
     matrix: &DepthMatrix,
-) -> Vec<Option<((usize, usize), f64)>> {
+) -> [Vec<((usize,usize), f64)>; 3] {
 
     let reference = match (prev_point, next_point) {
         (Some(prev), Some(next)) => {
@@ -97,15 +87,14 @@ fn get_points_perpendicular_to_this(
         }
         (Some(prev), None) => prev,
         (None, Some(next)) => next,
-        (None, None) => { println!("Hola hubo error ambos son none");
-                         return vec![None, None, None]}
+        (None, None) => { println!("Hola hubo error ambos son none"); return [vec![], vec![], vec![]]}
     };
 
     //Forma el vector
     let dx = reference.0 as f64 - current_point.0 as f64;
     let dy = reference.1 as f64 - current_point.1 as f64;
     let magnitude = (dx * dx + dy * dy).sqrt();
-    if magnitude == 0.0 { println!("Hola hubo error magnitud es 0"); return vec![None, None, None]; }
+    if magnitude == 0.0 { println!("Hola hubo error magnitud es 0"); return [vec![], vec![], vec![]] }
 
     let dx_norm = dx / magnitude;
     let dy_norm = dy / magnitude;
@@ -123,8 +112,6 @@ fn get_points_perpendicular_to_this(
     let angle_deg:f64 = 60.0; // Ángulo del haz en grados
     let mitad_cobertura = (2.0*(matrix.data[current_point.1][current_point.0])*(angle_deg.to_radians()).tan())/2.0;
 
-    println!("Mitad cobertura: {}", mitad_cobertura);
-
     let left_point_x = cx + mitad_cobertura * perp_x;
     let left_point_y = cy + mitad_cobertura * perp_y;
 
@@ -136,32 +123,57 @@ fn get_points_perpendicular_to_this(
     let cent_point = (current_point.0, current_point.1);
     let izq_point = (left_point_x.round() as usize, left_point_y.round() as usize);
 
-    
-    let tupla_centro = if !check_point_validity(cent_point, matrix){
-        None
-    } else {
-        Some((cent_point, matrix.data[current_point.1][current_point.0]))
-    };
+    let center_vector = vec![(cent_point, matrix.data[cent_point.1][cent_point.0])];
 
-    let tupla_der = if !check_point_validity(der_point, matrix){
-        None
-    } else {
-        Some((der_point, matrix.data[der_point.1][der_point.0]))
-    };
+    let right_vector = get_points_on_line(cent_point, der_point, matrix);
+    let left_vector = get_points_on_line(cent_point, izq_point, matrix);
 
+    [left_vector, center_vector, right_vector]
+}
 
-    let tupla_izq = if !check_point_validity(izq_point, matrix){
-        None
-    } else {
-        Some((izq_point, matrix.data[izq_point.1][izq_point.0]))
-    };
+pub fn get_points_on_line(
+    starting_point: (usize, usize),
+    ending_point: (usize, usize),
+    matrix: &DepthMatrix,
+) -> Vec<((usize, usize), f64)> {
+    let mut points = Vec::new();
 
-    vec![
-        tupla_izq,
-        tupla_centro,
-        tupla_der,
-    ]
-    
+    let (x0, y0) = (starting_point.0 as i64, starting_point.1 as i64);
+    let (x1, y1) = (ending_point.0 as i64, ending_point.1 as i64);
+
+    let dx = (x1 - x0).abs();
+    let dy = (y1 - y0).abs();
+
+    let sx: i64 = if x1 >= x0 { 1 } else { -1 };
+    let sy: i64 = if y1 >= y0 { 1 } else { -1 };
+
+    let mut x = x0;
+    let mut y = y0;
+    let mut err = dx - dy;
+
+    loop {
+        if check_point_validity((x as usize, y as usize), matrix){
+            points.push(((x as usize, y as usize), matrix.data[y as usize][x as usize]));
+        }
+
+        if x == x1 && y == y1 {
+            break;
+        }
+
+        let e2 = 2 * err;
+
+        if e2 > -dy {
+            err -= dy;
+            x += sx;
+        }
+
+        if e2 < dx {
+            err += dx;
+            y += sy;
+        }
+    }
+
+    points
 }
 
 fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
