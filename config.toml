@@ -15,4 +15,6 @@ ECHO_UMBRAL_MAX = 90.0
 SOUND_SPEED_MIN = 1450.0
 SOUND_SPEED_MAX = 1500.0
 ADMIN_PASS = "Magicpass2"
-DB_NAME = "database.sqlite"
+
+# Cambiar esto, borrara todos los proyectos actuales.
+FILE_UPLOAD_PATH = "./uploads"

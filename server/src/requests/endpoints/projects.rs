@@ -6,12 +6,142 @@ use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::structs::settings::Settings;
 use std::sync::{Arc};
+use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use crate::db::queries::{professor, auth, student};
+use serde_json;
+use std::{
+    fs::File,
+    io::{Read, Write},
+}; 
+use serde::Deserialize;
+use multipart::server::Multipart;
+
+#[derive(Debug, Deserialize)]
+struct Metadata {
+    nombre: String
+}
+ 
+
+pub fn get_boundary(request: &Request) -> Result<String, &str> {
+
+    let content_type = match request
+        .headers()
+        .iter()
+        .find(|h| h.field.equiv("Content-Type"))
+        .map(|h| h.value.as_str())
+    {
+        Some(v) => v,
+        None => return Err("Missing Content-Type"),
+    };
+
+    let boundary = match content_type
+        .split(';')
+        .find_map(|part| {
+            let part = part.trim();
+
+            if let Some(boundary) = part.strip_prefix("boundary=") {
+                Some(boundary.to_string())
+            } else {
+                None
+            }
+        })
+    {
+        Some(b) => b,
+        None => return Err("Missing boundary")
+    };
+
+    Ok(boundary)
+}
 
 
-// TODO: Falta el de crear, editar projectos
+pub fn create(
+    request: &mut Request,
+    db: DBEngine,
+    settings: Arc<Settings>,
+) -> HandlerResult {
 
-pub fn get_projects(request: &mut Request, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+    let boundary = match get_boundary(request) {
+        Ok(b) => b,
+        Err(e) => return server_error(e.into())
+    };
+
+    let mut multipart = Multipart::with_body(
+        request.as_reader(),
+        boundary,
+    );
+
+    let mut metadata_json = None::<String>;
+
+    if let Err(e) = multipart.foreach_entry(|mut field| {
+
+        match field.headers.name.as_ref() {
+
+                "metadata" => {
+                    let mut json = String::new();
+                    field.data.read_to_string(&mut json);
+
+                    metadata_json = Some(json);
+                }
+
+                "file" => {
+                    let original_filename = field.headers
+                        .filename
+                        .clone()
+                        .unwrap_or_else(|| "upload.bin".to_string());
+
+                    let timestamp = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs();
+
+                    let path = Path::new(&original_filename);
+
+                    let filename = match (
+                        path.file_stem().and_then(|s| s.to_str()),
+                        path.extension().and_then(|s| s.to_str()),
+                    ) {
+                        (Some(stem), Some(ext)) => format!("{}_{}.{}", stem, timestamp, ext),
+                        (Some(stem), None) => format!("{}_{}", stem, timestamp),
+                        _ => format!("upload_{}.bin", timestamp),
+                    };
+
+
+                    let mut out = File::create(
+                        format!("{}/geotiffs/{}", settings.upload_path, filename)
+                    ).unwrap();
+
+                    std::io::copy(
+                        &mut field.data,
+                        &mut out,
+                    );
+
+                    println!("Archivo guardado: {}", filename);
+                }
+
+                _ => {}
+        }
+
+    }) {
+        return server_error("No se pudo subir el archivo".to_string());
+    }
+
+    if let Some(json) = metadata_json {
+
+        let meta: Metadata = match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(e) => return server_error("No se pudo leer la metadata.".to_string()),
+        };
+
+        println!("{:#?}", meta);
+    }
+
+    string_response("ok".into(), 200)
+}
+
+
+
+pub fn get_projects(request: &mut Request, db: DBEngine) -> HandlerResult {
   
     let Some(id) = check_profesor_auth(request, &db) else {
         return string_response("Sin autorizar".to_string(), 401);
@@ -29,7 +159,7 @@ pub fn get_projects(request: &mut Request, db: DBEngine, settings: Arc<Settings>
     string_response(response, 200)
 }
 
-pub fn get_student_project(request: &mut Request, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+pub fn get_student_project(request: &mut Request, db: DBEngine) -> HandlerResult {
   
     let Some(id) = check_student_auth(request, &db) else {
         return string_response("Sin autorizar".to_string(), 401);
@@ -61,6 +191,7 @@ pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Setting
         return string_response("Sin autorizar".to_string(), 401);
     };
 
+    // TODO: Falta que borre el archivo de la carpeta.
     match delete_project_by_id(&db, id, professor_id) {
         Ok(true) => string_response("Proyecto eliminado.".to_string(), 200),
         Ok(false) => string_response(

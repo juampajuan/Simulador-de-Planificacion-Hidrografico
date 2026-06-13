@@ -28,3 +28,5 @@ mapa_reconstruido.txt
 
 *.db
 *sqlite
+
+uploads/
