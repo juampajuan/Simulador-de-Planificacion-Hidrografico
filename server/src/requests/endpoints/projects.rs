@@ -176,7 +176,11 @@ pub fn get_student_project(request: &mut Request, db: DBEngine) -> HandlerResult
         return server_error("Error al obtener los proyectos".to_string());
     };
 
-    let response = match serde_json::to_string(&projects) {
+    let Some(project) = projects else {
+        return string_response("Proyecto no encontrado".to_string(), 404);
+    };
+
+    let response = match serde_json::to_string(&project) {
         Ok(json) => json,
         Err(_) => return server_error("Error serializing limits data".to_string()),
     };

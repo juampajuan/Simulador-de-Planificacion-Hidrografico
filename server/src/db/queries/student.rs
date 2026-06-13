@@ -1,12 +1,20 @@
 use sqlite::State;
 use crate::db::engine::DBEngine;
+use serde::{Serialize, Deserialize};
 
 // Esto se podria mover a los structs. Y va a haber para cada tipo
+#[derive(Serialize)]
 pub struct Student {
     pub code: String,
     pub name: String,
     pub id: i64,
     pub project_id: i64
+}
+
+#[derive(Deserialize)]
+pub struct NewStudent {
+    pub name: String,
+    pub project_id: i64,
 }
 
 pub fn create_student(
@@ -76,7 +84,7 @@ pub fn verify_code(
 
 pub fn get_students_for_professor(
     db: &DBEngine,
-    professor_id: usize,
+    professor_id: i64,
 ) -> Result<Vec<Student>, sqlite::Error> {
     let query = "
         SELECT id, name, code, project_id
@@ -86,7 +94,7 @@ pub fn get_students_for_professor(
 
     let mut statement = db.run_query(query)?;
 
-    statement.bind((1, professor_id as i64))?;
+    statement.bind((1, professor_id))?;
 
     let mut students = Vec::new();
 
