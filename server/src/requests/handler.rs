@@ -2,7 +2,7 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{auth, generic, limits, projects, simulation, webpage};
+use crate::requests::endpoints::{auth, generic, limits, projects, simulation, students, webpage};
 use crate::db::engine::DBEngine;
 use tiny_http::Response;
 use crate::structs::settings::Settings;
@@ -63,6 +63,12 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
             (Method::Get, "/student_project") =>
                 projects::get_student_project(&mut request, db),  
+
+            (Method::Get, "/students") =>
+                students::get_all_students(&mut request, db),
+
+            (Method::Post, "/students") =>
+                students::create_new_student(&mut request, db),  
 
             // TODO: Yo sapararia por dominio esto. En otros arhcivos?
                 // Y agregas un nivel mas.

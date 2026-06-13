@@ -8,6 +8,7 @@ pub struct Project {
     pub name: String,
     pub description: Option<String>,
     pub filename: String, 
+    pub professor_id: i64
 }
  
 #[derive(Debug, Deserialize)]
@@ -88,6 +89,7 @@ pub fn get_all_by_professor_id(
             name: statement.read::<String, _>("name")?,
             description: statement.read::<Option<String>, _>("description")?,
             filename: statement.read::<String, _>("filename")?, 
+            professor_id: statement.read::<i64, _>("professor_id")?, 
         });
     }
 
@@ -98,8 +100,7 @@ pub fn get_all_by_professor_id(
 pub fn get_project_by_id(
     db: &DBEngine,
     id: i64,
-) -> Result<Project, sqlite::Error> {
-
+) -> Result<Option<Project>, sqlite::Error> {
     let mut statement = db.run_query(
         "
         SELECT id, name, description, filename, professor_id
@@ -111,16 +112,16 @@ pub fn get_project_by_id(
     statement.bind((1, id))?;
 
     if let sqlite::State::Row = statement.next()? {
-        Ok(Project {
+        Ok(Some(Project {
             id: statement.read::<i64, _>("id")? as usize,
             name: statement.read::<String, _>("name")?,
             description: statement.read::<Option<String>, _>("description")?,
-            filename: statement.read::<String, _>("filename")?, 
-        })
+            filename: statement.read::<String, _>("filename")?,
+            professor_id: statement.read::<i64, _>("professor_id")?,
+        }))
     } else {
-        unreachable!()
+        Ok(None)
     }
-
 }
 
 pub fn delete_project_by_id(
