@@ -1,6 +1,6 @@
 use sqlite::State;
 use crate::db::engine::DBEngine;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 #[derive(Serialize)]
 pub struct Project {
@@ -9,27 +9,54 @@ pub struct Project {
     pub description: Option<String>,
     pub filename: String, 
 }
+ 
+#[derive(Debug, Deserialize)]
+pub struct ProjectMetadata {
+    name: String,
+    description: String,
+    attempts_limit: i64,
+    weather: String,
+    seabed_hardness: String,
+    budget: f64,
+    geotiff_min_depth: f64,
+    geotiff_max_depth: f64,
+}
 
 pub fn create_project(
     db: &DBEngine,
-    name: &str,
-    description: Option<&str>,
     filename: &str,
     professor_id: i64,
+    metadata: &ProjectMetadata,
 ) -> Result<usize, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
-        INSERT INTO projects(name, description, filename, professor_id)
-        VALUES(?, ?, ?, ?)
+        INSERT INTO projects(
+            name,
+            description,
+            filename,
+            attempts_limit,
+            weather,
+            seabed_hardness,
+            budget,
+            geotiff_min_depth,
+            geotiff_max_depth,
+            professor_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
         "
     )?;
 
-    statement.bind((1, name))?;
-    statement.bind((2, description))?;
+    statement.bind((1, metadata.name.as_str()))?;
+    statement.bind((2, metadata.description.as_str()))?;
     statement.bind((3, filename))?;
-    statement.bind((4, professor_id))?;
+    statement.bind((4, metadata.attempts_limit))?;
+    statement.bind((5, metadata.weather.as_str()))?;
+    statement.bind((6, metadata.seabed_hardness.as_str()))?;
+    statement.bind((7, metadata.budget))?;
+    statement.bind((8, metadata.geotiff_min_depth))?;
+    statement.bind((9, metadata.geotiff_max_depth))?;
+    statement.bind((10, professor_id))?;
 
     if let sqlite::State::Row = statement.next()? {
         Ok(statement.read::<i64, _>("id")? as usize)

@@ -1,6 +1,6 @@
 use tiny_http::Request;
 use crate::db::engine::DBEngine;
-use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id};
+use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id, create_project, ProjectMetadata};
 use crate::requests::endpoints::auth::{check_profesor_auth, check_student_auth, get_cookie};
 use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{server_error, string_response};
@@ -16,11 +16,6 @@ use std::{
 }; 
 use serde::Deserialize;
 use multipart::server::Multipart;
-
-#[derive(Debug, Deserialize)]
-struct Metadata {
-    nombre: String
-}
  
 
 pub fn get_boundary(request: &Request) -> Result<String, &str> {
@@ -61,6 +56,10 @@ pub fn create(
     settings: Arc<Settings>,
 ) -> HandlerResult {
 
+    let Some(id) = check_profesor_auth(request, &db) else {
+        return string_response("Sin autorizar".to_string(), 401);
+    };
+
     let boundary = match get_boundary(request) {
         Ok(b) => b,
         Err(e) => return server_error(e.into())
@@ -72,7 +71,11 @@ pub fn create(
     );
 
     let mut metadata_json = None::<String>;
+    let mut filename_saved = None::<String>;
 
+    // TODO: Re hacer el codigo mas feo que hice en mi vida
+    // Transformarlo en un metodo, no iterativao, solo hay 2 entries que leer. 
+    // Y hacer que comprueba si el tipo de archivo es .geotiff
     if let Err(e) = multipart.foreach_entry(|mut field| {
 
         match field.headers.name.as_ref() {
@@ -116,7 +119,9 @@ pub fn create(
                         &mut out,
                     );
 
-                    println!("Archivo guardado: {}", filename);
+                    filename_saved = Some(filename);
+
+                    
                 }
 
                 _ => {}
@@ -126,20 +131,22 @@ pub fn create(
         return server_error("No se pudo subir el archivo".to_string());
     }
 
-    if let Some(json) = metadata_json {
+    let json = match metadata_json {
+        Some(j) => j,
+        None => return server_error("No hay metadata.".to_string()),
+    };
 
-        let meta: Metadata = match serde_json::from_str(&json) {
-            Ok(v) => v,
-            Err(e) => return server_error("No se pudo leer la metadata.".to_string()),
-        };
+    let meta: ProjectMetadata = match serde_json::from_str(&json) {
+        Ok(v) => v,
+        Err(_) => return server_error("Metadata incompleta.".to_string()),
+    };
 
-        println!("{:#?}", meta);
+    match create_project(&db, &filename_saved.unwrap(), id,&meta) {
+        Ok(_) => string_response("ok".into(), 200),
+        Err(_) => server_error("NO pudo".into())
     }
-
-    string_response("ok".into(), 200)
+    
 }
-
-
 
 pub fn get_projects(request: &mut Request, db: DBEngine) -> HandlerResult {
   
