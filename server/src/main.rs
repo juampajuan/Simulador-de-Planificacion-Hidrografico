@@ -13,6 +13,8 @@ mod db;
 use db::engine::DBEngine;
 use db::queries::professor;
 
+use crate::utils::create_dirs;
+
 fn main() {
 
     // Intentamos cargar la config y transformamos en un recurso compartido.
@@ -23,6 +25,11 @@ fn main() {
             return;
         }
     };
+
+    if create_dirs(&settings.upload_path).is_none() {
+        eprintln!("Error creando directorios");
+        return;
+    }
 
     // Para asegurar que exista y las migraciones se apliquen.
     // En un scope, ya que cada thread genera su conexion.

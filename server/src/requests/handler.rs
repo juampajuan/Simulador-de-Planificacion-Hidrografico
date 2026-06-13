@@ -53,13 +53,16 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
                 limits::get_limits(settings),
 
             (Method::Get, "/projects") =>
-                projects::get_projects(&mut request, db, settings), 
+                projects::get_projects(&mut request, db), 
+
+            (Method::Post, "/projects") =>
+                projects::create(&mut request, db, settings), 
 
             (Method::Delete, url) if url.starts_with("/projects/") =>
                 projects::delete_project(&mut request, db, settings),
 
             (Method::Get, "/student_project") =>
-                projects::get_student_project(&mut request, db, settings),  
+                projects::get_student_project(&mut request, db),  
 
             // TODO: Yo sapararia por dominio esto. En otros arhcivos?
                 // Y agregas un nivel mas.
