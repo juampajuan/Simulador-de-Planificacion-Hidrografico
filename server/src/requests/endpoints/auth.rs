@@ -1,8 +1,9 @@
 use tiny_http::{Header, Response, Request};
+use crate::db::queries::auth::{TokenOwner, get_user_by_token};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
 use crate::db::encrypt::{hash_password, verify_password};
-use crate::db::queries::{professor, auth};
+use crate::db::queries::{professor, auth, student};
 use std::fs::File;
 use std::path::PathBuf;
 use super::generic::{not_found, server_error, string_response};
@@ -11,10 +12,16 @@ use serde_json::Value;
 use rand::Rng;
 
 #[derive(serde::Deserialize)]
-pub struct AuthData {
+pub struct ProfessorAuthData {
     #[serde(default)]
     pub user: String,
-    pub pass: String,
+    pub pass: String, 
+}
+
+#[derive(serde::Deserialize)]
+pub struct StudentAuthData {
+    #[serde(default)]
+    pub code: String, 
 }
 
 pub fn create_professor(request: &mut Request, db: DBEngine) -> HandlerResult {
@@ -23,9 +30,9 @@ pub fn create_professor(request: &mut Request, db: DBEngine) -> HandlerResult {
         return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
     }
 
-    let data: AuthData = match parse_json_body(request) {
+    let data: ProfessorAuthData = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return server_error(format!("Bad Request: {}", err)),
+        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
     };
 
     if !check_password(&data.pass){
@@ -51,7 +58,7 @@ pub fn change_pass(request: &mut Request, db: DBEngine) -> HandlerResult {
         return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
     }
 
-    let data: AuthData = match parse_json_body(request) {
+    let data: ProfessorAuthData = match parse_json_body(request) {
         Ok(d) => d,
         Err(err) => return server_error(format!("Bad Request: {}", err)),
     };
@@ -82,20 +89,47 @@ pub fn change_pass(request: &mut Request, db: DBEngine) -> HandlerResult {
 
 pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
 
-    let data: AuthData = match parse_json_body(request) {
+    let data: Value = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return server_error(format!("Bad Request: {}", err)),
+        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
     };
 
-    let professor_id = match professor::verify_professor_credentials(&db, &data.user, &data.pass) {
-        Ok(Some(id)) => id,
-        Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
-        Err(_) => return server_error("Internal error.".to_string())
+    let owner = if data.get("code").is_some() {
+        let data: StudentAuthData = match serde_json::from_value(data) {
+            Ok(d) => d,
+            Err(_) => return string_response("Bad Request".to_string(), 400),
+        };
+
+        let student_id = match student::verify_code(&db, &data.code) {
+            Ok(Some(id)) => id,
+            Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
+            Err(_) => return server_error("Internal error.".to_string()),
+        };
+
+        auth::TokenOwner::Student(student_id)
+
+    } else {
+        let data: ProfessorAuthData = match serde_json::from_value(data) {
+            Ok(d) => d,
+            Err(_) => return string_response("Bad Request".to_string(), 400),
+        };
+
+        let professor_id = match professor::verify_professor_credentials(
+            &db,
+            &data.user,
+            &data.pass,
+        ) {
+            Ok(Some(id)) => id,
+            Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
+            Err(_) => return server_error("Internal error.".to_string()),
+        };
+
+        auth::TokenOwner::Professor(professor_id)
     };
 
     let token = generate_token();
 
-    if let Err(_) = auth::create_token(&db, professor_id, &token, 7) {
+    if let Err(_) = auth::create_token(&db, owner, &token, 7) {
         return server_error("Internal error.".to_string());
     }
 
@@ -143,6 +177,7 @@ pub fn close_session(request: &mut Request, db: DBEngine) -> HandlerResult {
     );
 } 
 
+// TODO: Mover a algun archivo de utils.
 fn check_password(pass: &str) -> bool {
     let has_upper = pass.chars().any(|c| c.is_uppercase());
     let has_number = pass.chars().any(|c| c.is_numeric());
@@ -194,4 +229,32 @@ pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
                 None
             }
         })
+}
+
+
+// Estos se usan para chequear al inicio de las request, si esta logueado.
+pub fn check_profesor_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+
+    let Some(token) = get_cookie(request, "auth_token") else {
+        return None;
+    };
+
+    match get_user_by_token(&db, &token) {
+        Ok(Some(TokenOwner::Professor(id))) => Some(id),
+        _ => None,
+    }
+
+}
+
+pub fn check_student_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+
+    let Some(token) = get_cookie(request, "auth_token") else {
+        return None;
+    };
+
+    match get_user_by_token(&db, &token) {
+        Ok(Some(TokenOwner::Student(id))) => Some(id),
+        _ => None,
+    }
+
 }

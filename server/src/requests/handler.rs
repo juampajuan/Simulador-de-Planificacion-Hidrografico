@@ -2,7 +2,7 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{auth, generic, simulation, webpage, limits};
+use crate::requests::endpoints::{auth, generic, limits, projects, simulation, webpage};
 use crate::db::engine::DBEngine;
 use tiny_http::Response;
 use crate::structs::settings::Settings;
@@ -51,6 +51,21 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
             (Method::Get, "/limits") =>
                 limits::get_limits(settings),
+
+            (Method::Get, "/projects") =>
+                projects::get_projects(&mut request, db, settings), 
+
+            (Method::Delete, url) if url.starts_with("/projects/") =>
+                projects::delete_project(&mut request, db, settings),
+
+            (Method::Get, "/student_project") =>
+                projects::get_student_project(&mut request, db, settings),  
+
+            // TODO: Yo sapararia por dominio esto. En otros arhcivos?
+                // Y agregas un nivel mas.
+                // OSea path /simulation/ <todas las apis para simular>
+                // /projects/ ...
+                // /auth/ .. Todo lo relacionado a autenticarse
 
             // Auth requests methods.
             (Method::Post, "/auth/create_professor_user") =>
