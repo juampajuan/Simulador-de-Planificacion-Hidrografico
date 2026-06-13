@@ -1,4 +1,5 @@
 use rand::random;
+use rand::RngExt;
 use rand_distr::{Distribution, Normal};
 use common::StudentMeasuringParameters;
 
@@ -8,25 +9,18 @@ use crate::{processing::measuring::calculate_distance_between_points, structs::{
 //  Umbrales de potencia
 // ------------------------------------------------------------
 
-const HIGH_FREQ_RX_THRESHOLD: f64  = -80.0;  // dB — señal mínima que detecta el receptor
-const HIGH_FREQ_SAT_THRESHOLD: f64 = 220.0;  // dB — potencia a partir de la cual hay falsos ecos
-
-const LOW_FREQ_RX_THRESHOLD: f64   = -100.0;
-const LOW_FREQ_SAT_THRESHOLD: f64  = 180.0;
+const HIGH_FREQ_POTENCY_THRESHOLD: f64  = 70.0; //en %
+const LOW_FREQ_POTENCY_THRESHOLD: f64 = 30.0; //en %
 
 // ------------------------------------------------------------
 //  Umbrales de ganancia
 // ------------------------------------------------------------
 
-// Alta frecuencia: haz angosto, más sensible al ruido
-const HIGH_FREQ_GAIN_LOW: f64  = 15.0;  // dB — por debajo: eco redondeado
-const HIGH_FREQ_GAIN_HIGH: f64 = 35.0;  // dB — por encima: falsos ecos
+const HIGH_FREQ_GAIN_THRESHOLD: f64  = 30.0; // en db
+const LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD: f64  = 30.0; // en db
+const LOW_FREQ_GAIN_THRESHOLD: f64  = 15.0; // en db
 
-// Baja frecuencia: haz más ancho, tolera más ganancia antes de amplificar ruido
-const LOW_FREQ_GAIN_LOW: f64   = 10.0;
-const LOW_FREQ_GAIN_HIGH: f64  = 45.0;
 
-const MAX_LOW_GAIN_ERROR: f64  = 0.3;   // metros — error máximo por ganancia baja (OHI: ~30cm)
 
 // ------------------------------------------------------------
 //  Otras constantes
@@ -106,7 +100,7 @@ pub fn apply_disturbances_monohaz(
         z = apply_tide_error(z, tide_levels.as_ref(), i);
  
         // 4. Potencia
-        let z = apply_potency_noise(z, echo.transmited_potency, echo.absortion_coefficient, echo.uses_high_frecuency);
+        let z = apply_potency_noise(z, echo.transmited_potency, echo.uses_high_frecuency);
  
         // 5. Ganancia
         let z = apply_gain_noise(z, echo.gain as f64, echo.uses_high_frecuency);
@@ -191,66 +185,72 @@ fn apply_tide_error(z_real: f64, tide_levels: Option<&Vec<f64>>, index: usize) -
 fn apply_potency_noise(
     z: f64,
     transmited_potency: f64,
-    absortion_coefficient: f64,
     uses_high_frecuency: bool,
 ) -> Option<f64> {
-    let (rx_threshold, sat_threshold) = if uses_high_frecuency {
-        (HIGH_FREQ_RX_THRESHOLD, HIGH_FREQ_SAT_THRESHOLD)
-    } else {
-        (LOW_FREQ_RX_THRESHOLD, LOW_FREQ_SAT_THRESHOLD)
-    };
- 
-    let tl = 20.0 * z.log10() + absortion_coefficient * z;
-    let p_recibida = transmited_potency - 2.0 * tl;
+
     
-    // Señal demasiado débil
-    if p_recibida < rx_threshold {
-        return None;
-    }
- 
-    // Potencia excesiva: falsos ecos superficiales
-    if transmited_potency > sat_threshold {
-        let exceso = transmited_potency - sat_threshold;
-        let probabilidad = (exceso / sat_threshold).clamp(0.0, 1.0);
-        if random::<f64>() < probabilidad {
-            return Some(z * random::<f64>());
-        }
-    }
- 
-    Some(z)
-}
- 
-/// Error por ganancia del receptor.
-/// - Ganancia baja: eco redondeado -> sondaje mayor al real (hasta MAX_LOW_GAIN_ERROR)
-/// - Ganancia normal: sin error
-/// - Ganancia alta: amplifica ruido -> falsos ecos con probabilidad proporcional al exceso
-fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Option<f64> {
-    let z = z?;
- 
-    let (gain_low, gain_high) = if uses_high_frecuency {
-        (HIGH_FREQ_GAIN_LOW, HIGH_FREQ_GAIN_HIGH)
+    let threshold = if uses_high_frecuency {
+        HIGH_FREQ_POTENCY_THRESHOLD
     } else {
-        (LOW_FREQ_GAIN_LOW, LOW_FREQ_GAIN_HIGH)
+        LOW_FREQ_POTENCY_THRESHOLD    
     };
 
-    if gain < gain_low {
-        // Ganancia baja: error proporcional al déficit, máximo MAX_LOW_GAIN_ERROR
-        let factor = 1.0 - (gain / gain_low); // 0 en el límite, 1 en gain=0
-        Some(z + factor * MAX_LOW_GAIN_ERROR)
- 
-    } else if gain > gain_high {
-        // Ganancia alta: falso eco con probabilidad proporcional al exceso
-        let exceso = gain - gain_high;
-        let probabilidad = (exceso / gain_high).clamp(0.0, 1.0);
-        if random::<f64>() < probabilidad {
-            Some(z * random::<f64>())
+    if transmited_potency < threshold {
+        let excess =  threshold - transmited_potency;
+        let false_echo_prob = excess / threshold; // Probabilidad proporcional al exceso
+        if random::<f64>() < false_echo_prob {
+            None // no se detecta el eco real
         } else {
             Some(z)
         }
- 
     } else {
         Some(z)
     }
+}
+ 
+fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Option<f64> {
+    if uses_high_frecuency == true {
+        if gain > HIGH_FREQ_GAIN_THRESHOLD {
+            z
+        } else {
+            z.and_then(|p| {
+                let excess =  HIGH_FREQ_GAIN_THRESHOLD - gain;
+                let echo_didnt_retorn_prob = excess / HIGH_FREQ_GAIN_THRESHOLD; // Probabilidad proporcional al exceso
+                if random::<f64>() < echo_didnt_retorn_prob {
+                    None // no se detecta el eco real
+                } else {
+                    Some(p)
+                }
+            })
+        }
+    } else {
+        if gain > LOW_FREQ_GAIN_THRESHOLD {
+            if gain > LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD {
+                let excess = gain - LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD;
+                let false_echo_prob = excess / LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD; // Probabilidad proporcional al exceso
+                if random::<f64>() < false_echo_prob {
+                    // eco falso: profundidad menor a la real, con algo de aleatoriedad
+                    let reduction =  rand::rng().random_range(0.1..0.5); // 10% a 50% menos
+                    z.and_then(|p| {Some(p * (1.0 - reduction))}) // no se detecta el eco real
+                } else {
+                    z
+                }
+            } else {
+                z
+            }
+        } else {
+            z.and_then(|p| {
+                let excess = gain - LOW_FREQ_GAIN_THRESHOLD;
+                let echo_didnt_retorn_prob = excess / LOW_FREQ_GAIN_THRESHOLD; // Probabilidad proporcional al exceso
+                if random::<f64>() < echo_didnt_retorn_prob {
+                    None
+                } else {
+                    Some(p)
+                }
+            })
+        }
+    }
+
 }
  
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
