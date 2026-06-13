@@ -99,7 +99,7 @@ pub fn apply_disturbances_monohaz(
         let mut z = if params.transport_parameters.uses_sound_profiler {
             z_ideal
         } else {
-            apply_sound_velocity_noise(z_ideal, params.transport_parameters.speed)
+            apply_sound_velocity_noise(z_ideal, params.echo_sounder_parameters.sound_speed)
         };
  
         // 3. Marea
