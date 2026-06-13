@@ -9,10 +9,10 @@ const HIGH_FREQ_DIAMETER: f64  = 0.10;      // Diámetro del transductor en metr
 const HIGH_FREQ_ALPHA: f64     = 0.060;     // Coeficiente de absorción en dB/m
 
 // ------------------------------------------------------------
-//  Constantes físicas — Baja frecuencia (12 kHz, D=20cm)
+//  Constantes físicas — Baja frecuencia (50 kHz, D=20cm)
 // ------------------------------------------------------------
 
-const LOW_FREQ_HZ: f64         = 12000.0;  // Frecuencia en Hz
+const LOW_FREQ_HZ: f64         = 50000.0;  // Frecuencia en Hz
 const LOW_FREQ_DIAMETER: f64   = 0.20;      // Diámetro del transductor en metros
 const LOW_FREQ_ALPHA: f64      = 0.004;     // Coeficiente de absorción en dB/m
 
@@ -51,6 +51,7 @@ impl EchosounderLogic for EchosounderParameters {
 
 
 fn calculate_angle_and_absortion_coefficient(uses_high_frecuency: bool) -> (f64, f64) {
+    
     let (frecuencia, diametro, alfa) = if uses_high_frecuency {
         (HIGH_FREQ_HZ, HIGH_FREQ_DIAMETER, HIGH_FREQ_ALPHA)
     } else {

@@ -3,6 +3,8 @@ use kiddo::SquaredEuclidean;
 use kiddo::NearestNeighbour;
 use spade::{DelaunayTriangulation, FloatTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
 use crate::structs::depth_matrix::DepthMatrix;
+use crate::structs::measurement_type::MeasurementsTypeWithError;
+use crate::processing::gdal_grid_interp::{interpolation_gdal_grid, GdalGridMethod};
 
 // ------------------------------------------------------------
 //  Tipos y enum público
@@ -13,28 +15,97 @@ pub enum InterpolationMethod {
     Idw,
     Kriging,
     Tin,
+    /// Interpola usando gdal_grid como backend en vez de las
+    /// implementaciones propias. El IDW con smoothing > 0 elimina
+    /// las franjas del recorrido sin necesidad de reduce_measuring_points.
+    /// Requiere gdal-bin instalado (gdal_grid en el PATH).
+    GdalGrid(GdalGridMethod),
 }
 
 pub fn interpolate(
     method: InterpolationMethod,
-    measuring_points: &[(usize, usize)],
-    matrix: &[Vec<f64>],
+    measuring_points: MeasurementsTypeWithError,
     geotiff: &DepthMatrix,
     distance_between_measurements_m: f64,  // velocidad_ms / frecuencia_hz
 ) -> Vec<Vec<f64>> {
+
     // cell_size escala linealmente con la distancia entre mediciones:
     //   <= 1m  → 75 píxeles
     //   cada metro extra suma 4 píxeles, máximo 100
     let cell_size = (75.0 + (distance_between_measurements_m - 1.0).max(0.0) * 4.0)
         .min(100.0) as usize;
 
-    let (new_points, new_matrix) = reduce_measuring_points(measuring_points, matrix, geotiff, cell_size);
+
+    let (new_points, new_matrix) = match measuring_points {
+        MeasurementsTypeWithError::Monohaz { measurements } => {
+            //let (points, matrix_with_measured_points) = create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff);
+
+            //reduce_measuring_points(&points, &matrix_with_measured_points, geotiff, cell_size)
+
+            create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff)
+        },
+    
+        MeasurementsTypeWithError::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
+            let (points_central, matrix_central) = create_matrix_with_measurments_and_eliminate_none_points(&central_measurments, geotiff);
+            let (points_left, matrix_left) = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_1, geotiff);
+            let (points_right, matrix_right) = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_2, geotiff);
+            
+
+            let (pts_central, mat_central) = reduce_measuring_points(&points_central, &matrix_central, geotiff, cell_size);
+            let (pts_left,    mat_left)    = reduce_measuring_points(&points_left,    &matrix_left,    geotiff, cell_size);
+            let (pts_right,   mat_right)   = reduce_measuring_points(&points_right,   &matrix_right,   geotiff, cell_size);
+
+            let mut new_matrix = vec![vec![0.0; geotiff.width]; geotiff.height];
+
+            for &(x, y) in &pts_central {
+                new_matrix[y][x] = mat_central[y][x];
+            }
+            for &(x, y) in &pts_left {
+                new_matrix[y][x] = mat_left[y][x];
+            }
+            for &(x, y) in &pts_right {
+                new_matrix[y][x] = mat_right[y][x];
+            }
+
+            // juntar los 3 en uno solo
+            let mut new_points = pts_central;
+            new_points.extend(pts_left);
+            new_points.extend(pts_right);
+
+            (new_points,new_matrix)
+        },
+    };
 
     match method {
         InterpolationMethod::Idw     => interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff),
         InterpolationMethod::Kriging => interpolation_kriging(&new_points, &new_matrix, geotiff),
         InterpolationMethod::Tin     => interpolation_tin(&new_points, &new_matrix, geotiff),
+        InterpolationMethod::GdalGrid(grid_method) => {
+            match interpolation_gdal_grid(&new_points, &new_matrix, geotiff, grid_method) {
+                Ok(result) => result,
+                Err(e) => {
+                    // Si gdal_grid no está disponible o falla, caemos
+                    // a TIN para no romper la simulación.
+                    println!("gdal_grid falló ({e}), usando TIN como fallback");
+                    interpolation_tin(&new_points, &new_matrix, geotiff)
+                }
+            }
+        }
     }
+}
+
+fn create_matrix_with_measurments_and_eliminate_none_points (measurements: &Vec<((usize, usize), Option<f64>)>, geotiff: &DepthMatrix) -> (Vec<(usize, usize)>, Vec<Vec<f64>>) {
+    let mut matrix_with_measured_points: Vec<Vec<f64>> = vec![vec![0.0f64; geotiff.width]; geotiff.height];
+    let mut points_validos: Vec<(usize, usize)> = Vec::new();
+
+    for (punto, z_obs) in measurements {
+        if let Some(z) = z_obs {
+            matrix_with_measured_points[punto.1][punto.0] = *z;
+            points_validos.push(*punto);
+        }
+    }
+
+    (points_validos, matrix_with_measured_points)
 }
 
 // ------------------------------------------------------------
@@ -100,25 +171,8 @@ fn representative_point_for_segment(
 
     let (middle_x, middle_y) = segment[chosen_index];
 
-    let mut weighted_sum = 0.0_f64;
-    let mut weight_total = 0.0_f64;
 
-    for &(px, py) in segment {
-        let depth = matrix[py][px];
-
-        let dx   = px as f64 - middle_x as f64;
-        let dy   = py as f64 - middle_y as f64;
-        let dist = (dx * dx + dy * dy).sqrt();
-
-        // Si es el punto representativo su distancia es 0, le damos peso 1.
-        // Al resto se les aplica 1/dist normalmente.
-        let weight = if dist == 0.0 { 1.0 } else { 1.0 / dist };
-
-        weighted_sum += depth * weight;
-        weight_total += weight;
-    }
-
-    (middle_x, middle_y, weighted_sum / weight_total)
+    (middle_x, middle_y, matrix[middle_y][middle_x])
 }
 
 fn reduce_measuring_points(
@@ -528,4 +582,3 @@ pub fn interpolation_tin(
 
     result
 }
-

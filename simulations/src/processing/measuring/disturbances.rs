@@ -2,7 +2,7 @@ use rand::random;
 use rand_distr::{Distribution, Normal};
 use common::StudentMeasuringParameters;
 
-use crate::{processing::measuring::calculate_distance_between_points, structs::depth_matrix::DepthMatrix};
+use crate::{processing::measuring::calculate_distance_between_points, structs::{depth_matrix::DepthMatrix, measurement_type::{MeasurementsType, MeasurementsTypeWithError}}};
 
 // ------------------------------------------------------------
 //  Umbrales de potencia
@@ -78,7 +78,7 @@ fn calculate_tide_levels(
 //  Aplicación de errores
 // ------------------------------------------------------------
  
-pub fn apply_disturbances(
+pub fn apply_disturbances_monohaz(
     mediciones: Vec<((usize, usize), f64)>,
     path: &[(usize, usize)],
     params: &StudentMeasuringParameters,
@@ -116,6 +116,28 @@ pub fn apply_disturbances(
  
         (punto, z)
     }).collect()
+}
+
+
+pub fn apply_disturbances(
+    mediciones: MeasurementsType,
+    path: &[(usize, usize)],
+    params: &StudentMeasuringParameters,
+    matrix: &DepthMatrix,
+) -> MeasurementsTypeWithError {
+    match mediciones {
+        MeasurementsType::Monohaz { measurements } => {
+            MeasurementsTypeWithError::Monohaz {measurements: apply_disturbances_monohaz(measurements, path, params, matrix)}
+        }
+    
+        MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
+            MeasurementsTypeWithError::Multihaz {
+                central_measurments: apply_disturbances_monohaz(central_measurments, path, params, matrix),
+                paralel_measurment_1: apply_disturbances_monohaz(paralel_measurment_1, path, params, matrix),
+                paralel_measurment_2: apply_disturbances_monohaz(paralel_measurment_2, path, params, matrix),
+            }
+        }
+    }
 }
  
 // ------------------------------------------------------------
@@ -158,7 +180,7 @@ fn apply_sound_velocity_noise(z_real: f64, v_alumno: f64) -> f64 {
  
 fn apply_tide_error(z_real: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
     match tide_levels {
-        Some(levels) => z_real - levels[index],
+        Some(levels) => z_real + levels[index],
         None => z_real,
     }
 }
@@ -180,7 +202,7 @@ fn apply_potency_noise(
  
     let tl = 20.0 * z.log10() + absortion_coefficient * z;
     let p_recibida = transmited_potency - 2.0 * tl;
- 
+    
     // Señal demasiado débil
     if p_recibida < rx_threshold {
         return None;
@@ -210,7 +232,7 @@ fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Opt
     } else {
         (LOW_FREQ_GAIN_LOW, LOW_FREQ_GAIN_HIGH)
     };
- 
+
     if gain < gain_low {
         // Ganancia baja: error proporcional al déficit, máximo MAX_LOW_GAIN_ERROR
         let factor = 1.0 - (gain / gain_low); // 0 en el límite, 1 en gain=0
