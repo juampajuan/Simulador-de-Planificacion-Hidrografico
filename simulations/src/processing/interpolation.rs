@@ -1,7 +1,7 @@
 use kiddo::KdTree;
 use kiddo::SquaredEuclidean;
 use kiddo::NearestNeighbour;
-use spade::{DelaunayTriangulation, FloatTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
+use spade::{DelaunayTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::structs::measurement_type::MeasurementsTypeWithError;
 use crate::processing::gdal_grid_interp::{interpolation_gdal_grid, GdalGridMethod};

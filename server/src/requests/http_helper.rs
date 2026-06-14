@@ -1,7 +1,7 @@
 use tiny_http::{Response, Request};
 use serde::de::DeserializeOwned;
 use std::io::{Cursor};
-use image::{ImageFormat, RgbImage, RgbaImage};
+use image::{ImageFormat, RgbaImage};
 
 /// Lee el cuerpo de la petición y lo parsea a la estructura correspondiente de forma segura.
 pub fn parse_json_body<T: DeserializeOwned>(request: &mut Request) -> Result<T, String> {

@@ -14,4 +14,5 @@ sqlite = "0.37.0"
 bcrypt = "0.15"
 rand = "0.9" 
 hex = "0.4"
-cli = { path = "../cli" }
+cli = { path = "../cli" } 
+multipart = "0.18"

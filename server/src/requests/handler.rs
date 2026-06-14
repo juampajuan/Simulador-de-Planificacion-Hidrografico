@@ -2,7 +2,7 @@ use tiny_http::{Server, Request, Method};
 use std::sync::{Arc, Mutex};
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{auth, generic, limits, projects, simulation, webpage};
+use crate::requests::endpoints::{auth, generic, limits, projects, simulation, students, webpage};
 use crate::db::engine::DBEngine;
 use tiny_http::Response;
 use crate::structs::settings::Settings;
@@ -15,8 +15,6 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
         match (request.method(), api_path) {
 
-            // ✨ SUPER LIMPIO: El OPTIONS ahora devuelve una respuesta vacía y limpia.
-            // Los headers de CORS se los va a poner el response_sender a la salida.
             (Method::Options, _) => {
                 (Response::empty(200).boxed(), 200)
             }
@@ -38,13 +36,28 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
                         limits::get_limits(settings),
 
                     (Method::Get, "/projects") =>
-                        projects::get_projects(&mut request, db_connection, settings), 
+                        projects::get_projects(&mut request, db_connection), 
+
+                    (Method::Post, "/projects") =>
+                        projects::create(&mut request, db_connection, settings), 
 
                     (Method::Delete, url) if url.starts_with("/projects/") =>
                         projects::delete_project(&mut request, db_connection, settings),
+                    
+                    (Method::Put, url) if url.starts_with("/projects/") =>
+                        projects::update_a_project(&mut request, db_connection),
 
                     (Method::Get, "/student_project") =>
-                        projects::get_student_project(&mut request, db_connection, settings),  
+                        projects::get_student_project(&mut request, db_connection),  
+
+                    (Method::Get, "/students") =>
+                        students::get_all_students(&mut request, db_connection),
+
+                    (Method::Post, "/students") =>
+                        students::create_new_student(&mut request, db_connection),
+
+                    (Method::Put, "/students") => 
+                        students::update_an_student(&mut request, db_connection),  
 
                     (Method::Post, "/auth/create_professor_user") =>
                         auth::create_professor(&mut request, db_connection),
