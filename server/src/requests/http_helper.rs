@@ -27,9 +27,6 @@ pub fn create_png_response(rgb_image: RgbaImage) -> Response<Cursor<Vec<u8>>> {
     if let Ok(h) = tiny_http::Header::from_bytes(b"Content-Type", b"image/png") {
         response = response.with_header(h);
     }
-    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"*") {
-        response = response.with_header(h);
-    }
     if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, OPTIONS") {
         response = response.with_header(h);
     }

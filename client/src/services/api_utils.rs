@@ -20,12 +20,33 @@ pub fn get_window_fetch(mensaje: &UseStateHandle<String>, loading: &UseStateHand
 pub fn build_native_post_request(url: &str, body: &str) -> Result<Request, JsValue> {
     let opts = RequestInit::new();
     opts.set_method("POST");
+    opts.set_credentials(web_sys::RequestCredentials::Include);
     opts.set_mode(RequestMode::Cors);
     opts.set_body(&JsValue::from_str(body));
 
     let request = Request::new_with_str_and_init(url, &opts)?;
     request.headers().set("Content-Type", "application/json")?;
     Ok(request)
+}
+
+pub fn create_login_closure(
+    mensaje: UseStateHandle<String>, 
+    loading: UseStateHandle<bool>,
+    display_name: String,
+    redirection: String
+) -> Closure<dyn FnMut(JsValue) -> JsValue> {
+    Closure::wrap(Box::new(move |_text_val: JsValue| -> JsValue {
+        mensaje.set("Login exitoso. Redirigiendo...".to_string());
+        loading.set(false);
+
+        if let Some(w) = web_sys::window() {
+            if let Ok(Some(storage)) = w.local_storage() {
+                let _ = storage.set_item("group_or_user_name", &display_name);
+                let _ = w.location().set_pathname(&redirection); 
+            }
+        }
+        JsValue::UNDEFINED
+    }) as Box<dyn FnMut(JsValue) -> JsValue>)
 }
 
 // el closure de la respuesta. Se encarga de verificar el status y extraer el ArrayBuffer del cuerpo.

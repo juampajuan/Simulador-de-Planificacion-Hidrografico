@@ -9,105 +9,97 @@ use crate::structs::settings::Settings;
 
 const API_V1: &str = "/api/v1";
 
-/// Recibe todas las requests y llama al metodo que corresponde
-// Cada metodo, devuelve una response
-// Que luego es enviada por el sender y logueada
 pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Option<DBEngine>, settings: Arc<Settings>) -> RequestLog {
-
-    let db = match db {
-        Some(db) => db,
-        None => {
-            let result = generic::server_error("No se pudo iniciar la db".to_string());
-            return response_sender(request, result)
-        }
-    };
 
     let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
 
         match (request.method(), api_path) {
 
-            (Method::Options, "/create_path" | "/run_simulation" | "/limits" ) => {
-
-                let mut response = Response::empty(200);
-
-                if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"*") {
-                    response = response.with_header(h);
-                }
-                if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, GET, OPTIONS") {
-                    response = response.with_header(h);
-                }
-                if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Headers", b"Content-Type") {
-                    response = response.with_header(h);
-                }
-
-                (response.boxed(), 200)
+            // ✨ SUPER LIMPIO: El OPTIONS ahora devuelve una respuesta vacía y limpia.
+            // Los headers de CORS se los va a poner el response_sender a la salida.
+            (Method::Options, _) => {
+                (Response::empty(200).boxed(), 200)
             }
 
-            (Method::Post, "/create_path") =>
-                simulation::create_path(&mut request, cache),
+            _ => {
+                let db_connection = match db {
+                    Some(valid_db) => valid_db,
+                    None => return response_sender(request, generic::server_error("No se pudo iniciar la db".to_string())),
+                };
 
-            (Method::Post, "/run_simulation") =>
-                simulation::run_simulation(&mut request, cache),
+                match (request.method(), api_path) {
+                    (Method::Post, "/create_path") =>
+                        simulation::create_path(&mut request, cache),
 
-            (Method::Get, "/limits") =>
-                limits::get_limits(settings),
+                    (Method::Post, "/run_simulation") =>
+                        simulation::run_simulation(&mut request, cache),
 
-            (Method::Get, "/projects") =>
-                projects::get_projects(&mut request, db, settings), 
+                    (Method::Get, "/limits") =>
+                        limits::get_limits(settings),
 
-            (Method::Delete, url) if url.starts_with("/projects/") =>
-                projects::delete_project(&mut request, db, settings),
+                    (Method::Get, "/projects") =>
+                        projects::get_projects(&mut request, db_connection, settings), 
 
-            (Method::Get, "/student_project") =>
-                projects::get_student_project(&mut request, db, settings),  
+                    (Method::Delete, url) if url.starts_with("/projects/") =>
+                        projects::delete_project(&mut request, db_connection, settings),
 
-            // TODO: Yo sapararia por dominio esto. En otros arhcivos?
-                // Y agregas un nivel mas.
-                // OSea path /simulation/ <todas las apis para simular>
-                // /projects/ ...
-                // /auth/ .. Todo lo relacionado a autenticarse
+                    (Method::Get, "/student_project") =>
+                        projects::get_student_project(&mut request, db_connection, settings),  
 
-            // Auth requests methods.
-            (Method::Post, "/auth/create_professor_user") =>
-                auth::create_professor(&mut request, db),
+                    (Method::Post, "/auth/create_professor_user") =>
+                        auth::create_professor(&mut request, db_connection),
 
-            (Method::Post, "/auth/change_professor_pass") =>
-                auth::change_pass(&mut request, db),
+                    (Method::Post, "/auth/change_professor_pass") =>
+                        auth::change_pass(&mut request, db_connection),
 
-            (Method::Post, "/auth/login") =>
-                auth::login(&mut request, db),
+                    (Method::Post, "/auth/login") =>
+                        auth::login(&mut request, db_connection),
 
-            (Method::Post, "/auth/close_session") =>
-                auth::close_session(&mut request, db),
+                    (Method::Post, "/auth/close_session") =>
+                        auth::close_session(&mut request, db_connection),
 
-            (Method::Post, "/auth/close_all") =>
-                auth::close_all(&mut request, db),
+                    (Method::Post, "/auth/close_all") =>
+                        auth::close_all(&mut request, db_connection),
 
-            _ => generic::not_found(),
+                    _ => generic::not_found(),
+                }
+            }
         }
 
     } else {
-        // Entrega los archivos de la web.
         webpage::get_page_file(&request)
     };
 
     response_sender(request, result)
-} 
+}
 
 /// Envia la respuesta al cliente y la loguea por consola.
-// Si falla, imprime 499 como status code.
 fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
-
     let method = request.method().to_string();
     let path = request.url().to_string();
 
-    let (response, status) = result;
+    let (mut response, status) = result;
+
+    // 🚀 Centralización absoluta: Todo lo que responda la API lleva estos headers obligatoriamente
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"http://localhost.:8080") {
+        response = response.with_header(h);
+    }
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Credentials", b"true") {
+        response = response.with_header(h);
+    }
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, GET, OPTIONS, DELETE") {
+        response = response.with_header(h);
+    }
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Headers", b"Content-Type, Cookie") {
+        response = response.with_header(h);
+    }
+
     let status_code = match request.respond(response) {
         Ok(_) => status,
         Err(_) => 499,
     };
 
-    RequestLog{
+    RequestLog {
         method,
         path,
         status_code,

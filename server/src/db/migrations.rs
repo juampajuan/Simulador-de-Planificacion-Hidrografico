@@ -85,6 +85,8 @@ pub fn init(
         INSERT INTO professors (username, password_hash, is_admin)
         VALUES ('admin', '$2b$12$df1235sa8sf8kffddnasnb9qpnpoiznaswq2', 1)
         ON CONFLICT (username) DO NOTHING;
+        INSERT OR IGNORE INTO students (name, code, professor_id, project_id)
+        VALUES ('Grupo Alumnos 1', 'ABC1J5', 1, 1);
 
         -- TODO: Los indices.
     ")?;

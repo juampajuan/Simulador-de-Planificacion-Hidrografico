@@ -1,4 +1,4 @@
-use crate::services::api_client::{send_blob_request, send_json_get_request};
+use crate::services::api_client::{send_blob_request, send_json_get_request, send_login_request};
 use crate::parser::{parse_path_parameters, parse_echosounder_parameters, parse_transport_parameters};
 use crate::structs::state::{PathState, EchoState, FullSimulationRequest, SimulationUiState, CreatePathRequest};
 use crate::structs::limits::ConfigLimits;
@@ -69,4 +69,40 @@ pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: Simula
     };
 
     send_blob_request("http://localhost:3000/api/v1/run_simulation",&simulation_params, ui.mensaje, ui.image_url, ui.loading);
+}
+
+pub fn trigger_login(
+    student_code: &str,
+    teacher_user: &str,
+    teacher_password: &str,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>
+) {
+    let (credentials, display_name,redirection) = if !student_code.is_empty() {
+        (
+            serde_json::json!({ "code": student_code }),
+            student_code.to_string(),
+            "/".to_string()
+        )
+    } else if !teacher_user.is_empty() && !teacher_password.is_empty() {
+        (
+            serde_json::json!({ "user": teacher_user, "pass": teacher_password }),
+            teacher_user.to_string(),
+            "/admin".to_string()
+        )
+    } else {
+        return;
+    };
+
+    ui_mensaje.set("Autenticando...".to_string());
+    ui_loading.set(true);
+
+    send_login_request(
+        "http://localhost:3000/api/v1/auth/login",
+        &credentials,
+        ui_mensaje,
+        ui_loading,
+        display_name,
+        redirection
+    );
 }
