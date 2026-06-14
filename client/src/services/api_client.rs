@@ -2,7 +2,7 @@ use yew::prelude::UseStateHandle;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use web_sys::{RequestInit, RequestMode};
-use crate::services::api_utils::{get_window_fetch, build_native_post_request, create_response_closure, create_bytes_closure, create_json_closure, create_error_closure, execute_promise_chain};
+use crate::services::api_utils::{get_window_fetch, build_native_post_request, create_response_closure, create_bytes_closure, create_json_closure, create_error_closure, execute_promise_chain, create_login_closure};
 
 /// envía una petición POST con JSON y procesa la respuesta binaria (Blob) 
 /// mapeando los resultados directamente a los estados de Yew.
@@ -81,5 +81,49 @@ pub fn send_json_get_request<R: DeserializeOwned + 'static>(
 
     on_response.forget();
     on_json_ready.forget();
+    on_error.forget();
+}
+
+pub fn send_login_request<T: serde::Serialize>(
+    url: &str, 
+    data: &T, 
+    mensaje: UseStateHandle<String>,
+    loading: UseStateHandle<bool>,
+    display_name: String,
+    redirection: String
+) {
+    let body_str = match serde_json::to_string(data) {
+        Ok(s) => s,
+        Err(_) => {
+            mensaje.set("Error de serialización".to_string());
+            loading.set(false);
+            return;
+        }
+    };
+
+    let request = match build_native_post_request(url, &body_str) {
+        Ok(r) => r,
+        Err(_) => {
+            mensaje.set("Error creando request".to_string());
+            loading.set(false);
+            return;
+        }
+    };
+
+    let request_promise = match get_window_fetch(&mensaje, &loading) {
+        Some(w) => w.fetch_with_request(&request),
+        None => return,
+    };
+
+    // false porque esperamos texto plano/OK del endpoint de login, no un Blob/imagen
+    let on_response = create_response_closure(mensaje.clone(), loading.clone(), false);
+    let on_success = create_login_closure(mensaje.clone(), loading.clone(), display_name, redirection);
+    let on_error = create_error_closure(mensaje, loading);
+
+    // Tu execute_promise_chain nativo se encarga de encadenar todo en JS
+    let _ = execute_promise_chain(&request_promise, &on_response, &on_success, &on_error);
+
+    on_response.forget();
+    on_success.forget();
     on_error.forget();
 }

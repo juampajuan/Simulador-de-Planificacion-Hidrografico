@@ -4,6 +4,7 @@ use crate::components::subtitle::Subtitle;
 use crate::components::title::Title;
 use lucide_yew::{GraduationCap,University};
 use web_sys::HtmlInputElement;
+use crate::services::requests::trigger_login;
 
 
 #[derive(Clone, PartialEq)]
@@ -123,34 +124,23 @@ pub fn login_page() -> Html {
             "
         }
     };
+    let login_mensaje = use_state(|| String::new());
 
     let on_submit = {
         let student_code = student_code.clone();
         let teacher_user = teacher_user.clone();
         let teacher_password = teacher_password.clone();
         let loading = loading.clone();
+        let mensaje = login_mensaje.clone();
 
-        // TODO: Implementar los logins.
-        // Y redirigir a la pagina que corresponda.
-        // Usar set_local_storage, para guardar el nombre a mostrar en la navbar. la key se llama 'group_or_user_name'
         Callback::from(move |_| {
-            if !student_code.is_empty() {
-                loading.set(true);
-                web_sys::console::log_1(
-                    &format!("LOGIN ESTUDIANTE: {}", *student_code).into(),
-                );
-            } else if !teacher_user.is_empty() {
-                loading.set(true);
-                web_sys::console::log_1(
-                    &format!(
-                        "LOGIN DOCENTE: {} / {}",
-                        *teacher_user,
-                        *teacher_password
-                    )
-                    .into(),
-                );
-            }
-            // Si no entro en alguno, no hace nada clickear el boton
+            trigger_login(
+                &student_code,
+                &teacher_user,
+                &teacher_password,
+                mensaje.clone(),
+                loading.clone()
+            );
         })
     };
 
