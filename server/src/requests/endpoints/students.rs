@@ -1,7 +1,7 @@
 use tiny_http::Request;
 use crate::utils::helpers::generate_code;
 use crate::db::engine::DBEngine;
-use crate::db::queries::student::{NewStudent, UpdateStudent, create_student, get_students_for_professor,update_student};
+use crate::db::queries::student::{NewStudent, create_student, get_students_for_professor,update_student, delete_student};
 use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id, create_project, ProjectMetadata};
 use crate::requests::endpoints::auth::{check_profesor_auth};
 use crate::requests::http_helper::parse_json_body;
@@ -67,19 +67,51 @@ pub fn get_all_students(request: &mut Request, db: DBEngine) -> HandlerResult {
     string_response(response, 200)
 }
 
+pub fn delete_a_student(request: &mut Request, db: DBEngine) -> HandlerResult {
+
+    let Some(id_str) = request.url().rsplit('/').next() else {
+        return string_response("Ruta inválida".to_string(), 400);
+    };
+
+    let Some(_) = check_profesor_auth(request, &db) else {
+        return string_response("Sin autorizar".to_string(), 401);
+    };
+
+    let Ok(id) = id_str.parse::<i64>() else {
+        return string_response("ID inválido".to_string(), 400);
+    };
+
+    match delete_student(&db, id) {
+        Ok(true) => string_response("Estudiante eliminado".to_string(), 200),
+        Ok(false) => string_response("Estudiante no encontrado.".to_string(), 404),
+        Err(_) => server_error("Error al eliminar".to_string())
+    }
+}
+
 pub fn update_an_student(request: &mut Request, db: DBEngine) -> HandlerResult {
     
     let Some(professor_id) = check_profesor_auth(request, &db) else {
         return string_response("Sin autorizar".to_string(), 401);
     };
 
-    let data: UpdateStudent = match parse_json_body(request) {
+    let id_str = match request.url().rsplit('/').next() {
+        Some(id) => id,
+        None => return string_response("Ruta inválida".to_string(), 400),
+    };
+
+    let id = match id_str.parse::<i64>() {
+        Ok(id) => id,
+        Err(_) => return string_response("ID inválido".to_string(), 400),
+    };
+
+    let data: NewStudent = match parse_json_body(request) {
         Ok(d) => d,
         Err(err) => return string_response(format!("Bad Request: {}", err), 400),
     };
 
-    match update_student(&db, data.id, &data.name, data.project_id, professor_id) {
-        Ok(_) => string_response("Estudiante actualizado".to_string(), 200),
+    match update_student(&db, id, &data.name, data.project_id, professor_id) {
+        Ok(true) => string_response("Estudiante actualizado".to_string(), 200),
+        Ok(false) => string_response("Estudiante no encontrado.".to_string(), 404),
         Err(_) => server_error("Error al actualizar".to_string())
     }
 }

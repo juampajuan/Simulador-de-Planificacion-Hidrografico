@@ -17,13 +17,6 @@ pub struct NewStudent {
     pub project_id: i64,
 }
 
-#[derive(serde::Deserialize)]
-pub struct UpdateStudent {
-    pub id: i64,
-    pub name: String,
-    pub project_id: i64,
-}
-
 pub fn create_student(
     db: &DBEngine,
     code: &str,
@@ -51,7 +44,7 @@ pub fn create_student(
 pub fn delete_student(
     db: &DBEngine,
     id: i64
-) -> Result<Option<()>, sqlite::Error> {
+) -> Result<bool, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
@@ -63,7 +56,7 @@ pub fn delete_student(
     statement.bind((1, id))?;
     statement.next()?;
 
-    Ok(None)
+    Ok(db.connection.change_count() > 0)
 }
     
 pub fn verify_code(
@@ -123,7 +116,7 @@ pub fn update_student(
     name: &str,
     project_id: i64,
     professor_id: i64,
-) -> Result<(), sqlite::Error> {
+) -> Result<bool, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
@@ -139,7 +132,7 @@ pub fn update_student(
     statement.bind((4, professor_id))?;
     statement.next()?;
 
-    Ok(()) 
+    Ok(db.connection.change_count() > 0)
     //Deberia devolver alguna confirmacion de que pudo modificarlo
 }
 
