@@ -190,6 +190,10 @@ pub fn get_student_project(request: &mut Request, db: DBEngine) -> HandlerResult
 
 pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
 
+    let Some(professor_id) = check_profesor_auth(request, &db) else {
+            return string_response("Sin autorizar".to_string(), 401);
+        };
+
     let Some(id_str) = request.url().rsplit('/').next() else {
         return string_response("Ruta inválida".to_string(), 400);
     };
@@ -197,14 +201,23 @@ pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Setting
     let Ok(id) = id_str.parse::<i64>() else {
         return string_response("ID inválido".to_string(), 400);
     };
-  
-    let Some(professor_id) = check_profesor_auth(request, &db) else {
-        return string_response("Sin autorizar".to_string(), 401);
+    
+    let Ok(projects) = get_project_by_id(&db, id) else {
+        return server_error("Error al obtener los proyectos".to_string());
+    };
+    
+    let Some(project) = projects else {
+        return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
-    // TODO: Falta que borre el archivo de la carpeta.
+    let filename = project.filename;
+
     match delete_project_by_id(&db, id, professor_id) {
-        Ok(true) => string_response("Proyecto eliminado.".to_string(), 200),
+        Ok(true) => {
+            let path = format!("{}/geotiffs/{}", settings.upload_path, filename);
+            let _ = std::fs::remove_file(&path);
+            string_response("Proyecto eliminado.".to_string(), 200)
+        }
         Ok(false) => string_response(
                 "Proyecto no encontrado".to_string(),
                 404,

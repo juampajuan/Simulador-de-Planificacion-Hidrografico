@@ -55,8 +55,11 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
                     (Method::Post, "/students") =>
                         students::create_new_student(&mut request, db_connection),
+                        
+                    (Method::Delete,  url) if url.starts_with("/students/") =>
+                        students::delete_a_student(&mut request, db_connection),
 
-                    (Method::Put, "/students") => 
+                    (Method::Put,  url) if url.starts_with("/students/") => 
                         students::update_an_student(&mut request, db_connection),  
 
                     (Method::Post, "/auth/create_professor_user") =>
