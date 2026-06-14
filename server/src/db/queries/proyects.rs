@@ -123,6 +123,28 @@ pub fn get_project_by_id(
     }
 }
 
+pub fn get_project_id_by_student(
+    db: &DBEngine,
+    student_id: i64,
+) -> Result<Option<i64>, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        SELECT project_id
+        FROM students
+        WHERE id = ?
+        "
+    )?;
+
+    statement.bind((1, student_id))?;
+
+    if let Ok(sqlite::State::Row) = statement.next() {
+        return Ok(Some(statement.read::<i64, _>("project_id")?));
+    } else {
+        Ok(None)
+    }
+}
+
 pub fn delete_project_by_id(
     db: &DBEngine,
     project_id: i64,

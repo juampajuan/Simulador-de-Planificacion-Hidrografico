@@ -27,10 +27,10 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
                 match (request.method(), api_path) {
                     (Method::Post, "/create_path") =>
-                        simulation::create_path(&mut request, cache),
+                        simulation::create_path(&mut request, cache,db_connection, settings),
 
                     (Method::Post, "/run_simulation") =>
-                        simulation::run_simulation(&mut request, cache),
+                        simulation::run_simulation(&mut request, cache, db_connection, settings),
 
                     (Method::Get, "/limits") =>
                         limits::get_limits(settings),
