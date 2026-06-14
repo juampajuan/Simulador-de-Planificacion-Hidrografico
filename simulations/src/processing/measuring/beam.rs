@@ -1,10 +1,6 @@
-use std::thread::current;
-
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::structs::measurement_type::MeasurementsType;
 use super::points::calculate_distance_between_points;
-
-const SOUND_VELOCITY :f64 = 1500.0;
 
 #[allow(dead_code)]
 pub enum MeasureMode {

@@ -1,5 +1,6 @@
 use yew::prelude::*;
 use crate::components::{subtitle::Subtitle};
+use crate::structs::project::Project;
 use lucide_yew::{FolderOpenDot, Pencil, Plus, Trash};
  
 #[function_component(AdminProjects)]
@@ -35,15 +36,6 @@ pub fn admin_projects() -> Html {
             <ProjectsTable projects={projects}/>
         </div>
     </>}
-}
-
-// TODO: A otra carpeta o archivo
-#[derive(Clone, PartialEq)]
-pub struct Project {
-    pub name: String,
-    pub description: String,
-    pub filename: String,
-    pub id: i32
 }
 
 #[derive(Properties, PartialEq)]

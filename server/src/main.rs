@@ -13,7 +13,7 @@ mod db;
 use db::engine::DBEngine;
 use db::queries::professor;
 
-use crate::utils::create_dirs;
+use crate::utils::helpers::create_dirs;
 
 fn main() {
 

@@ -60,6 +60,9 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
 
             (Method::Delete, url) if url.starts_with("/projects/") =>
                 projects::delete_project(&mut request, db, settings),
+            
+            (Method::Put, url) if url.starts_with("/projects/") =>
+                projects::update_a_project(&mut request, db),
 
             (Method::Get, "/student_project") =>
                 projects::get_student_project(&mut request, db),  
@@ -68,7 +71,10 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Op
                 students::get_all_students(&mut request, db),
 
             (Method::Post, "/students") =>
-                students::create_new_student(&mut request, db),  
+                students::create_new_student(&mut request, db),
+
+            (Method::Put, "/students") => 
+                students::update_an_student(&mut request, db),  
 
             // TODO: Yo sapararia por dominio esto. En otros arhcivos?
                 // Y agregas un nivel mas.

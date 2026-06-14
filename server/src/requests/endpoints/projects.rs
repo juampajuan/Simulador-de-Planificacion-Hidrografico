@@ -1,9 +1,10 @@
 use tiny_http::Request;
 use crate::db::engine::DBEngine;
-use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id, create_project, ProjectMetadata};
-use crate::requests::endpoints::auth::{check_profesor_auth, check_student_auth, get_cookie};
+use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id, create_project, update_project, ProjectMetadata};
+use crate::requests::endpoints::auth::{check_profesor_auth, check_student_auth};
 use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{server_error, string_response};
+use crate::requests::http_helper::parse_json_body;
 use crate::structs::settings::Settings;
 use std::sync::{Arc};
 use std::path::Path;
@@ -12,9 +13,8 @@ use crate::db::queries::{professor, auth, student};
 use serde_json;
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{Read},
 }; 
-use serde::Deserialize;
 use multipart::server::Multipart;
  
 
@@ -74,7 +74,7 @@ pub fn create(
     let mut filename_saved = None::<String>;
 
     // TODO: Re hacer el codigo mas feo que hice en mi vida
-    // Transformarlo en un metodo, no iterativao, solo hay 2 entries que leer. 
+    // Transformarlo en un metodo, no iterativo, solo hay 2 entries que leer. 
     // Y hacer que comprueba si el tipo de archivo es .geotiff
     if let Err(e) = multipart.foreach_entry(|mut field| {
 
@@ -82,7 +82,7 @@ pub fn create(
 
                 "metadata" => {
                     let mut json = String::new();
-                    field.data.read_to_string(&mut json);
+                    let _ = field.data.read_to_string(&mut json);
 
                     metadata_json = Some(json);
                 }
@@ -114,7 +114,7 @@ pub fn create(
                         format!("{}/geotiffs/{}", settings.upload_path, filename)
                     ).unwrap();
 
-                    std::io::copy(
+                    let _ = std::io::copy(
                         &mut field.data,
                         &mut out,
                     );
@@ -214,4 +214,35 @@ pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Setting
             )
     }
 
+}
+
+pub fn update_a_project(
+    request: &mut Request,
+    db: DBEngine,
+) -> HandlerResult {
+
+    let Some(professor_id) = check_profesor_auth(request, &db) else {
+        return string_response("Sin autorizar".to_string(), 401);
+    };
+
+    let id_str = match request.url().rsplit('/').next() {
+        Some(id) => id,
+        None => return string_response("Ruta inválida".to_string(), 400),
+    };
+
+    let id = match id_str.parse::<i64>() {
+        Ok(id) => id,
+        Err(_) => return string_response("ID inválido".to_string(), 400),
+    };
+
+    let meta: ProjectMetadata = match parse_json_body(request) {
+        Ok(d) => d,
+        Err(err) => return server_error(format!("Bad Request: {}", err)),
+    };
+
+    match update_project(&db, id, professor_id, &meta) {
+        Ok(true) => string_response("Proyecto actualizado.".to_string(), 200),
+        Ok(false) => string_response("Proyecto no encontrado.".to_string(), 404),
+        Err(_) => server_error("Error al actualizar el proyecto.".to_string()),
+    }
 }
