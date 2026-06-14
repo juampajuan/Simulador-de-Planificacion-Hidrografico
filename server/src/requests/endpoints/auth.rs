@@ -1,12 +1,11 @@
 use tiny_http::{Header, Response, Request};
+use crate::utils::helpers::check_password;
 use crate::db::queries::auth::{TokenOwner, get_user_by_token};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
-use crate::db::encrypt::{hash_password, verify_password};
+use crate::db::encrypt::{hash_password};
 use crate::db::queries::{professor, auth, student};
-use std::fs::File;
-use std::path::PathBuf;
-use super::generic::{not_found, server_error, string_response};
+use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
 use serde_json::Value;
 use rand::Rng;
@@ -72,19 +71,12 @@ pub fn change_pass(request: &mut Request, db: DBEngine) -> HandlerResult {
         Err(_) =>  return server_error("No se pudo hashear la contraseña.".to_string())
     };
 
-    // TODO: Mergear esto. Asi lo uso en main.
-    let professor_id = match professor::get_professor_id_by_username(&db, &data.user) {
-        Ok(Some(id)) => id,
-        Ok(None) => return string_response("No existe el usuario".to_string(), 400),
-        Err(_) => return server_error("Internal error.".to_string())
-    };
 
-    let professor_id = match professor::change_password(&db, professor_id, &password_hash) {
-        Ok(id) => id,
-        Err(_) =>  return server_error("No se pudo cambiar la contraseña.".to_string())
-    };
+    match professor::change_password_by_username(&db, &data.user, &password_hash) {
+        Ok(_) => string_response("Contraseña cambiada correctamente".to_string(), 200),
+        Err(_) => server_error("No se pudo cambiar la contraseña.".to_string())
+    }
 
-    string_response("Contraseña cambiada correctamente".to_string(), 200)
 }
 
 pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
@@ -176,14 +168,6 @@ pub fn close_session(request: &mut Request, db: DBEngine) -> HandlerResult {
                 200
     );
 } 
-
-// TODO: Mover a algun archivo de utils.
-fn check_password(pass: &str) -> bool {
-    let has_upper = pass.chars().any(|c| c.is_uppercase());
-    let has_number = pass.chars().any(|c| c.is_numeric());
-    let ok_length = pass.len() >= 8;
-    has_upper && has_number && ok_length
-}
 
 fn is_local_request(request: &Request) -> bool {
     match request.remote_addr() {

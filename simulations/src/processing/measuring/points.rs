@@ -43,6 +43,7 @@ pub fn calculate_distance_between_points(
     ((a_x - b_x).powi(2) + (a_y - b_y).powi(2)).sqrt()
 }
 
+#[allow(dead_code)]
 fn calculate_effective_measurement_distance(
     distance_between_points: &f64,
     pixel_size: &f64,

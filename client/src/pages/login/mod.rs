@@ -130,7 +130,7 @@ pub fn login_page() -> Html {
         let teacher_password = teacher_password.clone();
         let loading = loading.clone();
 
-        // TODO: IMplementar los logins.
+        // TODO: Implementar los logins.
         // Y redirigir a la pagina que corresponda.
         // Usar set_local_storage, para guardar el nombre a mostrar en la navbar. la key se llama 'group_or_user_name'
         Callback::from(move |_| {

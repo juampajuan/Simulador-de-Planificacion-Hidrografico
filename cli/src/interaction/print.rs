@@ -1,26 +1,29 @@
 use std::io::{self, Write};
 
-// TODO: Colores como constantes
+const BLUE: &str = "\x1b[34m";
+const CYAN: &str = "\x1b[36m";
+const MAGENTA: &str = "\x1b[35m";
+const RESET: &str = "\x1b[0m";
 
 pub fn print_banner() {
     let space = 32 as char;
 
     println!(
-        "\x1b[34m\
+        "{BLUE}\
         {space}___ ___ __  __ _   _ _      _   ___   ___  ___   _  _ ___ ___  ___  ___   ___ ___    _   ___ ___ ___ ___     ___ _    ___ \n\
         / __|_ _|  \\/  | | | | |    /_\\ |   \\ / _ \\| _ \\ | || |_ _|   \\| _ \\/ _ \\ / __| _ \\  /_\\ | __|_ _/ __/ _ \\   / __| |  |_ _|\n\
         \\__ \\| || |\\/| | |_| | |__ / _ \\| |) | (_) |   / | __ || || |) |   / (_) | (_ |   / / _ \\| _| | | (_| (_) | | (__| |__ | | \n\
         |___/___|_|  |_|\\___/|____/_/ \\_\\___/ \\___/|_|_\\ |_||_|___|___/|_|_\\\\___/ \\___|_|_\\/_/ \\_\\_| |___\\___\\___/   \\___|____|___|\n\
-        \x1b[0m"
+        {RESET}"
     );
     println!("Bienvenido al CLI del simulador. Este permite añadir docentes y restaurar contraseñas.");
 }
 
 pub fn unknown_command() {
     println!(
-        "\x1b[34mComando desconocido.\x1b[0m Escriba \
-        \x1b[36mH\x1b[0m o \
-        \x1b[36mHELP\x1b[0m \
+        "{BLUE}Comando desconocido.{RESET} Escriba \
+        {CYAN}H{RESET} o \
+        {CYAN}HELP{RESET} \
         para ayuda."
     );
 }
@@ -52,8 +55,8 @@ pub fn print_help() {
 
 fn print_command(description: &str, command: &str, params: &str) {
     println!(
-        "\x1b[34m{}\x1b[0m\n\
-         └─ \x1b[36m{}\x1b[0m \x1b[35m{}\x1b[0m\n",
+        "{BLUE}{}{RESET}\n\
+         └─ {CYAN}{}{RESET} {MAGENTA}{}{RESET}\n",
         description,
         command,
         params

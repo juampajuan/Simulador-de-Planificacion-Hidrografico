@@ -1,8 +1,9 @@
 use tiny_http::Request;
+use crate::utils::helpers::generate_code;
 use crate::db::engine::DBEngine;
-use crate::db::queries::student::{NewStudent, create_student, get_students_for_professor};
+use crate::db::queries::student::{NewStudent, UpdateStudent, create_student, get_students_for_professor,update_student};
 use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id, create_project, ProjectMetadata};
-use crate::requests::endpoints::auth::{check_profesor_auth, check_student_auth, get_cookie};
+use crate::requests::endpoints::auth::{check_profesor_auth};
 use crate::requests::http_helper::parse_json_body;
 use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{server_error, string_response};
@@ -16,24 +17,6 @@ use std::{
     fs::File,
     io::{Read, Write},
 }; 
-use serde::Deserialize;
-use multipart::server::Multipart;
-use rand::Rng;
-
-
-// TODO: Mover a utils
-fn generate_code() -> String {
-    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let mut rng = rand::rng();
-
-    (0..6)
-        .map(|_| {
-            let idx = rng.random_range(0..CHARSET.len());
-            CHARSET[idx] as char
-        })
-        .collect()
-}
-
 
 pub fn create_new_student(request: &mut Request, db: DBEngine) -> HandlerResult {
 
@@ -82,4 +65,21 @@ pub fn get_all_students(request: &mut Request, db: DBEngine) -> HandlerResult {
     };
 
     string_response(response, 200)
+}
+
+pub fn update_an_student(request: &mut Request, db: DBEngine) -> HandlerResult {
+    
+    let Some(professor_id) = check_profesor_auth(request, &db) else {
+        return string_response("Sin autorizar".to_string(), 401);
+    };
+
+    let data: UpdateStudent = match parse_json_body(request) {
+        Ok(d) => d,
+        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
+    };
+
+    match update_student(&db, data.id, &data.name, data.project_id, professor_id) {
+        Ok(_) => string_response("Estudiante actualizado".to_string(), 200),
+        Err(_) => server_error("Error al actualizar".to_string())
+    }
 }

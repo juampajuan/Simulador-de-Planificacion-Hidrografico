@@ -17,6 +17,13 @@ pub struct NewStudent {
     pub project_id: i64,
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateStudent {
+    pub id: i64,
+    pub name: String,
+    pub project_id: i64,
+}
+
 pub fn create_student(
     db: &DBEngine,
     code: &str,
@@ -108,6 +115,32 @@ pub fn get_students_for_professor(
     }
 
     Ok(students)
+}
+
+pub fn update_student(
+    db: &DBEngine,
+    id: i64,
+    name: &str,
+    project_id: i64,
+    professor_id: i64,
+) -> Result<(), sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        UPDATE students
+        SET name = ?, project_id = ?
+        WHERE id = ? AND professor_id = ?
+        "
+    )?;
+
+    statement.bind((1, name))?;
+    statement.bind((2, project_id))?;
+    statement.bind((3, id))?;
+    statement.bind((4, professor_id))?;
+    statement.next()?;
+
+    Ok(()) 
+    //Deberia devolver alguna confirmacion de que pudo modificarlo
 }
 
 // Demo de uso

@@ -1,4 +1,3 @@
-use sqlite::State;
 use crate::db::engine::DBEngine;
 use serde::{Serialize, Deserialize};
 
@@ -140,6 +139,45 @@ pub fn delete_project_by_id(
 
     statement.bind((1, project_id))?;
     statement.bind((2, professor_id))?;
+
+    statement.next()?;
+
+    Ok(db.connection.change_count() > 0)
+}
+
+pub fn update_project(
+    db: &DBEngine,
+    id: i64,
+    professor_id: i64,
+    metadata: &ProjectMetadata,
+) -> Result<bool, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        UPDATE projects
+        SET name = ?,
+            description = ?,
+            attempts_limit = ?,
+            weather = ?,
+            seabed_hardness = ?,
+            budget = ?,
+            geotiff_min_depth = ?,
+            geotiff_max_depth = ?
+        WHERE id = ?
+          AND professor_id = ?
+        "
+    )?;
+
+    statement.bind((1, metadata.name.as_str()))?;
+    statement.bind((2, metadata.description.as_str()))?;
+    statement.bind((3, metadata.attempts_limit))?;
+    statement.bind((4, metadata.weather.as_str()))?;
+    statement.bind((5, metadata.seabed_hardness.as_str()))?;
+    statement.bind((6, metadata.budget))?;
+    statement.bind((7, metadata.geotiff_min_depth))?;
+    statement.bind((8, metadata.geotiff_max_depth))?;
+    statement.bind((9, id))?;
+    statement.bind((10, professor_id))?;
 
     statement.next()?;
 

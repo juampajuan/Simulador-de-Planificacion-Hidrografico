@@ -18,6 +18,7 @@ pub struct Settings {
     pub cache_amount: usize,
     pub db_name: String,
     pub upload_path: String,
+    #[serde(skip)]  
     pub admin_pass: String,
     pub azimut_min: f64,
     pub azimut_max: f64,
