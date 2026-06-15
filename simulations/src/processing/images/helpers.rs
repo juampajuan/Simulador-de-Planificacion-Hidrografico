@@ -1,5 +1,7 @@
 use image::Rgb;
 
+use crate::structs::depth_matrix::DepthMatrix;
+
 // Esta escala esta basada en la imagen de demostración que mandó Fernando.
 // t=0.0 → rojo        (menos profundo)
 // t=0.5 → crema claro (profundidad promedio)
@@ -39,4 +41,25 @@ pub fn depth_color(t: f64) -> Rgb<u8> {
         (g0 + factor * (g1 - g0)).clamp(0.0, 255.0) as u8,
         (b0 + factor * (b1 - b0)).clamp(0.0, 255.0) as u8,
     ])
+}
+
+pub fn depth_range(matrix: &DepthMatrix) -> (f64, f64) {
+    let mut min = f64::MAX;
+    let mut max = f64::MIN;
+    for row in &matrix.data {
+        for &val in row {
+            if is_valid(val, matrix) {
+                min = min.min(val);
+                max = max.max(val);
+            }
+        }
+    }
+    (min, max)
+}
+
+pub fn is_valid(val: f64, matrix: &DepthMatrix) -> bool {
+    match matrix.no_data {
+        Some(nd) => val != nd,
+        None => val.is_finite(),
+    }
 }

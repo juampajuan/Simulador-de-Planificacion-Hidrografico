@@ -57,6 +57,7 @@ fn calculate_tide_levels(
  
     Some(levels)
 }
+
  
 // ------------------------------------------------------------
 //  Aplicación de errores
@@ -70,6 +71,17 @@ pub fn apply_disturbances_monohaz(
 ) -> Vec<((usize, usize), Option<f64>)> {
     let echo = &params.echo_sounder_parameters;
     let tide_levels = calculate_tide_levels(mediciones.len(), params, path, matrix);
+
+    let potency_value = match params.echo_sounder_parameters.transmited_potency as u32 {
+    25  => 150.0,
+    50  => 200.0,
+    100 => 250.0,
+    _   => 200.0,
+    };
+
+    let gain_value = params.echo_sounder_parameters.gain as f64;
+
+    println!("potencia: {}, ganancia: {} ", potency_value, gain_value);
  
     mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
         // 1. Sensor inercial
@@ -79,27 +91,49 @@ pub fn apply_disturbances_monohaz(
             apply_inertial_sensor_error(punto, matrix)
         };
 
+        println!("profundidad ideal: {}", p_ideal);
         // 2. Potencia y ganancia
-        let optional_p = apply_power_and_gain_noise(p_ideal, echo.transmited_potency, echo.gain, echo.absortion_coefficient);
+        let optional_p = apply_power_and_gain_noise(p_ideal, potency_value, gain_value, echo.absortion_coefficient);
+
+        match optional_p {
+            Some(p) => println!("despues de aplicar error: {}", p),
+            None => (),
+        }
 
         // 3. Filtro de límites
         let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
-        
+
         match optional_p {
+            Some(p) => println!("despues de limites: {}", p),
             None => (),
+        }
+        
+        let optional_p = match optional_p {
+            None => None,
             Some(mut p) => {
 
-                    // 4. Velocidad del sonido
-                    p = if params.transport_parameters.uses_sound_profiler {
-                        p
-                    } else {
-                        apply_sound_velocity_noise(p, params.echo_sounder_parameters.sound_speed)
-                    };
-            
-                    // 5. Marea
-                    apply_tide_error(p, tide_levels.as_ref(), i);
-                }
+                // 4. Velocidad del sonido
+                p = if params.transport_parameters.uses_sound_profiler {
+                    p
+                } else {
+                    apply_sound_velocity_noise(p, params.echo_sounder_parameters.sound_speed)
+                };
+                
+                p = if params.transport_parameters.uses_mareograph {
+                    p
+                } else {
+                // 5. Marea
+                    apply_tide_error(p, tide_levels.as_ref(), i)
+                }; 
+
+                Some(p)
+            }
  
+        };
+
+        match optional_p {
+            Some(p) => println!("final: {}", p),
+            None => (),
         }
 
         (punto, optional_p)
@@ -149,13 +183,13 @@ fn apply_inertial_sensor_error(
     let theta_x = normal.sample(&mut rng).to_radians();
     let theta_y = normal.sample(&mut rng).to_radians();
  
-    let z_ref = matrix.data[punto.1][punto.0];
-    if z_ref <= 0.0 {
-        return (punto, z_ref);
+    let p_ref = matrix.data[punto.1][punto.0];
+    if p_ref <= 0.0 {
+        return (punto, p_ref);
     }
  
-    let dx = (z_ref * theta_x.tan() / matrix.size_x).round() as i64;
-    let dy = (z_ref * theta_y.tan() / matrix.size_y).round() as i64;
+    let dx = (p_ref * theta_x.tan() / matrix.size_x).round() as i64;
+    let dy = (p_ref * theta_y.tan() / matrix.size_y).round() as i64;
  
     let x_des = (punto.0 as i64 + dx).clamp(0, matrix.width as i64 - 1) as usize;
     let y_des = (punto.1 as i64 + dy).clamp(0, matrix.height as i64 - 1) as usize;
@@ -196,7 +230,6 @@ pub fn apply_power_and_gain_noise(
         let reduction = (excess / max_excess).min(0.5); // máximo 50% de reducción
         Some(p * (1.0 - reduction))
     } else {
-        // Lectura correcta
         Some(p)
     }
 }
@@ -207,7 +240,7 @@ fn apply_sound_velocity_noise(p: f64, v_alumno: f64) -> f64 {
  
 fn apply_tide_error(p: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
     match tide_levels {
-        Some(levels) => p + levels[index],
+        Some(levels) => {p + levels[index]}
         None => p,
     }
 }

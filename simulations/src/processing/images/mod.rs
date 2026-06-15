@@ -1,4 +1,4 @@
-mod colormap;
+mod helpers;
 mod path_image;
 mod simulation_image;
  

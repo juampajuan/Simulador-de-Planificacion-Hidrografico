@@ -1,6 +1,6 @@
 use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
-use super::colormap::depth_color;
+use super::helpers::{depth_color,depth_range};
 
 pub fn makepng_with_matrix_and_interpolation(
     matrix: &Vec<Vec<f64>>,
@@ -11,7 +11,7 @@ pub fn makepng_with_matrix_and_interpolation(
     let height = matrix.len() as u32;
     let width  = matrix[0].len() as u32;
 
-    let (min_val, max_val) = depth_range(matrix, no_data);
+    let (min_val, max_val) = depth_range(geotiff);
     let range = if (max_val - min_val).abs() < 1e-10 { 1.0 } else { max_val - min_val };
 
     let mut img = RgbaImage::new(width, height);
@@ -30,22 +30,4 @@ pub fn makepng_with_matrix_and_interpolation(
     }
 
     img
-}
-
-fn depth_range(matrix: &Vec<Vec<f64>>, no_data: f64) -> (f64, f64) {
-    let mut min = f64::INFINITY;
-    let mut max = f64::NEG_INFINITY;
-    for row in matrix {
-        for &val in row {
-            if val != no_data {
-                if val < min { min = val; }
-                if val > max { max = val; }
-            }
-        }
-    }
-    if min == f64::INFINITY {
-        (0.0, 10.0)
-    } else {
-        (min, max)
-    }
 }
