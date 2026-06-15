@@ -2,7 +2,7 @@ use crate::requests;
 use super::print;
 use std::env;
 
-pub fn menu(host:&str, pass: &str) {
+pub fn menu(host:&str, _pass: &str) {
 
     let input = match print::input("> ") {
         Ok(input) => input,

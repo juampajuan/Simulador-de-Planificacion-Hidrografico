@@ -1,7 +1,7 @@
 use tiny_http::{Response, Request};
 use serde::de::DeserializeOwned;
 use std::io::{Cursor};
-use image::{ImageFormat, RgbImage, RgbaImage};
+use image::{ImageFormat, RgbaImage};
 
 /// Lee el cuerpo de la petición y lo parsea a la estructura correspondiente de forma segura.
 pub fn parse_json_body<T: DeserializeOwned>(request: &mut Request) -> Result<T, String> {
@@ -25,9 +25,6 @@ pub fn create_png_response(rgb_image: RgbaImage) -> Response<Cursor<Vec<u8>>> {
     let mut response = Response::from_data(bytes).with_status_code(200);
 
     if let Ok(h) = tiny_http::Header::from_bytes(b"Content-Type", b"image/png") {
-        response = response.with_header(h);
-    }
-    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"*") {
         response = response.with_header(h);
     }
     if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, OPTIONS") {

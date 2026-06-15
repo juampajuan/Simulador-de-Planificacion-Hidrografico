@@ -59,7 +59,9 @@ pub fn init(
         CREATE TABLE IF NOT EXISTS auth_tokens (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            professor_id INTEGER NOT NULL,
+            professor_id INTEGER,
+            student_id INTEGER,
+
             token TEXT UNIQUE NOT NULL,
 
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -67,12 +69,24 @@ pub fn init(
 
             FOREIGN KEY (professor_id)
                 REFERENCES professors(id)
-                ON DELETE CASCADE
-        ); 
+                ON DELETE CASCADE,
+
+            FOREIGN KEY (student_id)
+                REFERENCES students(id)
+                ON DELETE CASCADE,
+
+            CHECK (
+                (professor_id IS NOT NULL AND student_id IS NULL)
+                OR
+                (professor_id IS NULL AND student_id IS NOT NULL)
+            )
+        );
 
         INSERT INTO professors (username, password_hash, is_admin)
         VALUES ('admin', '$2b$12$df1235sa8sf8kffddnasnb9qpnpoiznaswq2', 1)
         ON CONFLICT (username) DO NOTHING;
+        INSERT OR IGNORE INTO students (name, code, professor_id, project_id)
+        VALUES ('Grupo Alumnos 1', 'ABC1J5', 1, 1);
 
         -- TODO: Los indices.
     ")?;

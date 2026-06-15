@@ -5,6 +5,10 @@ use std::sync::{Arc};
 
 
 pub fn get_limits(settings: Arc<Settings>) -> HandlerResult {
+    
+    // Juampa: Solucionado, agregue #[serde(skip)] en el struct de settings, por lo que skipea
+    // el parametro admin pass al armar el JSON
+
     let response = match serde_json::to_string(&*settings) {
         Ok(json) => json,
         Err(_) => return server_error("Error serializing limits data".to_string()),

@@ -1,3 +1,10 @@
+use tiny_http::ResponseBox;
+
+const GREEN: &str = "\x1b[32m";
+const BLUE: &str = "\x1b[34m";
+const RED: &str = "\x1b[31m";
+const RESET: &str = "\x1b[0m";
+
 /// Lo genera cada endpoints, para luego loggear en consola o si se decide en un archivo.
 pub struct RequestLog {
     pub method: String,
@@ -5,31 +12,25 @@ pub struct RequestLog {
     pub status_code: u16,
 }
 
-// TODO: Implementar/Agregar Error/String, como un option. Asi se puede loguear lo que falla.
+// TODO: Implementar/Agregar Error/String, como un option. Asi se puede logear lo que falla
 impl RequestLog {
-
     pub fn print(&self) {
-
-        let color = match self.status_code {
-            200..=299 => "\x1b[32m", // verde
-            300..=499 => "\x1b[34m", // azul 
-            500..=599 => "\x1b[31m", // rojo
-            _ => "\x1b[0m",
+        let color: &str = match self.status_code {
+            200..=299 => GREEN,
+            300..=499 => BLUE,
+            500..=599 => RED,
+            _ => RESET,
         };
-
-        let reset = "\x1b[0m";
 
         println!(
             "{} {} -> {}{}{}",
-            
             self.method,
             self.path,
             color,
             self.status_code,
-            reset
+            RESET
         );
     }
 }
 
-use tiny_http::ResponseBox;
 pub type HandlerResult = (ResponseBox, u16);

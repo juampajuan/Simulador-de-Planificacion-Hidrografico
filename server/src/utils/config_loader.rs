@@ -46,6 +46,11 @@ fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<
         return Ok(());
     }
 
+    let line = match line.split_once('#') {
+        Some((code, _comment)) => code.trim(),
+        None => line,
+    };
+
     let (key, value) = match line.split_once('=') {
         Some(parts) => parts,
         None =>  return Err(format!("Archivo corrupto"))

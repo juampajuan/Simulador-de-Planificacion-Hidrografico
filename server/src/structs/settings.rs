@@ -17,6 +17,8 @@ pub struct Settings {
     pub port: i32,
     pub cache_amount: usize,
     pub db_name: String,
+    pub upload_path: String,
+    #[serde(skip)]  
     pub admin_pass: String,
     pub azimut_min: f64,
     pub azimut_max: f64,
@@ -57,6 +59,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             echo_umbral_max: get_float(&config, "ECHO_UMBRAL_MAX")?,
             sound_speed_min: get_float(&config, "SOUND_SPEED_MIN")?,
             sound_speed_max: get_float(&config, "SOUND_SPEED_MAX")?,
+            upload_path: get_string(&config, "FILE_UPLOAD_PATH")?,
         })
     }
 }

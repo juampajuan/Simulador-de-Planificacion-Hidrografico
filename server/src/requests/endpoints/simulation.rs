@@ -1,9 +1,13 @@
 use tiny_http::{Request};
 use std::sync::{Arc, Mutex};
+use crate::db::queries::proyects::{get_project_by_id, get_project_id_by_student};
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::requests::http_helper::{parse_json_body, create_png_response};
 use crate::requests::endpoints::generic;
+use crate::requests::endpoints::auth::check_student_auth;
+use crate::db::engine::DBEngine;
+use crate::structs::settings::Settings;
 use common::{StudentMeasuringParameters, PathParameters};
 
 const TIF_ID: &str = "Darsena_20cm_v2.tif";
@@ -15,7 +19,34 @@ pub struct FullSimulationRequest {
 } // Dejo el option para lo de measure porque puede ser que se llame a create_path sin echo_parameters.
 // Si eso pasa, deja el echo en default, y continua.
 
-pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
+pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+
+    // TODO: Es muy grande la funcion, capaz lo mejor seria mover este pedazo en una funcion aparte 
+    // que obtenga el path del tif a partir del id del estudiante.
+    // -------------------------------------------------------------------------------------------------------
+    //let Some(id) = check_student_auth(request, &db) else {
+    //    return generic::string_response("Sin autorizar".to_string(), 401);
+    //};
+    
+
+    let project_id = match get_project_id_by_student(&db, 170) {
+        Ok(Some(id)) => id,
+        Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
+        Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
+    };
+
+    println!("obtuve id proyecto: {}", project_id);
+    let filename = match get_project_by_id(&db, project_id) {
+        Ok(Some(project)) => project.filename,
+        Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
+        Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
+    };
+
+    let file_path = format!("{}/geotiffs/{}", settings.upload_path, filename);
+    // -------------------------------------------------------------------------------------------------------
+
+    println!("filename {}", filename);
+
     // Parseo y obtencion de pathParameters
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
@@ -23,7 +54,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
     };
 
     // Creacion de matriz de profundidad con simulations
-    let matrix = match simulations::create_depth_matrix(TIF_ID) {
+    let matrix = match simulations::create_depth_matrix(&file_path) {
         Ok(m) => m,
         Err(_) => return generic::server_error("Error processing TIF (500)".to_string()),
     };
@@ -36,7 +67,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        lock.update_path(TIF_ID.to_string(), matrix.clone(), path.clone());
+        lock.update_path(file_path.clone(), matrix.clone(), path.clone());
     }
 
     // Se crea la imagen y la response.
@@ -47,7 +78,29 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Handl
 }
 
 
-pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> HandlerResult {
+pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+
+    // -------------------------------------------------------------------------------------------------------
+    // Obtener student_id y filename del proyecto
+    //let Some(id) = check_student_auth(request, &db) else {
+    //    return generic::string_response("Sin autorizar".to_string(), 401);
+    //};
+
+    let project_id = match get_project_id_by_student(&db, 170) {
+        Ok(Some(id)) => id,
+        Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
+        Err(_) => return generic::server_error("Error al obtener el proyecto del estudiante".to_string()),
+    };
+
+    let filename = match get_project_by_id(&db, project_id) {
+        Ok(Some(project)) => project.filename,
+        Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
+        Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
+    };
+
+    let file_path = format!("{}/geotiffs/{}", settings.upload_path, filename);
+    // -------------------------------------------------------------------------------------------------------
+
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
         Err(err) => return generic::server_error(format!("Bad Request: {}", err)),
@@ -58,12 +111,12 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Ha
         Err(poisoned) => poisoned.into_inner()
     };
 
-    let (matrix, path) = match lock.get(TIF_ID) {
+    let (matrix, path) = match lock.get(&file_path) {
         Some(item) => (item.matrix.clone(), item.last_path.clone()),
         None => {
             println!("Caché vacío. No existe el TIF en el cache...");
             
-            let generated_matrix = match simulations::create_depth_matrix(TIF_ID) {
+            let generated_matrix = match simulations::create_depth_matrix(&file_path) {
                 Ok(m) => m,
                 Err(_) => return generic::server_error("Error crítico procesando TIF".to_string()),
             };
@@ -75,7 +128,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>) -> Ha
                 data.path_parameters.gnss_type
             );
 
-            lock.update_path(TIF_ID.to_string(), generated_matrix.clone(), generated_path.clone());
+            lock.update_path(file_path.clone(), generated_matrix.clone(), generated_path.clone());
             
             (generated_matrix, generated_path)
         }

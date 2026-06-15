@@ -1,12 +1,20 @@
 use sqlite::State;
 use crate::db::engine::DBEngine;
+use serde::{Serialize, Deserialize};
 
 // Esto se podria mover a los structs. Y va a haber para cada tipo
+#[derive(Serialize)]
 pub struct Student {
     pub code: String,
     pub name: String,
     pub id: i64,
     pub project_id: i64
+}
+
+#[derive(Deserialize)]
+pub struct NewStudent {
+    pub name: String,
+    pub project_id: i64,
 }
 
 pub fn create_student(
@@ -36,7 +44,7 @@ pub fn create_student(
 pub fn delete_student(
     db: &DBEngine,
     id: i64
-) -> Result<Option<()>, sqlite::Error> {
+) -> Result<bool, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
@@ -48,17 +56,17 @@ pub fn delete_student(
     statement.bind((1, id))?;
     statement.next()?;
 
-    Ok(None)
+    Ok(db.connection.change_count() > 0)
 }
     
-pub fn get_student_by_code(
+pub fn verify_code(
     db: &DBEngine,
-    code: &str
-) -> Result<Option<Student>, sqlite::Error> {
+    code: &str,
+) -> Result<Option<i64>, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
-        SELECT code, name
+        SELECT id
         FROM students
         WHERE code = ?
         "
@@ -67,15 +75,8 @@ pub fn get_student_by_code(
     statement.bind((1, code))?;
 
     if let Ok(State::Row) = statement.next() {
-
-        let student = Student {
-            code: statement.read::<String, _>("code")?,
-            name: statement.read::<String, _>("name")?,
-            id: statement.read::<i64, _>("id")?,
-            project_id: statement.read::<i64, _>("project_id")?,
-        };
-
-        return Ok(Some(student));
+        let id = statement.read::<i64, _>("id")?;
+        return Ok(Some(id));
     }
 
     Ok(None)
@@ -83,7 +84,7 @@ pub fn get_student_by_code(
 
 pub fn get_students_for_professor(
     db: &DBEngine,
-    professor_id: usize,
+    professor_id: i64,
 ) -> Result<Vec<Student>, sqlite::Error> {
     let query = "
         SELECT id, name, code, project_id
@@ -93,7 +94,7 @@ pub fn get_students_for_professor(
 
     let mut statement = db.run_query(query)?;
 
-    statement.bind((1, professor_id as i64))?;
+    statement.bind((1, professor_id))?;
 
     let mut students = Vec::new();
 
@@ -107,6 +108,32 @@ pub fn get_students_for_professor(
     }
 
     Ok(students)
+}
+
+pub fn update_student(
+    db: &DBEngine,
+    id: i64,
+    name: &str,
+    project_id: i64,
+    professor_id: i64,
+) -> Result<bool, sqlite::Error> {
+
+    let mut statement = db.run_query(
+        "
+        UPDATE students
+        SET name = ?, project_id = ?
+        WHERE id = ? AND professor_id = ?
+        "
+    )?;
+
+    statement.bind((1, name))?;
+    statement.bind((2, project_id))?;
+    statement.bind((3, id))?;
+    statement.bind((4, professor_id))?;
+    statement.next()?;
+
+    Ok(db.connection.change_count() > 0)
+    //Deberia devolver alguna confirmacion de que pudo modificarlo
 }
 
 // Demo de uso
