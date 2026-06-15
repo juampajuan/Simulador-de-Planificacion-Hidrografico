@@ -24,12 +24,12 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEn
     // TODO: Es muy grande la funcion, capaz lo mejor seria mover este pedazo en una funcion aparte 
     // que obtenga el path del tif a partir del id del estudiante.
     // -------------------------------------------------------------------------------------------------------
-    //let Some(id) = check_student_auth(request, &db) else {
-    //    return generic::string_response("Sin autorizar".to_string(), 401);
-    //};
+    let Some(id) = check_student_auth(request, &db) else {
+       return generic::string_response("Sin autorizar".to_string(), 401);
+    };
     
 
-    let project_id = match get_project_id_by_student(&db, 170) {
+    let project_id = match get_project_id_by_student(&db, id) {
         Ok(Some(id)) => id,
         Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
         Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
@@ -82,11 +82,11 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: D
 
     // -------------------------------------------------------------------------------------------------------
     // Obtener student_id y filename del proyecto
-    //let Some(id) = check_student_auth(request, &db) else {
-    //    return generic::string_response("Sin autorizar".to_string(), 401);
-    //};
+    let Some(id) = check_student_auth(request, &db) else {
+       return generic::string_response("Sin autorizar".to_string(), 401);
+    };
 
-    let project_id = match get_project_id_by_student(&db, 170) {
+    let project_id = match get_project_id_by_student(&db, id) {
         Ok(Some(id)) => id,
         Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
         Err(_) => return generic::server_error("Error al obtener el proyecto del estudiante".to_string()),

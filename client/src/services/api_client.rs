@@ -2,7 +2,8 @@ use yew::prelude::UseStateHandle;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use web_sys::{RequestInit, RequestMode};
-use crate::services::api_utils::{get_window_fetch, build_native_post_request, create_response_closure, create_bytes_closure, create_json_closure, create_error_closure, execute_promise_chain, create_login_closure};
+use crate::services::api_utils::{get_window_fetch, build_native_post_request, create_response_closure, create_bytes_closure, create_json_closure, create_error_closure, execute_promise_chain, create_login_closure, create_update_project_closure};
+use crate::structs::project::Project;
 
 /// envía una petición POST con JSON y procesa la respuesta binaria (Blob) 
 /// mapeando los resultados directamente a los estados de Yew.
@@ -61,10 +62,12 @@ pub fn send_json_get_request<R: DeserializeOwned + 'static>(
     url: &str,
     state_handle: UseStateHandle<R>,
     mensaje: UseStateHandle<String>,
-    loading: UseStateHandle<bool>
+    loading: UseStateHandle<bool>,
+    mensaje_str: Option<String>
 ) {
     let opts = RequestInit::new();
     opts.set_method("GET");
+    opts.set_credentials(web_sys::RequestCredentials::Include);
     opts.set_mode(RequestMode::Cors);
 
     let request_promise = match get_window_fetch(&mensaje, &loading) {
@@ -74,7 +77,7 @@ pub fn send_json_get_request<R: DeserializeOwned + 'static>(
 
     // Reutilizamos closures: este pide text
     let on_response = create_response_closure(mensaje.clone(), loading.clone(), false); 
-    let on_json_ready = create_json_closure(state_handle, mensaje.clone(), loading.clone());
+    let on_json_ready = create_json_closure(state_handle, mensaje.clone(), loading.clone(), mensaje_str);
     let on_error = create_error_closure(mensaje, loading);
 
     let _ = execute_promise_chain(&request_promise, &on_response, &on_json_ready, &on_error);
@@ -121,6 +124,46 @@ pub fn send_login_request<T: serde::Serialize>(
     let on_error = create_error_closure(mensaje, loading);
 
     // Tu execute_promise_chain nativo se encarga de encadenar todo en JS
+    let _ = execute_promise_chain(&request_promise, &on_response, &on_success, &on_error);
+
+    on_response.forget();
+    on_success.forget();
+    on_error.forget();
+}
+
+pub fn send_project_update_request(
+    url: &str,
+    updated_project: Project,
+    projects_state: UseStateHandle<Vec<Project>>,
+    mensaje: UseStateHandle<String>,
+    loading: UseStateHandle<bool>
+) {
+    loading.set(true);
+
+    let body_str = match serde_json::to_string(&updated_project) {
+        Ok(s) => s,
+        Err(_) => {
+            mensaje.set("Error de serialización de datos".to_string());
+            loading.set(false);
+            return;
+        }
+    };
+
+    let opts = RequestInit::new();
+    opts.set_method("PUT");
+    opts.set_credentials(web_sys::RequestCredentials::Include);
+    opts.set_mode(RequestMode::Cors);
+    opts.set_body(&wasm_bindgen::JsValue::from_str(&body_str));
+
+    let request_promise = match get_window_fetch(&mensaje, &loading) {
+        Some(w) => w.fetch_with_str_and_init(url, &opts),
+        None => return,
+    };
+
+    let on_response = create_response_closure(mensaje.clone(), loading.clone(), false); // false porque es texto plano
+    let on_success = create_update_project_closure(projects_state, updated_project, loading.clone());
+    let on_error = create_error_closure(mensaje, loading);
+
     let _ = execute_promise_chain(&request_promise, &on_response, &on_success, &on_error);
 
     on_response.forget();

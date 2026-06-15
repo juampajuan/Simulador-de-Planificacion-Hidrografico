@@ -4,6 +4,8 @@ use web_sys::{Url, Blob, Request, RequestInit, RequestMode, Response};
 use js_sys::{Uint8Array, Array, Function, Reflect};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use crate::structs::project::Project;
+
 
 pub fn get_window_fetch(mensaje: &UseStateHandle<String>, loading: &UseStateHandle<bool>) -> Option<web_sys::Window> {
     match web_sys::window() {
@@ -107,19 +109,42 @@ pub fn create_bytes_closure(
 pub fn create_json_closure<R: DeserializeOwned + 'static>(
     state_handle: UseStateHandle<R>,
     mensaje: UseStateHandle<String>, 
-    loading: UseStateHandle<bool>
+    loading: UseStateHandle<bool>,
+    success_msg: Option<String>
 ) -> Closure<dyn FnMut(JsValue) -> JsValue> {
     Closure::wrap(Box::new(move |text_val: JsValue| -> JsValue {
         if let Some(json_str) = text_val.as_string() {
             match serde_json::from_str::<R>(&json_str) {
                 Ok(parsed_data) => {
                     state_handle.set(parsed_data);
-                    mensaje.set("Seleccione parámetros para el recorrido".to_string());
+                    
+                    if let Some(ref msg) = success_msg {
+                        mensaje.set(msg.clone());
+                    } else {
+                        mensaje.set(String::new());
+                    }
                 },
                 Err(_) => {
                     mensaje.set("Error al deserializar la respuesta del sistema".to_string());
                 }
             }
+        }
+        loading.set(false);
+        JsValue::UNDEFINED
+    }) as Box<dyn FnMut(JsValue) -> JsValue>)
+}
+
+pub fn create_update_project_closure(
+    projects_state: UseStateHandle<Vec<Project>>,
+    updated_project: Project,
+    loading: UseStateHandle<bool>
+) -> Closure<dyn FnMut(JsValue) -> JsValue> {
+    Closure::wrap(Box::new(move |_text_val: JsValue| -> JsValue {
+        let mut list = (*projects_state).clone();
+        
+        if let Some(pos) = list.iter().position(|p| p.id == updated_project.id) {
+            list[pos] = updated_project.clone();
+            projects_state.set(list);
         }
         loading.set(false);
         JsValue::UNDEFINED

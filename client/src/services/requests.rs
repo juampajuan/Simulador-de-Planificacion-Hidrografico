@@ -1,9 +1,42 @@
-use crate::services::api_client::{send_blob_request, send_json_get_request, send_login_request};
+use crate::services::api_client::{send_blob_request, send_json_get_request, send_login_request, send_project_update_request};
 use crate::parser::{parse_path_parameters, parse_echosounder_parameters, parse_transport_parameters};
 use crate::structs::state::{PathState, EchoState, FullSimulationRequest, SimulationUiState, CreatePathRequest};
 use crate::structs::limits::ConfigLimits;
 use common::StudentMeasuringParameters;
 use yew::prelude::UseStateHandle;
+use crate::structs::project::Project;
+
+pub fn update_project(
+    project_id: i64,
+    updated_project: Project,
+    projects_state: UseStateHandle<Vec<Project>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    let url = format!("http://localhost:3000/api/v1/projects/{}", project_id);
+    send_project_update_request(
+        &url,
+        updated_project,
+        projects_state,
+        ui_mensaje,
+        ui_loading
+    );
+}
+
+pub fn get_all_projects(
+    projects_handle: UseStateHandle<Vec<Project>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    ui_loading.set(true);
+    send_json_get_request(
+        "http://localhost:3000/api/v1/projects", 
+        projects_handle, 
+        ui_mensaje, 
+        ui_loading,
+        None
+    );
+}
 
 pub fn get_system_limits(
     limits_handle: UseStateHandle<ConfigLimits>,
@@ -14,7 +47,8 @@ pub fn get_system_limits(
         "http://localhost:3000/api/v1/limits", 
         limits_handle, 
         ui_mensaje, 
-        ui_loading
+        ui_loading,
+        Some("Seleccione parámetros para el recorrido".to_string())
     );
 }
 

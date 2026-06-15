@@ -10,7 +10,7 @@ pub struct Project {
     pub professor_id: i64
 }
  
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ProjectMetadata {
     name: String,
     description: String,
@@ -20,6 +20,15 @@ pub struct ProjectMetadata {
     budget: f64,
     geotiff_min_depth: f64,
     geotiff_max_depth: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AdminProjectView {
+    pub id: usize,
+    pub filename: String,
+    pub professor_id: i64,
+    #[serde(flatten)] 
+    pub metadata: ProjectMetadata,
 }
 
 pub fn create_project(
@@ -68,11 +77,12 @@ pub fn create_project(
 pub fn get_all_by_professor_id(
     db: &DBEngine,
     professor_id: i64,
-) -> Result<Vec<Project>, sqlite::Error> {
+) -> Result<Vec<AdminProjectView>, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
-        SELECT id, name, description, filename, professor_id
+        SELECT id, name, description, filename, professor_id,
+               attempts_limit, weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth
         FROM projects
         WHERE professor_id = ?
         "
@@ -83,12 +93,20 @@ pub fn get_all_by_professor_id(
     let mut projects = Vec::new();
 
     while let sqlite::State::Row = statement.next()? {
-        projects.push(Project {
+        projects.push(AdminProjectView {
             id: statement.read::<i64, _>("id")? as usize,
-            name: statement.read::<String, _>("name")?,
-            description: statement.read::<Option<String>, _>("description")?,
             filename: statement.read::<String, _>("filename")?, 
             professor_id: statement.read::<i64, _>("professor_id")?, 
+            metadata: ProjectMetadata {
+                name: statement.read::<String, _>("name")?,
+                description: statement.read::<Option<String>, _>("description")?.unwrap_or_default(),
+                attempts_limit: statement.read::<i64, _>("attempts_limit")?,
+                weather: statement.read::<String, _>("weather")?,
+                seabed_hardness: statement.read::<String, _>("seabed_hardness")?,
+                budget: statement.read::<f64, _>("budget")?,
+                geotiff_min_depth: statement.read::<f64, _>("geotiff_min_depth")?,
+                geotiff_max_depth: statement.read::<f64, _>("geotiff_max_depth")?,
+            }
         });
     }
 
