@@ -6,21 +6,11 @@ use common::StudentMeasuringParameters;
 use crate::{processing::measuring::calculate_distance_between_points, structs::{depth_matrix::DepthMatrix, measurement_type::{MeasurementsType, MeasurementsTypeWithError}}};
 
 // ------------------------------------------------------------
-//  Umbrales de potencia
+//  Umbrales Para Potencia y ganancia
 // ------------------------------------------------------------
 
-const HIGH_FREQ_POTENCY_THRESHOLD: f64  = 70.0; //en %
-const LOW_FREQ_POTENCY_THRESHOLD: f64 = 30.0; //en %
-
-// ------------------------------------------------------------
-//  Umbrales de ganancia
-// ------------------------------------------------------------
-
-const HIGH_FREQ_GAIN_THRESHOLD: f64  = 30.0; // en db
-const LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD: f64  = 30.0; // en db
-const LOW_FREQ_GAIN_THRESHOLD: f64  = 15.0; // en db
-
-
+const DETECTION_THRESHOLD: f64 = 40.0; //db
+const SATURATION_THRESHOLD: f64 = 220.0; //db
 
 // ------------------------------------------------------------
 //  Otras constantes
@@ -185,8 +175,6 @@ pub fn apply_power_and_gain_noise(
     gain: f64,         // 12.0, 24.0 o 36.0
     alpha: f64,        // 0.004 o 0.06 según frecuencia
 ) -> Option<f64> {
-    const DETECTION_THRESHOLD: f64 = 40.0;
-    const SATURATION_THRESHOLD: f64 = 220.0;
 
     // 1. Pérdida de transmisión (ida y vuelta)
     let tl = 2.0 * (20.0 * p.log10() + alpha * p);
