@@ -164,6 +164,8 @@ pub fn login_page() -> Html {
                     shadow-xl
                 ">
                     <div class="p-6 border-b border-white/20 space-y-2">
+                        <img width="60px" src="/static/icon.png"/>
+
                         <Title text={"Acceso al simulador"} />
 
                         <div class="dark:text-white/90 text-xs">
