@@ -44,13 +44,13 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     });
 
     html! {
-        <div class={classes!("space-y-3", disabled_buttons)}>
+        <div class={classes!("space-y-3", "relative", disabled_buttons)}>
             
             <TransportParams echo_state={state.clone()} />
 
             <EchosounderParams echo_state={state} />
 
-            <div class="w-full mt-auto">
+            <div class="pb-1 px-3">
                 <button 
                     disabled={!is_form_complete || is_loading} 
                     onclick={on_simulate_click}

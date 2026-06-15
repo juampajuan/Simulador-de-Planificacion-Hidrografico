@@ -29,7 +29,8 @@ pub fn path_params(props: &PathProps) -> Html {
     });
 
     html! {
-        <div class="border-white/15 p-3 bg-zinc-900 rounded-md border flex flex-col gap-3">
+        // border-white/15 p-3 bg-zinc-900 rounded-md border flex flex-col gap-3
+        <div class="border-white/25 p-3 pt-0 border-b flex flex-col gap-3">
 
             <Subtitle
                 text={"1. Recorrido"}
@@ -38,50 +39,54 @@ pub fn path_params(props: &PathProps) -> Html {
                 }}
             />
 
-            <div class="flex flex-col gap-1">
-                <span class="text-xs font-semibold text-white/40 ml-1">
-                    {"Separación (mts)"}
-                </span>
+            <div class="grid grid-cols-2 gap-3">
 
-                <input
-                    type="number"
-                    disabled={*props.ui_state.loading}
-                    placeholder="10"
-                    class={input_cls}
-                    value={(*props.path_state).separacion.clone()}
-                    onchange={{
-                        let s_handle = props.path_state.clone();
-                        Callback::from(move |e: Event| {
-                            let val = e.target_unchecked_into::<HtmlInputElement>().value();
-                            let mut nuevo_estado = (*s_handle).clone();
-                            nuevo_estado.separacion = val;
-                            s_handle.set(nuevo_estado);
-                        })
-                    }}
-                />
-            </div>
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-semibold text-white/40 ml-1">
+                        {"Separación (mts)"}
+                    </span>
 
-            <div class="flex flex-col gap-1">
-                <span class="text-xs font-semibold text-white/40 ml-1">
-                    {"Azimut (Grados)"}
-                </span>
+                    <input
+                        type="number"
+                        disabled={*props.ui_state.loading}
+                        placeholder="10"
+                        class={input_cls}
+                        value={(*props.path_state).separacion.clone()}
+                        onchange={{
+                            let s_handle = props.path_state.clone();
+                            Callback::from(move |e: Event| {
+                                let val = e.target_unchecked_into::<HtmlInputElement>().value();
+                                let mut nuevo_estado = (*s_handle).clone();
+                                nuevo_estado.separacion = val;
+                                s_handle.set(nuevo_estado);
+                            })
+                        }}
+                    />
+                </div>
 
-                <input
-                    type="number"
-                    disabled={*props.ui_state.loading}
-                    placeholder="45"
-                    class={input_cls}
-                    value={(*props.path_state).azimut.clone()}
-                    onchange={{
-                        let a_handle = props.path_state.clone();
-                        Callback::from(move |e: Event| {
-                            let val = e.target_unchecked_into::<HtmlInputElement>().value();
-                            let mut nuevo_estado = (*a_handle).clone();
-                            nuevo_estado.azimut = val;
-                            a_handle.set(nuevo_estado);
-                        })
-                    }}
-                />
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-semibold text-white/40 ml-1">
+                        {"Azimut (Grados)"}
+                    </span>
+
+                    <input
+                        type="number"
+                        disabled={*props.ui_state.loading}
+                        placeholder="45"
+                        class={input_cls}
+                        value={(*props.path_state).azimut.clone()}
+                        onchange={{
+                            let a_handle = props.path_state.clone();
+                            Callback::from(move |e: Event| {
+                                let val = e.target_unchecked_into::<HtmlInputElement>().value();
+                                let mut nuevo_estado = (*a_handle).clone();
+                                nuevo_estado.azimut = val;
+                                a_handle.set(nuevo_estado);
+                            })
+                        }}
+                    />
+                </div>
+
             </div>
 
             <div class="flex flex-col gap-1">
