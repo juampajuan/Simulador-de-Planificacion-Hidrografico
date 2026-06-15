@@ -81,34 +81,39 @@ pub fn apply_disturbances_monohaz(
     let echo = &params.echo_sounder_parameters;
     let tide_levels = calculate_tide_levels(mediciones.len(), params, path, matrix);
  
-    mediciones.into_iter().enumerate().map(|(i, (punto, z_ideal))| {
+    mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
         // 1. Sensor inercial
-        let (punto, z_ideal) = if params.transport_parameters.uses_inertial_sensor {
-            (punto, z_ideal)
+        let (punto, p_ideal) = if params.transport_parameters.uses_inertial_sensor {
+            (punto, p_ideal)
         } else {
             apply_inertial_sensor_error(punto, matrix)
         };
+
+        // 2. Potencia y ganancia
+        let optional_p = apply_power_and_gain_noise(p_ideal, echo.transmited_potency, echo.gain, echo.absortion_coefficient);
+
+        // 3. Filtro de límites
+        let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
+        
+        match optional_p {
+            None => (),
+            Some(mut p) => {
+
+                    // 4. Velocidad del sonido
+                    p = if params.transport_parameters.uses_sound_profiler {
+                        p
+                    } else {
+                        apply_sound_velocity_noise(p, params.echo_sounder_parameters.sound_speed)
+                    };
+            
+                    // 5. Marea
+                    apply_tide_error(p, tide_levels.as_ref(), i);
+                }
  
-        // 2. Velocidad del sonido
-        let mut z = if params.transport_parameters.uses_sound_profiler {
-            z_ideal
-        } else {
-            apply_sound_velocity_noise(z_ideal, params.echo_sounder_parameters.sound_speed)
-        };
- 
-        // 3. Marea
-        z = apply_tide_error(z, tide_levels.as_ref(), i);
- 
-        // 4. Potencia
-        let z = apply_potency_noise(z, echo.transmited_potency, echo.uses_high_frecuency);
- 
-        // 5. Ganancia
-        let z = apply_gain_noise(z, echo.gain as f64, echo.uses_high_frecuency);
- 
-        // 6. Filtro de límites
-        let z = apply_limits_filter(z, echo.min_limit, echo.max_limit);
- 
-        (punto, z)
+        }
+
+        (punto, optional_p)
+        
     }).collect()
 }
 
@@ -168,93 +173,53 @@ fn apply_inertial_sensor_error(
     (punto, matrix.data[y_des][x_des])
 }
  
-fn apply_sound_velocity_noise(z_real: f64, v_alumno: f64) -> f64 {
-    z_real * (v_alumno / SOUND_VELOCITY)
-}
- 
-fn apply_tide_error(z_real: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
-    match tide_levels {
-        Some(levels) => z_real + levels[index],
-        None => z_real,
-    }
-}
- 
-/// Error por potencia transmitida.
-/// - Potencia insuficiente: señal no llega al receptor -> None
-/// - Potencia excesiva: falsos ecos con probabilidad proporcional al exceso
-fn apply_potency_noise(
-    z: f64,
-    transmited_potency: f64,
-    uses_high_frecuency: bool,
-) -> Option<f64> {
-
-    
-    let threshold = if uses_high_frecuency {
-        HIGH_FREQ_POTENCY_THRESHOLD
-    } else {
-        LOW_FREQ_POTENCY_THRESHOLD    
-    };
-
-    if transmited_potency < threshold {
-        let excess =  threshold - transmited_potency;
-        let false_echo_prob = excess / threshold; // Probabilidad proporcional al exceso
-        if random::<f64>() < false_echo_prob {
-            None // no se detecta el eco real
-        } else {
-            Some(z)
-        }
-    } else {
-        Some(z)
-    }
-}
- 
-fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Option<f64> {
-    if uses_high_frecuency == true {
-        if gain > HIGH_FREQ_GAIN_THRESHOLD {
-            z
-        } else {
-            z.and_then(|p| {
-                let excess =  HIGH_FREQ_GAIN_THRESHOLD - gain;
-                let echo_didnt_retorn_prob = excess / HIGH_FREQ_GAIN_THRESHOLD; // Probabilidad proporcional al exceso
-                if random::<f64>() < echo_didnt_retorn_prob {
-                    None // no se detecta el eco real
-                } else {
-                    Some(p)
-                }
-            })
-        }
-    } else {
-        if gain > LOW_FREQ_GAIN_THRESHOLD {
-            if gain > LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD {
-                let excess = gain - LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD;
-                let false_echo_prob = excess / LOW_FREQ_GAIN_FALSE_ECO_THRESHOLD; // Probabilidad proporcional al exceso
-                if random::<f64>() < false_echo_prob {
-                    // eco falso: profundidad menor a la real, con algo de aleatoriedad
-                    let reduction =  rand::rng().random_range(0.1..0.5); // 10% a 50% menos
-                    z.and_then(|p| {Some(p * (1.0 - reduction))}) // no se detecta el eco real
-                } else {
-                    z
-                }
-            } else {
-                z
-            }
-        } else {
-            z.and_then(|p| {
-                let excess = gain - LOW_FREQ_GAIN_THRESHOLD;
-                let echo_didnt_retorn_prob = excess / LOW_FREQ_GAIN_THRESHOLD; // Probabilidad proporcional al exceso
-                if random::<f64>() < echo_didnt_retorn_prob {
-                    None
-                } else {
-                    Some(p)
-                }
-            })
-        }
-    }
-
-}
- 
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
     z.and_then(|p| {
         if p >= min_limit && p <= max_limit { Some(p) } else { None }
     })
+}
+
+pub fn apply_power_and_gain_noise(
+    p: f64,
+    potency: f64,      // 150.0, 200.0 o 250.0
+    gain: f64,         // 12.0, 24.0 o 36.0
+    alpha: f64,        // 0.004 o 0.06 según frecuencia
+) -> Option<f64> {
+    const DETECTION_THRESHOLD: f64 = 40.0;
+    const SATURATION_THRESHOLD: f64 = 220.0;
+
+    // 1. Pérdida de transmisión (ida y vuelta)
+    let tl = 2.0 * (20.0 * p.log10() + alpha * p);
+
+    // 2. Señal de retorno antes del amplificador
+    let signal_return = potency - tl;
+
+    // 3. Señal final post-amplificación
+    let signal_final = signal_return + gain;
+
+    if signal_final < DETECTION_THRESHOLD {
+        // Eco perdido: señal demasiado débil
+        None
+    } else if signal_final > SATURATION_THRESHOLD {
+        // Eco falso: saturación proporcional al exceso
+        // A mayor exceso sobre el umbral, más se reduce la profundidad medida
+        let excess = signal_final - SATURATION_THRESHOLD;
+        let max_excess = 100.0; // exceso máximo esperado para normalizar
+        let reduction = (excess / max_excess).min(0.5); // máximo 50% de reducción
+        Some(p * (1.0 - reduction))
+    } else {
+        // Lectura correcta
+        Some(p)
+    }
+}
+ 
+fn apply_sound_velocity_noise(p: f64, v_alumno: f64) -> f64 {
+    p * (v_alumno / SOUND_VELOCITY)
+}
+ 
+fn apply_tide_error(p: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
+    match tide_levels {
+        Some(levels) => p + levels[index],
+        None => p,
+    }
 }

@@ -48,7 +48,7 @@ pub fn parse_echosounder_parameters(state: &EchoState, limits: &ConfigLimits) ->
     let transmited_potency = state.transmited_potency.parse::<f64>()
         .map_err(|_| "Error: Potencia transmitida inválida".to_string())?;
         
-    let gain = state.gain.parse::<f32>()
+    let gain = state.gain.parse::<f64>()
         .map_err(|_| "Error: Ganancia inválida".to_string())?;
         
         
