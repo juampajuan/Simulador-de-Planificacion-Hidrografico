@@ -1,6 +1,6 @@
 use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
-use super::colormap::depth_color;
+use super::helpers::{depth_color,depth_range,is_valid};
 
 pub fn makepng_with_matrix_and_path(
     matrix: &DepthMatrix,
@@ -41,23 +41,3 @@ pub fn makepng_with_matrix_and_path(
     img
 }
 
-fn depth_range(matrix: &DepthMatrix) -> (f64, f64) {
-    let mut min = f64::MAX;
-    let mut max = f64::MIN;
-    for row in &matrix.data {
-        for &val in row {
-            if is_valid(val, matrix) {
-                min = min.min(val);
-                max = max.max(val);
-            }
-        }
-    }
-    (min, max)
-}
-
-fn is_valid(val: f64, matrix: &DepthMatrix) -> bool {
-    match matrix.no_data {
-        Some(nd) => val != nd,
-        None => val.is_finite(),
-    }
-}
