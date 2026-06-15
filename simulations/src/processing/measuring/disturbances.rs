@@ -81,7 +81,6 @@ pub fn apply_disturbances_monohaz(
 
     let gain_value = params.echo_sounder_parameters.gain as f64;
 
-    println!("potencia: {}, ganancia: {} ", potency_value, gain_value);
  
     mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
         // 1. Sensor inercial
@@ -91,22 +90,11 @@ pub fn apply_disturbances_monohaz(
             apply_inertial_sensor_error(punto, matrix)
         };
 
-        println!("profundidad ideal: {}", p_ideal);
         // 2. Potencia y ganancia
         let optional_p = apply_power_and_gain_noise(p_ideal, potency_value, gain_value, echo.absortion_coefficient);
 
-        match optional_p {
-            Some(p) => println!("despues de aplicar error: {}", p),
-            None => (),
-        }
-
         // 3. Filtro de límites
         let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
-
-        match optional_p {
-            Some(p) => println!("despues de limites: {}", p),
-            None => (),
-        }
         
         let optional_p = match optional_p {
             None => None,
@@ -130,11 +118,6 @@ pub fn apply_disturbances_monohaz(
             }
  
         };
-
-        match optional_p {
-            Some(p) => println!("final: {}", p),
-            None => (),
-        }
 
         (punto, optional_p)
         
