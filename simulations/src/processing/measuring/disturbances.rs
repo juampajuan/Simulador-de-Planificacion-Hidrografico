@@ -1,32 +1,16 @@
 use rand::random;
+use rand::RngExt;
 use rand_distr::{Distribution, Normal};
 use common::StudentMeasuringParameters;
 
 use crate::{processing::measuring::calculate_distance_between_points, structs::{depth_matrix::DepthMatrix, measurement_type::{MeasurementsType, MeasurementsTypeWithError}}};
 
 // ------------------------------------------------------------
-//  Umbrales de potencia
+//  Umbrales Para Potencia y ganancia
 // ------------------------------------------------------------
 
-const HIGH_FREQ_RX_THRESHOLD: f64  = -80.0;  // dB — señal mínima que detecta el receptor
-const HIGH_FREQ_SAT_THRESHOLD: f64 = 220.0;  // dB — potencia a partir de la cual hay falsos ecos
-
-const LOW_FREQ_RX_THRESHOLD: f64   = -100.0;
-const LOW_FREQ_SAT_THRESHOLD: f64  = 180.0;
-
-// ------------------------------------------------------------
-//  Umbrales de ganancia
-// ------------------------------------------------------------
-
-// Alta frecuencia: haz angosto, más sensible al ruido
-const HIGH_FREQ_GAIN_LOW: f64  = 15.0;  // dB — por debajo: eco redondeado
-const HIGH_FREQ_GAIN_HIGH: f64 = 35.0;  // dB — por encima: falsos ecos
-
-// Baja frecuencia: haz más ancho, tolera más ganancia antes de amplificar ruido
-const LOW_FREQ_GAIN_LOW: f64   = 10.0;
-const LOW_FREQ_GAIN_HIGH: f64  = 45.0;
-
-const MAX_LOW_GAIN_ERROR: f64  = 0.3;   // metros — error máximo por ganancia baja (OHI: ~30cm)
+const DETECTION_THRESHOLD: f64 = 40.0; //db
+const SATURATION_THRESHOLD: f64 = 220.0; //db
 
 // ------------------------------------------------------------
 //  Otras constantes
@@ -87,34 +71,39 @@ pub fn apply_disturbances_monohaz(
     let echo = &params.echo_sounder_parameters;
     let tide_levels = calculate_tide_levels(mediciones.len(), params, path, matrix);
  
-    mediciones.into_iter().enumerate().map(|(i, (punto, z_ideal))| {
+    mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
         // 1. Sensor inercial
-        let (punto, z_ideal) = if params.transport_parameters.uses_inertial_sensor {
-            (punto, z_ideal)
+        let (punto, p_ideal) = if params.transport_parameters.uses_inertial_sensor {
+            (punto, p_ideal)
         } else {
             apply_inertial_sensor_error(punto, matrix)
         };
+
+        // 2. Potencia y ganancia
+        let optional_p = apply_power_and_gain_noise(p_ideal, echo.transmited_potency, echo.gain, echo.absortion_coefficient);
+
+        // 3. Filtro de límites
+        let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
+        
+        match optional_p {
+            None => (),
+            Some(mut p) => {
+
+                    // 4. Velocidad del sonido
+                    p = if params.transport_parameters.uses_sound_profiler {
+                        p
+                    } else {
+                        apply_sound_velocity_noise(p, params.echo_sounder_parameters.sound_speed)
+                    };
+            
+                    // 5. Marea
+                    apply_tide_error(p, tide_levels.as_ref(), i);
+                }
  
-        // 2. Velocidad del sonido
-        let mut z = if params.transport_parameters.uses_sound_profiler {
-            z_ideal
-        } else {
-            apply_sound_velocity_noise(z_ideal, params.echo_sounder_parameters.sound_speed)
-        };
- 
-        // 3. Marea
-        z = apply_tide_error(z, tide_levels.as_ref(), i);
- 
-        // 4. Potencia
-        let z = apply_potency_noise(z, echo.transmited_potency, echo.absortion_coefficient, echo.uses_high_frecuency);
- 
-        // 5. Ganancia
-        let z = apply_gain_noise(z, echo.gain as f64, echo.uses_high_frecuency);
- 
-        // 6. Filtro de límites
-        let z = apply_limits_filter(z, echo.min_limit, echo.max_limit);
- 
-        (punto, z)
+        }
+
+        (punto, optional_p)
+        
     }).collect()
 }
 
@@ -174,87 +163,51 @@ fn apply_inertial_sensor_error(
     (punto, matrix.data[y_des][x_des])
 }
  
-fn apply_sound_velocity_noise(z_real: f64, v_alumno: f64) -> f64 {
-    z_real * (v_alumno / SOUND_VELOCITY)
-}
- 
-fn apply_tide_error(z_real: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
-    match tide_levels {
-        Some(levels) => z_real + levels[index],
-        None => z_real,
-    }
-}
- 
-/// Error por potencia transmitida.
-/// - Potencia insuficiente: señal no llega al receptor -> None
-/// - Potencia excesiva: falsos ecos con probabilidad proporcional al exceso
-fn apply_potency_noise(
-    z: f64,
-    transmited_potency: f64,
-    absortion_coefficient: f64,
-    uses_high_frecuency: bool,
-) -> Option<f64> {
-    let (rx_threshold, sat_threshold) = if uses_high_frecuency {
-        (HIGH_FREQ_RX_THRESHOLD, HIGH_FREQ_SAT_THRESHOLD)
-    } else {
-        (LOW_FREQ_RX_THRESHOLD, LOW_FREQ_SAT_THRESHOLD)
-    };
- 
-    let tl = 20.0 * z.log10() + absortion_coefficient * z;
-    let p_recibida = transmited_potency - 2.0 * tl;
-    
-    // Señal demasiado débil
-    if p_recibida < rx_threshold {
-        return None;
-    }
- 
-    // Potencia excesiva: falsos ecos superficiales
-    if transmited_potency > sat_threshold {
-        let exceso = transmited_potency - sat_threshold;
-        let probabilidad = (exceso / sat_threshold).clamp(0.0, 1.0);
-        if random::<f64>() < probabilidad {
-            return Some(z * random::<f64>());
-        }
-    }
- 
-    Some(z)
-}
- 
-/// Error por ganancia del receptor.
-/// - Ganancia baja: eco redondeado -> sondaje mayor al real (hasta MAX_LOW_GAIN_ERROR)
-/// - Ganancia normal: sin error
-/// - Ganancia alta: amplifica ruido -> falsos ecos con probabilidad proporcional al exceso
-fn apply_gain_noise(z: Option<f64>, gain: f64, uses_high_frecuency: bool) -> Option<f64> {
-    let z = z?;
- 
-    let (gain_low, gain_high) = if uses_high_frecuency {
-        (HIGH_FREQ_GAIN_LOW, HIGH_FREQ_GAIN_HIGH)
-    } else {
-        (LOW_FREQ_GAIN_LOW, LOW_FREQ_GAIN_HIGH)
-    };
-
-    if gain < gain_low {
-        // Ganancia baja: error proporcional al déficit, máximo MAX_LOW_GAIN_ERROR
-        let factor = 1.0 - (gain / gain_low); // 0 en el límite, 1 en gain=0
-        Some(z + factor * MAX_LOW_GAIN_ERROR)
- 
-    } else if gain > gain_high {
-        // Ganancia alta: falso eco con probabilidad proporcional al exceso
-        let exceso = gain - gain_high;
-        let probabilidad = (exceso / gain_high).clamp(0.0, 1.0);
-        if random::<f64>() < probabilidad {
-            Some(z * random::<f64>())
-        } else {
-            Some(z)
-        }
- 
-    } else {
-        Some(z)
-    }
-}
- 
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
     z.and_then(|p| {
         if p >= min_limit && p <= max_limit { Some(p) } else { None }
     })
+}
+
+pub fn apply_power_and_gain_noise(
+    p: f64,
+    potency: f64,      // 150.0, 200.0 o 250.0
+    gain: f64,         // 12.0, 24.0 o 36.0
+    alpha: f64,        // 0.004 o 0.06 según frecuencia
+) -> Option<f64> {
+
+    // 1. Pérdida de transmisión (ida y vuelta)
+    let tl = 2.0 * (20.0 * p.log10() + alpha * p);
+
+    // 2. Señal de retorno antes del amplificador
+    let signal_return = potency - tl;
+
+    // 3. Señal final post-amplificación
+    let signal_final = signal_return + gain;
+
+    if signal_final < DETECTION_THRESHOLD {
+        // Eco perdido: señal demasiado débil
+        None
+    } else if signal_final > SATURATION_THRESHOLD {
+        // Eco falso: saturación proporcional al exceso
+        // A mayor exceso sobre el umbral, más se reduce la profundidad medida
+        let excess = signal_final - SATURATION_THRESHOLD;
+        let max_excess = 100.0; // exceso máximo esperado para normalizar
+        let reduction = (excess / max_excess).min(0.5); // máximo 50% de reducción
+        Some(p * (1.0 - reduction))
+    } else {
+        // Lectura correcta
+        Some(p)
+    }
+}
+ 
+fn apply_sound_velocity_noise(p: f64, v_alumno: f64) -> f64 {
+    p * (v_alumno / SOUND_VELOCITY)
+}
+ 
+fn apply_tide_error(p: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
+    match tide_levels {
+        Some(levels) => p + levels[index],
+        None => p,
+    }
 }
