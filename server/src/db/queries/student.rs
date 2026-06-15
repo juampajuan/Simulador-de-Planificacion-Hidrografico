@@ -62,11 +62,11 @@ pub fn delete_student(
 pub fn verify_code(
     db: &DBEngine,
     code: &str,
-) -> Result<Option<i64>, sqlite::Error> {
+) -> Result<Option<(i64, String)>, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
-        SELECT id
+        SELECT id, name
         FROM students
         WHERE code = ?
         "
@@ -76,7 +76,8 @@ pub fn verify_code(
 
     if let Ok(State::Row) = statement.next() {
         let id = statement.read::<i64, _>("id")?;
-        return Ok(Some(id));
+        let name = statement.read::<String, _>("name")?;
+        return Ok(Some((id, name)));
     }
 
     Ok(None)
