@@ -181,7 +181,7 @@ fn create_auth_cookie(
 ) -> Result<Header, ()> {
 
     let cookie = format!(
-        "auth_token={}; Path=/; Max-Age=604800; HttpOnly; SameSite=Strict",
+        "auth_token={}; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax; Domain=localhost",
         token
     );
 
@@ -206,7 +206,6 @@ pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
         .split(';')
         .find_map(|cookie| {
             let (key, value) = cookie.trim().split_once('=')?;
-
             if key == name {
                 Some(value.to_string())
             } else {

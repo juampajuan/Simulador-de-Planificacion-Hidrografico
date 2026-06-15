@@ -96,14 +96,13 @@ fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
 
     let (mut response, status) = result;
 
-    // 🚀 Centralización absoluta: Todo lo que responda la API lleva estos headers obligatoriamente
-    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"http://localhost.:8080") {
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"http://localhost:8080") {
         response = response.with_header(h);
     }
     if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Credentials", b"true") {
         response = response.with_header(h);
     }
-    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, GET, OPTIONS, DELETE") {
+    if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Methods", b"POST, GET, OPTIONS, DELETE, PUT") {
         response = response.with_header(h);
     }
     if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Headers", b"Content-Type, Cookie") {
