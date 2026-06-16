@@ -31,24 +31,20 @@ fn main() {
         return;
     }
 
-    // Para asegurar que exista y las migraciones se apliquen.
-    // En un scope, ya que cada thread genera su conexion.
-    let err = {
-        match DBEngine::new(&settings.db_name) {
-            Ok(db) => {
-                match professor::sync_admin_password(&db, &settings.admin_pass) {
-                    Ok(()) => None,
-                    Err(err) => Some(err),
-                }
+    let db = match DBEngine::new(&settings.db_name) {
+        Ok(db) => match professor::sync_admin_password(&db, &settings.admin_pass) {
+            Ok(()) => db,
+            Err(err) => {
+                eprintln!("Error inicializando la DB: {err}");
+                return;
             }
-            Err(err) => Some(err.into()),
+        },
+        Err(err) => {
+            eprintln!("Error inicializando la DB: {err}");
+            return;
         }
     };
-
-    if let Some(err) = err {
-        eprintln!("Error inicializando la DB: {err}");
-        return;
-    }
+    let db_mutex = Arc::new(Mutex::new(db));
 
     // Generamos el struct para hacer de cache con los geotiffs cargados.
     let file_cache = FileCache::new(settings.cache_amount);
@@ -70,7 +66,8 @@ fn main() {
     for request in server.incoming_requests() {
         let settings_clone = Arc::clone(&settings);
         let cache_clone = Arc::clone(&cache);
-        threads.push(create_request_thread(request, cache_clone, settings_clone));
+        let db_clone = Arc::clone(&db_mutex);
+        threads.push(create_request_thread(request, cache_clone, settings_clone, db_clone));
     }
 
     for thread in threads {

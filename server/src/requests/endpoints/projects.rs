@@ -1,15 +1,15 @@
 use tiny_http::Request;
 use crate::db::engine::DBEngine;
-use crate::db::queries::proyects::{delete_project_by_id, get_all_by_professor_id, get_project_by_id, create_project, update_project, ProjectMetadata};
+use crate::db::queries::proyects::{ProjectMetadata};
+use crate::db::queries_interface::projects;
 use crate::requests::endpoints::auth::{check_profesor_auth, check_student_auth};
 use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
 use crate::structs::settings::Settings;
-use std::sync::{Arc};
+use std::sync::{Arc, Mutex};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::db::queries::{professor, auth, student};
 use serde_json;
 use std::{
     fs::File,
@@ -52,12 +52,14 @@ pub fn get_boundary(request: &Request) -> Result<String, &str> {
 
 pub fn create(
     request: &mut Request,
-    db: DBEngine,
+    db: Arc<Mutex<DBEngine>>,
     settings: Arc<Settings>,
 ) -> HandlerResult {
 
-    let Some(id) = check_profesor_auth(request, &db) else {
-        return string_response("Sin autorizar".to_string(), 401);
+    let professor_id = match check_profesor_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return server_error(err),
     };
 
     let boundary = match get_boundary(request) {
@@ -141,20 +143,22 @@ pub fn create(
         Err(_) => return server_error("Metadata incompleta.".to_string()),
     };
 
-    match create_project(&db, &filename_saved.unwrap(), id,&meta) {
+    match projects::create_project_locked(&db, &filename_saved.unwrap(), professor_id, &meta) {
         Ok(_) => string_response("ok".into(), 200),
         Err(_) => server_error("NO pudo".into())
     }
     
 }
 
-pub fn get_projects(request: &mut Request, db: DBEngine) -> HandlerResult {
+pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
   
-    let Some(id) = check_profesor_auth(request, &db) else {
-        return string_response("Sin autorizar".to_string(), 401);
+    let professor_id = match check_profesor_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return server_error(err),
     };
 
-    let Ok(projects) = get_all_by_professor_id(&db, id) else {
+    let Ok(projects) = projects::get_all_by_professor_id_locked(&db, professor_id) else {
         return server_error("Error al obtener los proyectos".to_string());
     };
 
@@ -166,13 +170,15 @@ pub fn get_projects(request: &mut Request, db: DBEngine) -> HandlerResult {
     string_response(response, 200)
 }
 
-pub fn get_student_project(request: &mut Request, db: DBEngine) -> HandlerResult {
-  
-    let Some(id) = check_student_auth(request, &db) else {
-        return string_response("Sin autorizar".to_string(), 401);
+pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+
+    let student_id = match check_student_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return server_error(err),
     };
 
-    let Ok(projects) = get_project_by_id(&db, id) else {
+    let Ok(projects) = projects::get_project_by_id_locked(&db, student_id) else {
         return server_error("Error al obtener los proyectos".to_string());
     };
 
@@ -188,11 +194,13 @@ pub fn get_student_project(request: &mut Request, db: DBEngine) -> HandlerResult
     string_response(response, 200)
 }
 
-pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
-    let Some(professor_id) = check_profesor_auth(request, &db) else {
-            return string_response("Sin autorizar".to_string(), 401);
-        };
+    let professor_id = match check_profesor_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return server_error(err),
+    };
 
     let Some(id_str) = request.url().rsplit('/').next() else {
         return string_response("Ruta inválida".to_string(), 400);
@@ -202,8 +210,8 @@ pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Setting
         return string_response("ID inválido".to_string(), 400);
     };
     
-    let Ok(projects) = get_project_by_id(&db, id) else {
-        return server_error("Error al obtener los proyectos".to_string());
+    let Ok(projects) = projects::get_project_by_id_locked(&db, id) else {
+        return server_error("Error al obtener el proyecto.".to_string());
     };
     
     let Some(project) = projects else {
@@ -212,7 +220,7 @@ pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Setting
 
     let filename = project.filename;
 
-    match delete_project_by_id(&db, id, professor_id) {
+    match projects::delete_project_by_id_locked(&db, id, professor_id) {
         Ok(true) => {
             let path = format!("{}/geotiffs/{}", settings.upload_path, filename);
             let _ = std::fs::remove_file(&path);
@@ -231,11 +239,13 @@ pub fn delete_project(request: &mut Request, db: DBEngine, settings: Arc<Setting
 
 pub fn update_a_project(
     request: &mut Request,
-    db: DBEngine,
+    db: Arc<Mutex<DBEngine>>
 ) -> HandlerResult {
 
-    let Some(professor_id) = check_profesor_auth(request, &db) else {
-        return string_response("Sin autorizar".to_string(), 401);
+    let professor_id = match check_profesor_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return server_error(err),
     };
 
     let id_str = match request.url().rsplit('/').next() {
@@ -253,7 +263,7 @@ pub fn update_a_project(
         Err(err) => return server_error(format!("Bad Request: {}", err)),
     };
 
-    match update_project(&db, id, professor_id, &meta) {
+    match projects::update_project_locked(&db, id, professor_id, &meta) {
         Ok(true) => string_response("Proyecto actualizado.".to_string(), 200),
         Ok(false) => string_response("Proyecto no encontrado.".to_string(), 404),
         Err(_) => server_error("Error al actualizar el proyecto.".to_string()),

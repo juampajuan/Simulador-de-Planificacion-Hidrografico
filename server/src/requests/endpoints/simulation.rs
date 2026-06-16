@@ -1,6 +1,6 @@
 use tiny_http::{Request};
 use std::sync::{Arc, Mutex};
-use crate::db::queries::proyects::{get_project_by_id, get_project_id_by_student};
+use crate::db::queries_interface::projects;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::requests::http_helper::{parse_json_body, create_png_response};
@@ -9,8 +9,7 @@ use crate::requests::endpoints::auth::check_student_auth;
 use crate::db::engine::DBEngine;
 use crate::structs::settings::Settings;
 use common::{StudentMeasuringParameters, PathParameters};
-
-const TIF_ID: &str = "Darsena_20cm_v2.tif";
+ 
 #[derive(serde::Deserialize)]
 pub struct FullSimulationRequest {
     #[serde(default)]
@@ -19,24 +18,24 @@ pub struct FullSimulationRequest {
 } // Dejo el option para lo de measure porque puede ser que se llame a create_path sin echo_parameters.
 // Si eso pasa, deja el echo en default, y continua.
 
-pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     // TODO: Es muy grande la funcion, capaz lo mejor seria mover este pedazo en una funcion aparte 
     // que obtenga el path del tif a partir del id del estudiante.
     // -------------------------------------------------------------------------------------------------------
-    let Some(id) = check_student_auth(request, &db) else {
-       return generic::string_response("Sin autorizar".to_string(), 401);
+    let student_id = match check_student_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return generic::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return generic::server_error(err),
     };
-    
 
-    let project_id = match get_project_id_by_student(&db, id) {
+    let project_id = match projects::get_project_id_by_student_locked(&db, student_id) {
         Ok(Some(id)) => id,
         Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
-        Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
+        Err(_) => return generic::server_error("Error al obtener el proyecto del estudiante".to_string()),
     };
 
-    println!("obtuve id proyecto: {}", project_id);
-    let filename = match get_project_by_id(&db, project_id) {
+    let filename = match projects::get_project_by_id_locked(&db, project_id) {
         Ok(Some(project)) => project.filename,
         Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
         Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
@@ -78,21 +77,21 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEn
 }
 
 
-pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
-    // -------------------------------------------------------------------------------------------------------
-    // Obtener student_id y filename del proyecto
-    let Some(id) = check_student_auth(request, &db) else {
-       return generic::string_response("Sin autorizar".to_string(), 401);
+    let student_id = match check_student_auth(request, &db) {
+        Ok(Some(id)) => id,
+        Ok(None) => return generic::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return generic::server_error(err),
     };
 
-    let project_id = match get_project_id_by_student(&db, id) {
+    let project_id = match projects::get_project_id_by_student_locked(&db, student_id) {
         Ok(Some(id)) => id,
         Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
         Err(_) => return generic::server_error("Error al obtener el proyecto del estudiante".to_string()),
     };
 
-    let filename = match get_project_by_id(&db, project_id) {
+    let filename = match projects::get_project_by_id_locked(&db, project_id) {
         Ok(Some(project)) => project.filename,
         Ok(None) => return generic::string_response("Proyecto no encontrado".to_string(), 404),
         Err(_) => return generic::server_error("Error al obtener el proyecto".to_string()),
