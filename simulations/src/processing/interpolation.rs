@@ -29,50 +29,33 @@ pub fn interpolate(
     distance_between_measurements_m: f64,  // velocidad_ms / frecuencia_hz
 ) -> Vec<Vec<f64>> {
 
-    // cell_size escala linealmente con la distancia entre mediciones:
-    //   <= 1m  → 75 píxeles
-    //   cada metro extra suma 4 píxeles, máximo 100
-    let cell_size = (75.0 + (distance_between_measurements_m - 1.0).max(0.0) * 4.0)
-        .min(100.0) as usize;
-
-
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
-            //let (points, matrix_with_measured_points) = create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff);
-
-            //reduce_measuring_points(&points, &matrix_with_measured_points, geotiff, cell_size)
-
             create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff)
         },
     
         MeasurementsTypeWithError::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
             let (points_central, matrix_central) = create_matrix_with_measurments_and_eliminate_none_points(&central_measurments, geotiff);
-            let (points_left, matrix_left) = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_1, geotiff);
-            let (points_right, matrix_right) = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_2, geotiff);
-            
-
-            let (pts_central, mat_central) = reduce_measuring_points(&points_central, &matrix_central, geotiff, cell_size);
-            let (pts_left,    mat_left)    = reduce_measuring_points(&points_left,    &matrix_left,    geotiff, cell_size);
-            let (pts_right,   mat_right)   = reduce_measuring_points(&points_right,   &matrix_right,   geotiff, cell_size);
+            let (points_left,    matrix_left)    = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_1, geotiff);
+            let (points_right,   matrix_right)   = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_2, geotiff);
 
             let mut new_matrix = vec![vec![0.0; geotiff.width]; geotiff.height];
 
-            for &(x, y) in &pts_central {
-                new_matrix[y][x] = mat_central[y][x];
+            for &(x, y) in &points_central {
+                new_matrix[y][x] = matrix_central[y][x];
             }
-            for &(x, y) in &pts_left {
-                new_matrix[y][x] = mat_left[y][x];
+            for &(x, y) in &points_left {
+                new_matrix[y][x] = matrix_left[y][x];
             }
-            for &(x, y) in &pts_right {
-                new_matrix[y][x] = mat_right[y][x];
+            for &(x, y) in &points_right {
+                new_matrix[y][x] = matrix_right[y][x];
             }
 
-            // juntar los 3 en uno solo
-            let mut new_points = pts_central;
-            new_points.extend(pts_left);
-            new_points.extend(pts_right);
+            let mut new_points = points_central;
+            new_points.extend(points_left);
+            new_points.extend(points_right);
 
-            (new_points,new_matrix)
+            (new_points, new_matrix)
         },
     };
 

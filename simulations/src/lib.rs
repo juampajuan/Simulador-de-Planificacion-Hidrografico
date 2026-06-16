@@ -4,7 +4,7 @@ use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::{processing::measuring::apply_disturbances, structs::{measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
 use image::{RgbaImage};
-use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
+use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation, make_shaded_png}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 
 mod processing;
 
@@ -93,4 +93,32 @@ pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec
     println!("Generando PNG ...");
 
     makepng_with_matrix_and_interpolation(student_interpolation, matrix)
+}
+
+pub fn create_path_with_shadows(
+    matrix: &DepthMatrix,
+    path: &Vec<(usize, usize)>,
+    params: StudentMeasuringParameters,
+)-> RgbaImage{
+    println!("Generando PNG con sombras ...");
+
+    let (sum, count) = matrix.data
+    .iter()
+    .flatten()
+    .filter(|&&v| v.is_finite())
+    .fold((0.0f64, 0usize), |(s, c), &v| (s + v, c + 1));
+
+    let avg = sum / count as f64;
+
+    let width: f64 = match params.echo_sounder_parameters.mode{
+        EcosondaMode::Monohaz => {
+            avg * (params.echo_sounder_parameters.angle.to_radians()/2.0).tan()
+        },
+        EcosondaMode::Multihaz => {
+            let angle_deg:f64 = 60.0;
+            (2.0*(avg)*(angle_deg.to_radians()).tan())/2.0
+        },
+    };
+
+    make_shaded_png(matrix, path, width)
 }
