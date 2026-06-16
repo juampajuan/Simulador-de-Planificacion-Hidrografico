@@ -1,6 +1,21 @@
 PORT = 3000
-CACHE_ITEMS_MAX = 10
 DB_NAME = "database.sqlite"
+
+# Capacidad maxima del cache
+CACHE_ITEMS_MAX = 10
+    # Agiliza la simulacion, almacenando calculos parciales de la misma
+    # Configurar en base a la RAM disponible. Se puede estimar que cada item, ocupara lo mismo que un geotiff.
+
+# Pass utilizada para acceder al CLI.
+ADMIN_PASS = "Magicpass2" 
+    # Requiere reinicar el servidor, para que se aplique.
+
+# Directorio donde se almacenan los archivos. (geofiff)
+# FILE_UPLOAD_PATH = "./uploads"
+    # Descomentar y cambiarlo hara que dejen de funcionar los proyectos actuales.
+    # Requiriendo volver a subirlos.
+
+# Parametros limite, usados para las simulaciones
 AZIMUT_MAX = 360.0
 AZIMUT_MIN = 0.0
 SEPARATION_MIN = 1.0
@@ -14,7 +29,4 @@ ECHO_UMBRAL_MIN = 10.0
 ECHO_UMBRAL_MAX = 90.0
 SOUND_SPEED_MIN = 1450.0
 SOUND_SPEED_MAX = 1500.0
-ADMIN_PASS = "Magicpass2"
-
-# Cambiar esto, borrara todos los proyectos actuales.
-FILE_UPLOAD_PATH = "./uploads"
+    # Se debe reiniciar el servidor, para que se apliquen.
