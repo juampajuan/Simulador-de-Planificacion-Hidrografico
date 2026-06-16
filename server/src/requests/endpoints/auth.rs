@@ -86,19 +86,19 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
         Err(err) => return string_response(format!("Bad Request: {}", err), 400),
     };
 
-    let owner = if data.get("code").is_some() {
+    let (owner, username) = if data.get("code").is_some() {
         let data: StudentAuthData = match serde_json::from_value(data) {
             Ok(d) => d,
             Err(_) => return string_response("Bad Request".to_string(), 400),
         };
 
-        let student_id = match student::verify_code(&db, &data.code) {
-            Ok(Some(id)) => id,
+        let (student_id, student_name) = match student::verify_code(&db, &data.code) {
+            Ok(Some((id, name))) => (id, name),
             Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
             Err(_) => return server_error("Internal error.".to_string()),
         };
 
-        auth::TokenOwner::Student(student_id)
+        (auth::TokenOwner::Student(student_id), student_name)
 
     } else {
         let data: ProfessorAuthData = match serde_json::from_value(data) {
@@ -116,7 +116,7 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
             Err(_) => return server_error("Internal error.".to_string()),
         };
 
-        auth::TokenOwner::Professor(professor_id)
+        (auth::TokenOwner::Professor(professor_id), data.user)
     };
 
     let token = generate_token();
@@ -130,7 +130,7 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
         Err(_) => return server_error("Internal error.".to_string()),
     };
 
-    let re = Response::from_string("OK").with_header(cookie);
+    let re = Response::from_string(username).with_header(cookie);
     (re.boxed(), 200)
 }
 

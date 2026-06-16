@@ -34,7 +34,7 @@ pub fn transport_params(props: &TransportParamsProps) -> Html {
     };
 
     html! {
-        <div class="border-white/15 p-3 bg-zinc-900 rounded-md border flex flex-col gap-3">
+        <div class="border-white/25 p-3 pt-0 border-b flex flex-col gap-3">
             <Subtitle text={"2. Embarcación"} icon={html! { <Ship size={18} /> }} />
 
             <div class="flex gap-2 p-1 bg-zinc-700 rounded border border-white/15">

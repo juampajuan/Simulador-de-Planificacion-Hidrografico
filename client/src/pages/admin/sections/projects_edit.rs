@@ -71,8 +71,8 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
     };
 
     html! {
-        <div class="space-y-4 border-t border-white/5 pt-4">
-            <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+        <div class="space-y-4">
+            <div class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
                 { "Editar Parámetros de Proyecto" }
             </div>
 
@@ -133,8 +133,8 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
             </div>
 
             <div class="flex justify-end pt-2">
-                <button onclick={on_submit} class="flex items-center gap-2 bg-cyan-200 hover:bg-cyan-300 text-black font-semibold text-xs px-4 py-2 rounded-full transition-colors">
-                    <Save size={14}/>
+                <button onclick={on_submit} class="flex items-center gap-2 bg-cyan-200 hover:bg-cyan-300 text-black font-semibold text-xs px-3 py-2 rounded transition-colors">
+                    <Save size={18}/>
                     {"Guardar Cambios"}
                 </button>
             </div>

@@ -74,6 +74,7 @@ pub fn login_page() -> Html {
     let student_cls = match mode {
         LoginMode::Teacher => {
             "
+            flex-1
             overflow-hidden
             transition-all
             duration-300
@@ -87,6 +88,7 @@ pub fn login_page() -> Html {
         }
         _ => {
             "
+            flex-1
             overflow-hidden
             transition-all
             duration-300
@@ -101,18 +103,20 @@ pub fn login_page() -> Html {
     let teacher_cls = match mode {
         LoginMode::Student => {
             "
+            flex-1
             overflow-hidden
             transition-all
             duration-300
             ease-in-out
             opacity-0
             scale-95
-            max-w-0
+            max-w-0 
             p-0 
             "
         }
         _ => {
             "
+            flex-1
             overflow-hidden
             transition-all
             duration-300
@@ -124,6 +128,7 @@ pub fn login_page() -> Html {
             "
         }
     };
+
     let login_mensaje = use_state(|| String::new());
 
     let on_submit = {
@@ -158,12 +163,15 @@ pub fn login_page() -> Html {
                 <div class="
                     bg-cyan-100
                     dark:bg-slate-950
+                    w-[420px] 
                     border
                     border-white/20
                     rounded-md
                     shadow-xl
                 ">
                     <div class="p-6 border-b border-white/20 space-y-2">
+                        // <img width="60px" src="/static/icon.png"/>
+
                         <Title text={"Acceso al simulador"} />
 
                         <div class="dark:text-white/90 text-xs">
@@ -223,7 +231,7 @@ pub fn login_page() -> Html {
                                 />
 
                                 <div class="flex flex-col gap-1 pt-3">
-                                    <span class="text-xs font-semibold text-white/40 ml-1">
+                                    <span class="text-xs font-semibold text-white/40 ml-1 truncate">
                                         {"Nombre de usuario"}
                                     </span>
 

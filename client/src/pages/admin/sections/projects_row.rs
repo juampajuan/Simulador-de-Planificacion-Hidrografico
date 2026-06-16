@@ -45,7 +45,14 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
 
     html! {
         <>
-            <tr class="text-sm bg-slate-800 rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_0_1px_rgba(255,255,255,0.1)]">
+            <tr 
+                class={classes!(
+                    "text-sm",
+                    if *is_editing { "bg-slate-600" } else { "bg-slate-800" },
+                    "rounded-lg",
+                    "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                )}
+            >
                 <td class="px-4 py-3 font-semibold text-xl rounded-l-lg">
                     { props.project.id }
                 </td>
@@ -68,7 +75,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                             onclick={toggle_edit} 
                             class={classes!(
                                 "p-2", "rounded-full", "transition-colors",
-                                if *is_editing { "bg-cyan-200"; "text-black" } else { "bg-white/15"; "hover:bg-white/25"; "text-white" }
+                                if *is_editing { "bg-cyan-200"; "text-white" } else { "bg-white/15"; "hover:bg-white/25"; "text-white" }
                             )}
                         >
                             if *is_editing { <X size={18}/> } else { <Pencil size={18}/> }
@@ -81,8 +88,8 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
             </tr>
 
             if *is_editing {
-                <tr class="text-sm bg-slate-800/20">
-                    <td colspan="4" class="p-4 pt-1">
+                <tr class="text-sm">
+                    <td colspan="4" class="p-3 bg-slate-600 rounded-lg border border-white/20">
                         <ProjectEdit
                             project_state={props.project.clone()} 
                             projects_state={props.projects_state.clone()}
