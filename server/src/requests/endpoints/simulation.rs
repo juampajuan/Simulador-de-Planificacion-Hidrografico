@@ -5,9 +5,9 @@ use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::requests::http_helper::{parse_json_body, create_png_response};
 use crate::requests::endpoints::generic;
-use crate::requests::endpoints::auth::check_student_auth;
 use crate::db::engine::DBEngine;
 use crate::structs::settings::Settings;
+use crate::utils::helpers_endpoints::check_student_auth;
 use common::{StudentMeasuringParameters, PathParameters};
  
 #[derive(serde::Deserialize)]

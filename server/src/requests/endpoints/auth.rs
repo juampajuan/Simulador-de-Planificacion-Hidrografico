@@ -1,5 +1,5 @@
 use tiny_http::{Header, Response, Request};
-use crate::utils::helpers::check_password;
+use crate::utils::helpers::{check_password, get_cookie};
 use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
@@ -197,52 +197,4 @@ fn create_auth_cookie(
 fn generate_token() -> String {
     let bytes: [u8; 32] = rand :: rng().random();
     hex::encode(bytes)
-}
-
-pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
-    let cookie_header = request
-        .headers()
-        .iter()
-        .find(|h| h.field.equiv("Cookie"))?;
-
-    cookie_header
-        .value
-        .as_str()
-        .split(';')
-        .find_map(|cookie| {
-            let (key, value) = cookie.trim().split_once('=')?;
-            if key == name {
-                Some(value.to_string())
-            } else {
-                None
-            }
-        })
-}
-
-// TODO: Mover a algun lugar generico
-pub fn check_profesor_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
-
-    let Some(token) = get_cookie(request, "auth_token") else {
-        return Ok(None);
-    };
-
-    match auth::get_user_by_token_locked(&db, &token) {
-        Ok(Some(TokenOwner::Professor(id))) => Ok(Some(id)),
-        Ok(_) => Ok(None),
-        Err(e) => Err(e.to_string())
-    }
-}
-
-// TODO: Mover a algun lugar generico
-pub fn check_student_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
-
-    let Some(token) = get_cookie(request, "auth_token") else {
-        return Ok(None);
-    };
-
-    match auth::get_user_by_token_locked(&db, &token) {
-        Ok(Some(TokenOwner::Student(id))) => Ok(Some(id)),
-        Ok(_) => Ok(None),
-        Err(e) => Err(e.to_string())
-    }
 }

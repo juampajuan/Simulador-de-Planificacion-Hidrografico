@@ -86,6 +86,7 @@ pub fn create_path_image(
 )-> RgbaImage  {
     println!("Generando PNG ...");
 
+    //TODO: Hacer que no genere la imagen original de fondo
     makepng_with_matrix_and_path(matrix,path)
 }
 

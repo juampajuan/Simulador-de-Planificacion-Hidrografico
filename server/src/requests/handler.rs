@@ -15,7 +15,6 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
         match (request.method(), api_path) {
 
-            // TODO: q hace esto, se puede borrar?
             (Method::Options, _) => {
                 (Response::empty(200).boxed(), 200)
             }
