@@ -121,7 +121,7 @@ pub fn echosounder_params(props: &EchosounderProps) -> Html {
             <div class="flex flex-col gap-1">
                 <span class="text-xs text-white/40 ml-1">{"Potencia"}</span>
                 <div class="flex gap-2 p-1 bg-zinc-700 rounded border border-white/15">
-                    {for vec![("25", "BAJA (25%)"), ("50", "MEDIA (50%)"), ("220", "ALTA (100%)")].into_iter().map(|(val, label)| {
+                    {for vec![("25", "BAJA (25%)"), ("50", "MEDIA (50%)"), ("100", "ALTA (100%)")].into_iter().map(|(val, label)| {
                         let state = state.clone();
                         html! {
                             <button type="button"
@@ -140,7 +140,7 @@ pub fn echosounder_params(props: &EchosounderProps) -> Html {
             <div class="flex flex-col gap-1">
                 <span class="text-xs text-white/40 ml-1">{"Ganancia"}</span>
                 <div class="flex gap-2 p-1 bg-zinc-700 rounded border border-white/15">
-                    {for vec!["0", "24", "36"].into_iter().map(|val| {
+                    {for vec!["12", "24", "36"].into_iter().map(|val| {
                         let state = state.clone();
                         html! {
                             <button type="button"

@@ -66,7 +66,6 @@ pub fn run_simulation(
 
     params.echo_sounder_parameters.create_echosounder();
 
-    //Vec<((usize,usize), f64)>
     let measurements_points: MeasurementsType = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
             get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure)
