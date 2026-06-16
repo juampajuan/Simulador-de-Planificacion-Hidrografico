@@ -106,7 +106,7 @@ fn get_points_perpendicular_to_this(
     //Hay que hacer que se mida una cantidad de puntos ingresada por parametro y lo mismo con el salto entra cada punto
 
     let angle_deg:f64 = 60.0; // Ángulo del haz en grados
-    let mitad_cobertura = (2.0*(matrix.data[current_point.1][current_point.0])*(angle_deg.to_radians()).tan())/2.0;
+    let mitad_cobertura = (2.0*(matrix.data[current_point.1][current_point.0])*(angle_deg.to_radians()).tan())/2.0/ matrix.size_x; 
 
     let left_point_x = cx + mitad_cobertura * perp_x;
     let left_point_y = cy + mitad_cobertura * perp_y;

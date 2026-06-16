@@ -70,14 +70,14 @@ fn write_vrt(vrt_path: &str, csv_path: &str, layer_name: &str) -> std::io::Resul
 
     let content = format!(
         r#"<OGRVRTDataSource>
-    <OGRVRTLayer name="{layer_name}">
-        <SrcDataSource>{csv_path}</SrcDataSource>
-        <SrcLayer>{csv_stem}</SrcLayer>
-        <GeometryType>wkbPoint</GeometryType>
-        <GeometryField encoding="PointFromColumns" x="x" y="y" z="z"/>
-    </OGRVRTLayer>
-</OGRVRTDataSource>
-"#
+            <OGRVRTLayer name="{layer_name}">
+                <SrcDataSource>{csv_path}</SrcDataSource>
+                <SrcLayer>{csv_stem}</SrcLayer>
+                <GeometryType>wkbPoint</GeometryType>
+                <GeometryField encoding="PointFromColumns" x="x" y="y" z="z"/>
+            </OGRVRTLayer>
+        </OGRVRTDataSource>
+        "#
     );
 
     fs::write(vrt_path, content)
