@@ -1,6 +1,6 @@
 use tiny_http::{Header, Response, Request};
 use crate::utils::helpers::check_password;
-use crate::db::queries::auth::{TokenOwner, get_user_by_token};
+use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
 use std::sync::{Arc, Mutex};
@@ -46,7 +46,7 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     };
 
     // TODO: Cambiar para chequear si existe o modificar, para separar error de lock a si existe ya el username
-    let professor_id = match professor::create_professor_locked(&db, &data.user, &password_hash) {
+    let _ = match professor::create_professor_locked(&db, &data.user, &password_hash) {
         Ok(id) => id,
         Err(_) =>  return server_error("Ya existe un profesor con ese username.".to_string())
     };
@@ -219,30 +219,30 @@ pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
         })
 }
 
-
-// // Estos se usan para chequear al inicio de las request, si esta logueado.
-pub fn check_profesor_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+// TODO: Mover a algun lugar generico
+pub fn check_profesor_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
 
     let Some(token) = get_cookie(request, "auth_token") else {
-        return None;
+        return Ok(None);
     };
 
-    match get_user_by_token(&db, &token) {
-        Ok(Some(TokenOwner::Professor(id))) => Some(id),
-        _ => None,
+    match auth::get_user_by_token_locked(&db, &token) {
+        Ok(Some(TokenOwner::Professor(id))) => Ok(Some(id)),
+        Ok(_) => Ok(None),
+        Err(e) => Err(e.to_string())
     }
-
 }
 
-pub fn check_student_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+// TODO: Mover a algun lugar generico
+pub fn check_student_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
 
     let Some(token) = get_cookie(request, "auth_token") else {
-        return None;
+        return Ok(None);
     };
 
-    match get_user_by_token(&db, &token) {
-        Ok(Some(TokenOwner::Student(id))) => Some(id),
-        _ => None,
+    match auth::get_user_by_token_locked(&db, &token) {
+        Ok(Some(TokenOwner::Student(id))) => Ok(Some(id)),
+        Ok(_) => Ok(None),
+        Err(e) => Err(e.to_string())
     }
-
 }

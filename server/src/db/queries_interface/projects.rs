@@ -1,11 +1,12 @@
-use crate::db::queries::student;
+use crate::db::queries::proyects;
 use crate::db::engine::DBEngine;
 use std::sync::{Arc, Mutex};
 
-pub fn verify_code_locked(
+
+pub fn get_project_by_id_locked(
     db: &Arc<Mutex<DBEngine>>,
-    code: &str,
-) -> Result<Option<(i64, String)>, sqlite::Error> {
+    id: i64,
+) -> Result<Option<proyects::Project>, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
@@ -16,13 +17,34 @@ pub fn verify_code_locked(
         }
     };
 
-    student::verify_code(&db_connection, code)
+    proyects::get_project_by_id(
+        &db_connection,
+        id,
+    )
 }
 
-pub fn update_student_locked(
+pub fn get_all_by_professor_id_locked(
     db: &Arc<Mutex<DBEngine>>,
-    id: i64,
-    name: &str,
+    professor_id: i64,
+) -> Result<Vec<proyects::AdminProjectView>, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Cannot lock db".to_string()),
+            })
+        }
+    };
+
+    proyects::get_all_by_professor_id(
+        &db_connection,
+        professor_id,
+    )
+}
+
+pub fn delete_project_by_id_locked(
+    db: &Arc<Mutex<DBEngine>>,
     project_id: i64,
     professor_id: i64,
 ) -> Result<bool, sqlite::Error> {
@@ -36,19 +58,18 @@ pub fn update_student_locked(
         }
     };
 
-    student::update_student(
+    proyects::delete_project_by_id(
         &db_connection,
-        id,
-        name,
         project_id,
         professor_id,
     )
 }
 
-pub fn delete_student_locked(
+pub fn update_project_locked(
     db: &Arc<Mutex<DBEngine>>,
     id: i64,
-    professor_id: i64
+    professor_id: i64,
+    metadata: &proyects::ProjectMetadata,
 ) -> Result<bool, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
@@ -60,17 +81,20 @@ pub fn delete_student_locked(
         }
     };
 
-    student::delete_student(
+    proyects::update_project(
         &db_connection,
         id,
-        professor_id
+        professor_id,
+        metadata,
     )
 }
 
-pub fn get_students_for_professor_locked(
+pub fn create_project_locked(
     db: &Arc<Mutex<DBEngine>>,
+    filename: &str,
     professor_id: i64,
-) -> Result<Vec<student::Student>, sqlite::Error> {
+    metadata: &proyects::ProjectMetadata,
+) -> Result<usize, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
@@ -81,19 +105,18 @@ pub fn get_students_for_professor_locked(
         }
     };
 
-    student::get_students_for_professor(
+    proyects::create_project(
         &db_connection,
+        filename,
         professor_id,
+        metadata,
     )
 }
 
-pub fn create_student_locked(
+pub fn get_project_id_by_student_locked(
     db: &Arc<Mutex<DBEngine>>,
-    code: &str,
-    name: &str,
-    project_id: i64,
-    professor_id: i64,
-) -> Result<(), sqlite::Error> {
+    student_id: i64,
+) -> Result<Option<i64>, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
@@ -104,11 +127,8 @@ pub fn create_student_locked(
         }
     };
 
-    student::create_student(
+    proyects::get_project_id_by_student(
         &db_connection,
-        code,
-        name,
-        project_id,
-        professor_id,
+        student_id,
     )
 }

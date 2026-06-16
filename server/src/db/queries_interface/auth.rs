@@ -58,3 +58,23 @@ pub fn delete_all_tokens_locked(
 
     auth::delete_all_tokens(&db_connection)
 }
+
+pub fn get_user_by_token_locked(
+    db: &Arc<Mutex<DBEngine>>,
+    token: &str,
+) -> Result<Option<auth::TokenOwner>, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Cannot lock db".to_string()),
+            })
+        }
+    };
+
+    auth::get_user_by_token(
+        &db_connection,
+        token,
+    )
+}

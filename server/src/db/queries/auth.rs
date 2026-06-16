@@ -1,5 +1,4 @@
 use crate::db::engine::DBEngine;
-use crate::db::encrypt::{hash_password, verify_password};
 
 pub enum TokenOwner {
     Professor(i64),

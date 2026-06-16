@@ -22,41 +22,41 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
             _ => {
                 match (request.method(), api_path) {
-                    // (Method::Post, "/create_path") =>
-                    //     simulation::create_path(&mut request, cache, db_connection, settings),
+                    (Method::Post, "/create_path") =>
+                        simulation::create_path(&mut request, cache, db, settings),
 
-                    // (Method::Post, "/run_simulation") =>
-                    //     simulation::run_simulation(&mut request, cache, db_connection, settings),
+                    (Method::Post, "/run_simulation") =>
+                        simulation::run_simulation(&mut request, cache, db, settings),
 
                     (Method::Get, "/limits") =>
                         limits::get_limits(settings),
 
-                    // (Method::Get, "/projects") =>
-                    //     projects::get_projects(&mut request, db_connection), 
+                    (Method::Get, "/projects") =>
+                        projects::get_projects(&mut request, db), 
 
-                    // (Method::Post, "/projects") =>
-                    //     projects::create(&mut request, db_connection, settings), 
+                    (Method::Post, "/projects") =>
+                        projects::create(&mut request, db, settings), 
 
-                    // (Method::Delete, url) if url.starts_with("/projects/") =>
-                    //     projects::delete_project(&mut request, db_connection, settings),
+                    (Method::Delete, url) if url.starts_with("/projects/") =>
+                        projects::delete_project(&mut request, db, settings),
                     
-                    // (Method::Put, url) if url.starts_with("/projects/") =>
-                    //     projects::update_a_project(&mut request, db_connection),
+                    (Method::Put, url) if url.starts_with("/projects/") =>
+                        projects::update_a_project(&mut request, db),
 
-                    // (Method::Get, "/student_project") =>
-                    //     projects::get_student_project(&mut request, db_connection),  
+                    (Method::Get, "/student_project") =>
+                        projects::get_student_project(&mut request, db),  
 
-                    // (Method::Get, "/students") =>
-                    //     students::get_all_students(&mut request, db_connection),
+                    (Method::Get, "/students") =>
+                        students::get_all_students(&mut request, db),
 
-                    // (Method::Post, "/students") =>
-                    //     students::create_new_student(&mut request, db_connection),
+                    (Method::Post, "/students") =>
+                        students::create_new_student(&mut request, db),
                         
-                    // (Method::Delete, url) if url.starts_with("/students/") =>
-                    //     students::delete_a_student(&mut request, db_connection),
+                    (Method::Delete, url) if url.starts_with("/students/") =>
+                        students::delete_a_student(&mut request, db),
 
                     (Method::Put, url) if url.starts_with("/students/") => 
-                        students::update_an_student(&mut request, db_connection),  
+                        students::update_an_student(&mut request, db),  
 
                     (Method::Post, "/auth/create_professor_user") =>
                         auth::create_professor(&mut request, db),

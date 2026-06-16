@@ -43,17 +43,19 @@ pub fn create_student(
 
 pub fn delete_student(
     db: &DBEngine,
-    id: i64
+    id: i64,
+    professor_id: i64
 ) -> Result<bool, sqlite::Error> {
 
     let mut statement = db.run_query(
         "
         DELETE FROM students
-        WHERE id = ?;
+        WHERE id = ? and professor_id = ?;
         "
     )?;
 
     statement.bind((1, id))?;
+    statement.bind((1, professor_id))?;
     statement.next()?;
 
     Ok(db.connection.change_count() > 0)
@@ -134,31 +136,4 @@ pub fn update_student(
     statement.next()?;
 
     Ok(db.connection.change_count() > 0)
-    //Deberia devolver alguna confirmacion de que pudo modificarlo
 }
-
-// Demo de uso
-// use db::queries::student::{Student, create_student, get_student_by_code};
-
-//     create_student(
-//         &db,
-//         "A123",
-//         "Julen"
-//     )?;
-
-//     let student =
-//         get_student_by_code(
-//             &db,
-//             "A123"
-//         )?;
-
-//     match student {
-
-//         Some(student) => {
-//             println!("{}", student.name);
-//         }
-
-//         None => {
-//             println!("No encontrado");
-//         }
-//     }
