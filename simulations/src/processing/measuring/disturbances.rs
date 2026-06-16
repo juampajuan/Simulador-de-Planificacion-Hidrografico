@@ -1,5 +1,4 @@
 use common::Transport;
-use rand::RngExt;
 use rand_distr::{Distribution, Normal};
 use common::StudentMeasuringParameters;
 
@@ -152,7 +151,6 @@ fn apply_disturbances_monohaz(
     matrix: &DepthMatrix,
     dp: &DisturbanceParams,
 ) -> Vec<((usize, usize), Option<f64>)> {
-    let echo = &params.echo_sounder_parameters;
 
     mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
         // 1. Sensor inercial
@@ -190,9 +188,9 @@ fn apply_disturbances_multihaz(
     let mut result_der     = Vec::with_capacity(derecha.len());
 
     for i in 0..central.len() {
-        let (punto_c,   p_c)   = central[i];
-        let (punto_izq, p_izq) = izquierda[i];
-        let (punto_der, p_der) = derecha[i];
+        let (punto_c, _)   = central[i];
+        let (punto_izq, _) = izquierda[i];
+        let (punto_der, _) = derecha[i];
 
         // Los tres puntos del ping ocurren en el mismo instante,
         // con la misma inclinación de la embarcación.
