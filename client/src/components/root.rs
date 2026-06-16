@@ -16,6 +16,12 @@ pub struct RootProps {
 
 #[function_component(Root)]
 pub fn root(props: &RootProps) -> Html {
+
+    let location = use_location();
+    let is_login = location
+        .as_ref()
+        .is_some_and(|l| l.path() == "/login");
+
     html! {
         <main class=" 
             h-screen
@@ -27,20 +33,21 @@ pub fn root(props: &RootProps) -> Html {
             transition-colors
             duration-300
         ">
-            // Esto es la navbar, luego va a estar el nombre del grupo y un logout.
-            <div class="pt-2 px-3 flex justify-between items-center h-14">
-                <div>
-                    <Title text={&props.title} 
-                        icon={html! {
-                            <Waves size={24} />
-                        }}
-                    />
+            if !is_login {
+                <div class="pt-2 px-3 flex justify-between items-center h-14">
+                    <div>
+                        <Title text={&props.title} 
+                            icon={html! {
+                                <Waves size={24} />
+                            }}
+                        />
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <DarkModeButton />
+                        <UserButton/>
+                    </div>
                 </div>
-                <div class="flex gap-2 items-center">
-                    <DarkModeButton />
-                    <UserButton/>
-                </div>
-            </div>
+            }
 
             // Contenido principal
             <section class="h-full flex flex-1 gap-2 p-2 overflow-hidden">
@@ -53,11 +60,12 @@ pub fn root(props: &RootProps) -> Html {
 #[function_component(UserButton)]
 pub fn user_button() -> Html {
     let location = use_location();
-    let token = get_local_storage("group_or_user_name").unwrap_or_default();
-
     let is_login = location
         .as_ref()
         .is_some_and(|l| l.path() == "/login");
+    let token = get_local_storage("group_or_user_name").unwrap_or_default();
+
+    
 
     if is_login {
         html! {}

@@ -3,4 +3,3 @@ pub mod routing;
 pub mod measuring;
 pub mod interpolation;
 pub mod images;
-pub mod gdal_grid_interp;

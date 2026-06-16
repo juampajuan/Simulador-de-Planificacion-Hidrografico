@@ -1,10 +1,11 @@
 use tiny_http::{Header, Response, Request};
 use crate::utils::helpers::check_password;
-use crate::db::queries::auth::{TokenOwner, get_user_by_token};
+use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
+use std::sync::{Arc, Mutex};
 use crate::db::encrypt::{hash_password};
-use crate::db::queries::{professor, auth, student};
+use crate::db::queries_interface::{professor, auth, student};
 use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
 use serde_json::Value;
@@ -23,8 +24,9 @@ pub struct StudentAuthData {
     pub code: String, 
 }
 
-pub fn create_professor(request: &mut Request, db: DBEngine) -> HandlerResult {
+pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
+    // TODO: Arreglar esto para el CLI.
     if !is_local_request(&request) {
         return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
     }
@@ -43,7 +45,8 @@ pub fn create_professor(request: &mut Request, db: DBEngine) -> HandlerResult {
         Err(_) =>  return server_error("No se pudo hashear la contraseña.".to_string())
     };
 
-    let professor_id = match professor::create_professor(&db, &data.user, &password_hash) {
+    // TODO: Cambiar para chequear si existe o modificar, para separar error de lock a si existe ya el username
+    let _ = match professor::create_professor_locked(&db, &data.user, &password_hash) {
         Ok(id) => id,
         Err(_) =>  return server_error("Ya existe un profesor con ese username.".to_string())
     };
@@ -51,8 +54,9 @@ pub fn create_professor(request: &mut Request, db: DBEngine) -> HandlerResult {
     string_response("Usuario creado correctamente".to_string(), 200)
 }
 
-pub fn change_pass(request: &mut Request, db: DBEngine) -> HandlerResult {
+pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
+    // TODO: Arreglar esto para el CLI.
     if !is_local_request(&request) {
         return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
     }
@@ -72,14 +76,14 @@ pub fn change_pass(request: &mut Request, db: DBEngine) -> HandlerResult {
     };
 
 
-    match professor::change_password_by_username(&db, &data.user, &password_hash) {
+    match professor::change_password_by_username_locked(&db, &data.user, &password_hash) {
         Ok(_) => string_response("Contraseña cambiada correctamente".to_string(), 200),
         Err(_) => server_error("No se pudo cambiar la contraseña.".to_string())
     }
 
 }
 
-pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
+pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let data: Value = match parse_json_body(request) {
         Ok(d) => d,
@@ -92,13 +96,13 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
             Err(_) => return string_response("Bad Request".to_string(), 400),
         };
 
-        let (student_id, student_name) = match student::verify_code(&db, &data.code) {
+        let (student_id, student_name) = match student::verify_code_locked(&db, &data.code) {
             Ok(Some((id, name))) => (id, name),
             Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
             Err(_) => return server_error("Internal error.".to_string()),
         };
 
-        (auth::TokenOwner::Student(student_id), student_name)
+        (TokenOwner::Student(student_id), student_name)
 
     } else {
         let data: ProfessorAuthData = match serde_json::from_value(data) {
@@ -106,7 +110,7 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
             Err(_) => return string_response("Bad Request".to_string(), 400),
         };
 
-        let professor_id = match professor::verify_professor_credentials(
+        let professor_id = match professor::verify_professor_credentials_locked(
             &db,
             &data.user,
             &data.pass,
@@ -116,12 +120,12 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
             Err(_) => return server_error("Internal error.".to_string()),
         };
 
-        (auth::TokenOwner::Professor(professor_id), data.user)
+        (TokenOwner::Professor(professor_id), data.user)
     };
 
     let token = generate_token();
 
-    if let Err(_) = auth::create_token(&db, owner, &token, 7) {
+    if let Err(_) = auth::create_token_locked(&db, owner, &token, 7) {
         return server_error("Internal error.".to_string());
     }
 
@@ -134,20 +138,21 @@ pub fn login(request: &mut Request, db: DBEngine) -> HandlerResult {
     (re.boxed(), 200)
 }
 
-pub fn close_all(request: &mut Request, db: DBEngine) -> HandlerResult {
+pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
+    // TODO: Arreglar esto para el CLI.
     if !is_local_request(&request) {
         return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
     }
 
-    if let Err(_) = auth::delete_all_tokens(&db) {
+    if let Err(_) = auth::delete_all_tokens_locked(&db) {
         return server_error("Internal error.".to_string());
     }
 
     string_response("Todos las sesiones fueron cerradas.".to_string(), 200)
 }
 
-pub fn close_session(request: &mut Request, db: DBEngine) -> HandlerResult {
+pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let auth_token = match get_cookie(request, "auth_token") {
         Some(token) => token,
@@ -159,7 +164,7 @@ pub fn close_session(request: &mut Request, db: DBEngine) -> HandlerResult {
         }
     };
 
-    if let Err(_) = auth::delete_token(&db, &auth_token) {
+    if let Err(_) = auth::delete_token_locked(&db, &auth_token) {
         return server_error("Internal error.".to_string());
     }
 
@@ -214,30 +219,30 @@ pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
         })
 }
 
-
-// Estos se usan para chequear al inicio de las request, si esta logueado.
-pub fn check_profesor_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+// TODO: Mover a algun lugar generico
+pub fn check_profesor_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
 
     let Some(token) = get_cookie(request, "auth_token") else {
-        return None;
+        return Ok(None);
     };
 
-    match get_user_by_token(&db, &token) {
-        Ok(Some(TokenOwner::Professor(id))) => Some(id),
-        _ => None,
+    match auth::get_user_by_token_locked(&db, &token) {
+        Ok(Some(TokenOwner::Professor(id))) => Ok(Some(id)),
+        Ok(_) => Ok(None),
+        Err(e) => Err(e.to_string())
     }
-
 }
 
-pub fn check_student_auth(request: &tiny_http::Request, db: &DBEngine) -> Option<i64> {
+// TODO: Mover a algun lugar generico
+pub fn check_student_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
 
     let Some(token) = get_cookie(request, "auth_token") else {
-        return None;
+        return Ok(None);
     };
 
-    match get_user_by_token(&db, &token) {
-        Ok(Some(TokenOwner::Student(id))) => Some(id),
-        _ => None,
+    match auth::get_user_by_token_locked(&db, &token) {
+        Ok(Some(TokenOwner::Student(id))) => Ok(Some(id)),
+        Ok(_) => Ok(None),
+        Err(e) => Err(e.to_string())
     }
-
 }

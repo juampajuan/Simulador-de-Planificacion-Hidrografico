@@ -1,9 +1,10 @@
 use yew::prelude::*;
+use crate::components::darkmode_btn::DarkModeButton;
 use crate::components::root::{Root};
 use crate::components::subtitle::Subtitle;
 use crate::components::title::Title;
 use lucide_yew::{GraduationCap,University};
-use web_sys::HtmlInputElement;
+use web_sys::{HtmlInputElement, window};
 use crate::services::requests::trigger_login;
 
 
@@ -149,8 +150,59 @@ pub fn login_page() -> Html {
         })
     };
 
+    let counter = use_state(|| 0u8);
+
+    {
+        let counter = counter.clone();
+
+        use_effect_with((), move |_| {
+            counter.set(next_counter());
+            || ()
+        });
+    }
+
     html! {
-        <Root title={"Bienvenido al Simulador de Planificación Hidrográfico"}>
+        // <Root title={"Bienvenido al Simulador de Planificación Hidrográfico"}>
+        <div class="h-screen w-screen grid grid-cols-2 bg-gradient-to-r from-slate-900 to-slate-900 relative">
+            <div class="h-screen w-screen absolute top-0 left-0 overflow-hidden">
+                <img
+                    src={format!("static/login_wall_{}.jpg", *counter)}
+                    class="w-full h-full object-cover opacity-60"
+                />
+            </div>
+            <div class="absolute right-5 top-5 z-30">
+                <DarkModeButton/>
+            </div>
+        <div class="h-screen w-screen grid grid-cols-2 bg-gradient-to-t from-slate-900/80 to-transparent relative">
+            
+            <div class="relative flex justify-center flex-col p-8 pt-0 pb-12 items-center">
+                <div class="space-y-2">
+                    <h1 class="
+                        font-semibold text-4xl
+                        font-shadow
+                        dark:text-cyan-100
+                        text-cyan-800 flex items-center gap-2
+                    ">
+                        { "Bienvenido al" }
+                    </h1>
+                    <h1 class="
+                        font-semibold text-6xl
+                        font-shadow
+                        dark:text-cyan-100
+                        text-cyan-800 flex items-center gap-2
+                    ">
+                        { "Simulador de Planificación" }
+                    </h1>
+                    <h1 class="
+                        font-semibold text-6xl
+                        font-shadow
+                        dark:text-cyan-100
+                        text-cyan-800 flex items-center gap-2
+                    ">
+                        { "Hidrográfico" }
+                    </h1>
+                </div>
+            </div>
             <div class="
                 flex-1
                 flex
@@ -162,10 +214,11 @@ pub fn login_page() -> Html {
             ">
                 <div class="
                     bg-cyan-100
-                    dark:bg-slate-950
+                    dark:bg-slate-950/70
+                    backdrop-blur
                     w-[420px] 
                     border
-                    border-white/20
+                    border-white/25
                     rounded-md
                     shadow-xl
                 ">
@@ -288,6 +341,33 @@ pub fn login_page() -> Html {
                     </div>
                 </div>
             </div>
-        </Root>
+        </div>
+        </div>
     }
+}
+
+fn next_counter() -> u8 {
+    let storage = window()
+        .unwrap()
+        .local_storage()
+        .unwrap()
+        .unwrap();
+
+    let current = storage
+        .get_item("page_counter")
+        .unwrap()
+        .and_then(|s| s.parse::<u8>().ok())
+        .unwrap_or(0);
+
+    let next = (current + 1) % 3; // 0..4
+
+    storage
+        .set_item("page_counter", &next.to_string())
+        .unwrap();
+
+    web_sys::console::log_1(
+        &format!("Counter: {}", next).into(),
+    );
+
+    next
 }

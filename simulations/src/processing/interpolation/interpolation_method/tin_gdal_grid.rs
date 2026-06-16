@@ -6,30 +6,6 @@ use gdal::{Dataset, DatasetOptions, GdalOpenFlags};
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::processing::geotiff::processing_geotiff;
 
-
-/// Métodos de gdal_grid que podemos usar.
-/// El string es el que se le pasa directo a `-a` en gdal_grid.
-pub enum GdalGridMethod {
-    /// IDW con suavizado. smoothing=0 es IDW puro (como
-    /// interpolation_idw_kdtrees); smoothing>0 difumina las
-    /// franjas del recorrido.
-    InverseDistance { power: f64, smoothing: f64 },
-    /// Interpolación lineal sobre triangulación de Delaunay
-    /// (equivalente a interpolation_tin).
-    Linear,
-}
-
-impl GdalGridMethod {
-    fn to_arg(&self) -> String {
-        match self {
-            GdalGridMethod::InverseDistance { power, smoothing } => {
-                format!("invdist:power={power}:smoothing={smoothing}")
-            }
-            GdalGridMethod::Linear => "linear".to_string(),
-        }
-    }
-}
-
 /// Exporta los puntos medidos a un CSV con columnas x,y,z.
 ///
 /// x es la columna de píxel directamente. y necesita invertirse:
@@ -91,11 +67,10 @@ fn write_vrt(vrt_path: &str, csv_path: &str, layer_name: &str) -> std::io::Resul
 ///
 /// Devuelve la matriz interpolada del mismo tamaño que el GeoTIFF
 /// original, o `Err` si gdal_grid no está disponible o falla.
-pub fn interpolation_gdal_grid(
+pub fn interpolation_gdal_tin(
     measuring_points: &[(usize, usize)],
     matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
-    method: GdalGridMethod,
 ) -> Result<Vec<Vec<f64>>, String> {
     // Directorio temporal para los archivos intermedios.
     // Usamos un nombre único por llamada para soportar ejecuciones
@@ -129,7 +104,7 @@ pub fn interpolation_gdal_grid(
     //    -l: nombre de la capa (definido en el .vrt)
     let output = Command::new("gdal_grid")
         .args([
-            "-a", &method.to_arg(),
+            "-a", "linear",
             "-of", "GTiff",
             "-ot", "Float64",
             "-txe", "0", &geotiff.width.to_string(),

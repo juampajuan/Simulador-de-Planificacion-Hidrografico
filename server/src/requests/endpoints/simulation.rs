@@ -1,6 +1,6 @@
 use tiny_http::Request;
 use std::sync::{Arc, Mutex};
-use crate::db::queries::proyects::{get_project_by_id, get_project_id_by_student};
+use crate::db::queries_interface::projects;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::requests::http_helper::{parse_json_body, create_png_response};
@@ -24,7 +24,7 @@ struct RequestContext {
     data: FullSimulationRequest,
 }
 
-pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
@@ -45,7 +45,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEn
     (response.boxed(), 200)
 }
 
-pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: DBEngine, settings: Arc<Settings>) -> HandlerResult {
+pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
@@ -79,19 +79,20 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: D
 }
 
 
-fn extract_request_context(request: &mut Request, db: &DBEngine, settings: &Arc<Settings>) -> Result<RequestContext, HandlerResult> {
+fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> Result<RequestContext, HandlerResult> {
     let student_id = match check_student_auth(request, db) {
-        Some(id) => id,
-        None => return Err(generic::string_response("Sin autorizar".to_string(), 401)),
+        Ok(Some(id)) => id,
+        Ok(None) => return Err(generic::string_response("Sin autorizar".to_string(), 401)),
+        Err(err) => return Err(generic::server_error(err)),
     };
 
-    let project_id = match get_project_id_by_student(db, student_id) {
+    let project_id = match projects::get_project_id_by_student_locked(db, student_id) {
         Ok(Some(id)) => id,
         Ok(None) => return Err(generic::string_response("Proyecto no encontrado".to_string(), 404)),
-        Err(_) => return Err(generic::server_error("Error al obtener el proyecto".to_string())),
+        Err(_) => return Err(generic::server_error("Error al obtener el proyecto del estudiante".to_string())),
     };
 
-    let filename = match get_project_by_id(db, project_id) {
+    let filename = match projects::get_project_by_id_locked(db, project_id) {
         Ok(Some(project)) => project.filename,
         Ok(None) => return Err(generic::string_response("Proyecto no encontrado".to_string(), 404)),
         Err(_) => return Err(generic::server_error("Error al obtener el proyecto".to_string())),

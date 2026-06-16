@@ -6,14 +6,8 @@ use crate::requests::handler::handle_request;
 use crate::structs::settings::Settings;
 use crate::db::engine::DBEngine;
 
-pub fn create_request_thread(request: Request, cache: Arc<Mutex<FileCache>>, settings: Arc<Settings>) -> JoinHandle<()> {
+pub fn create_request_thread(request: Request, cache: Arc<Mutex<FileCache>>, settings: Arc<Settings>, db: Arc<Mutex<DBEngine>>) -> JoinHandle<()> {
     thread::spawn(move || {
-
-        let db = match DBEngine::new(&settings.db_name) {
-            Ok(db) => Some(db),
-            Err(err) => None
-        };
-
         let log = handle_request(request, cache, db, settings);
         log.print();
     })
