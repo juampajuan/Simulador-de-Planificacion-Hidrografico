@@ -1,17 +1,24 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-// Importamos la matriz real para que sea la misma que usa el resto del sistema
 pub use simulations::structs::depth_matrix::DepthMatrix;
+use common::PathParameters;
+
+#[derive(Clone)]
+pub struct PathData {
+    pub coordinates: Vec<(usize, usize)>,
+    pub parameters: PathParameters,
+}
 
 #[derive(Clone)]
 pub struct CacheItem {
     pub id: String,
+    pub geotiff_path: String,
     pub matrix: DepthMatrix,
-    pub last_path: Vec<(usize, usize)>,
+    pub last_path: Option<PathData>, 
 }
 
 pub struct FileCache {
     items: Vec<(CacheItem, u64)>,
-    limit: usize    
+    pub limit: usize,
 }
 
 impl FileCache {
@@ -23,27 +30,59 @@ impl FileCache {
         SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
     }
 
-    // Upsert: Si existe actualiza, si no, crea.
-    pub fn update_path(&mut self, id: String, matrix: DepthMatrix, path: Vec<(usize, usize)>) {
+    pub fn update_map(&mut self, cache_key: String, geotiff_path: String, matrix: DepthMatrix) {
         let now = self.get_now();
 
-        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == id) {
+        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
+            self.items[pos].0.geotiff_path = geotiff_path;
             self.items[pos].0.matrix = matrix;
-            self.items[pos].0.last_path = path;
             self.items[pos].1 = now;
         } else {
             if self.items.len() >= self.limit {
                 self.remove_oldest();
             }
-            self.items.push((CacheItem { id, matrix, last_path: path }, now));
+            self.items.push((
+                CacheItem { 
+                    id: cache_key, 
+                    geotiff_path, 
+                    matrix, 
+                    last_path: None 
+                }, 
+                now
+            ));
         }
     }
 
-    pub fn get(&mut self, id: &str) -> Option<&CacheItem> {
+    pub fn get_map(&mut self, cache_key: &str, geotiff_path: &str) -> Option<&DepthMatrix> {
         let now = self.get_now();
-        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == id) {
+        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
+            if self.items[pos].0.geotiff_path == geotiff_path {
+                self.items[pos].1 = now;
+                return Some(&self.items[pos].0.matrix);
+            }
+        }
+        None
+    }
+
+    pub fn update_path(&mut self, cache_key: String, coordinates: Vec<(usize, usize)>, params: PathParameters) {
+        let now = self.get_now();
+
+        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
+            self.items[pos].0.last_path = Some(PathData { coordinates, parameters: params });
             self.items[pos].1 = now;
-            return Some(&self.items[pos].0);
+        }
+    }
+
+    pub fn get_path_if_valid(&mut self, cache_key: &str, current_params: &PathParameters) -> Option<Vec<(usize, usize)>> {
+        let now = self.get_now();
+        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
+            self.items[pos].1 = now;
+            
+            if let Some(ref path_data) = self.items[pos].0.last_path {
+                if path_data.parameters == *current_params {
+                    return Some(path_data.coordinates.clone());
+                }
+            }
         }
         None
     }
