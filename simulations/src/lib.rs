@@ -2,9 +2,9 @@
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
-use crate::{processing::measuring::apply_disturbances, structs::{measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
+use crate::{processing::{interpolation::interpolation_handler:: interpolate, measuring::apply_disturbances}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
 use image::{RgbaImage};
-use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation, make_shaded_png}, interpolation::{InterpolationMethod, interpolate}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
+use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation, make_shaded_png}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 
 mod processing;
 
@@ -77,7 +77,7 @@ pub fn run_simulation(
 
     let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix);
 
-    interpolate(InterpolationMethod::GdalGrid(processing::gdal_grid_interp::GdalGridMethod::Linear), mediciones_observadas, matrix, distance_between_points)
+    interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix)
 }
 
 pub fn create_path_image(
