@@ -67,3 +67,23 @@ pub fn create_professor_locked(
         password_hash,
     )
 }
+
+pub fn get_professor_id_by_username_locked(
+    db: &Arc<Mutex<DBEngine>>,
+    username: &str,
+) -> Result<Option<i64>, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Cannot lock db".to_string()),
+            });
+        }
+    };
+
+    professor::get_professor_id_by_username(
+        &db_connection,
+        username,
+    )
+}
