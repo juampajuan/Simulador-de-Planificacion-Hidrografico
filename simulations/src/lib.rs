@@ -4,7 +4,7 @@ use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
 use crate::{processing::{interpolation::interpolation_handler:: interpolate, measuring::apply_disturbances}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
 use image::{RgbaImage};
-use crate::{processing::{images::{makepng_with_matrix_and_path, makepng_with_matrix_and_interpolation, make_shaded_png}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
+use crate::{processing::{images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 
 mod processing;
 
@@ -87,7 +87,7 @@ pub fn create_path_image(
     println!("Generando PNG ...");
 
     //TODO: Hacer que no genere la imagen original de fondo
-    makepng_with_matrix_and_path(matrix,path)
+    makepng_transparent_with_path(matrix,path)
 }
 
 pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbaImage {
