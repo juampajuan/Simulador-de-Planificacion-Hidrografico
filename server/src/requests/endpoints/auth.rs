@@ -3,6 +3,7 @@ use crate::utils::helpers::{check_password, get_cookie};
 use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
+use crate::utils::helpers_endpoints::check_profesor_auth;
 use std::sync::{Arc, Mutex};
 use crate::db::encrypt::{hash_password};
 use crate::db::queries_interface::{auth, professor, projects, student};
