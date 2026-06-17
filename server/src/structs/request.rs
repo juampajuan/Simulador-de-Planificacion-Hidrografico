@@ -10,9 +10,9 @@ pub struct RequestLog {
     pub method: String,
     pub path: String,
     pub status_code: u16,
+    pub error: Option<String>,
 }
 
-// TODO: Implementar/Agregar Error/String, como un option. Asi se puede logear lo que falla
 impl RequestLog {
     pub fn print(&self) {
         let color: &str = match self.status_code {
@@ -30,7 +30,11 @@ impl RequestLog {
             self.status_code,
             RESET
         );
+
+        if let Some(err) = &self.error {
+            println!("  {}error: {}{}", RED, err, RESET);
+        }
     }
 }
 
-pub type HandlerResult = (ResponseBox, u16);
+pub type HandlerResult = (ResponseBox, u16, Option<String>);

@@ -52,7 +52,7 @@ pub fn get_page_file(request: &Request) -> HandlerResult {
                 .with_header(header)
                 .boxed();
 
-            return (response, 200);
+            return (response, 200, None);
         }
 
         Err(_) => return not_found(),
