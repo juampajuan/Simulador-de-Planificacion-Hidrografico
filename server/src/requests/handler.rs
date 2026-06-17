@@ -26,6 +26,9 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
                     (Method::Post, "/run_simulation") =>
                         simulation::run_simulation(&mut request, cache, db, settings),
+                        
+                    (Method::Post, "/coverage_image") =>
+                        simulation::create_coverage_image(&mut request, cache, db, settings),
 
                     (Method::Get, "/limits") =>
                         limits::get_limits(settings),

@@ -78,6 +78,36 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     (response.boxed(), 200)
 }
 
+pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
+    let ctx = match extract_request_context(request, &db, &settings) {
+        Ok(context) => context,
+        Err(response) => return response,
+    };
+ 
+    let echo_parameters = match ctx.data.echo_parameters {
+        Some(params) => params,
+        None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
+    };
+ 
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.cache_key, &ctx.file_path) {
+        Ok(m) => m,
+        Err(err) => return generic::server_error(err),
+    };
+ 
+    let path = lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters);
+ 
+    if path.is_empty() {
+        return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
+    }
+ 
+    let image = simulations::create_path_with_shadows(&matrix, &path, echo_parameters);
+    let response = create_png_response(image);
+ 
+    println!("Imagen de cobertura generada.");
+    (response.boxed(), 200)
+}
+ 
+
 
 fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> Result<RequestContext, HandlerResult> {
     let student_id = match check_student_auth(request, db) {
