@@ -1,10 +1,10 @@
 use tiny_http::ResponseBox;
-
+ 
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
 const RED: &str = "\x1b[31m";
 const RESET: &str = "\x1b[0m";
-
+ 
 /// Lo genera cada endpoints, para luego loggear en consola o si se decide en un archivo.
 pub struct RequestLog {
     pub method: String,
@@ -12,7 +12,7 @@ pub struct RequestLog {
     pub status_code: u16,
     pub error: Option<String>,
 }
-
+ 
 impl RequestLog {
     pub fn print(&self) {
         let color: &str = match self.status_code {
@@ -21,20 +21,22 @@ impl RequestLog {
             500..=599 => RED,
             _ => RESET,
         };
-
+ 
+        let error_str = match &self.error {
+            Some(err) => format!(" - {}", err),
+            None => String::new(),
+        };
+ 
         println!(
-            "{} {} -> {}{}{}",
+            "{} {} -> {}{}{}{}",
             self.method,
             self.path,
             color,
             self.status_code,
+            error_str,
             RESET
         );
-
-        if let Some(err) = &self.error {
-            println!("  {}error: {}{}", RED, err, RESET);
-        }
     }
 }
-
+ 
 pub type HandlerResult = (ResponseBox, u16, Option<String>);
