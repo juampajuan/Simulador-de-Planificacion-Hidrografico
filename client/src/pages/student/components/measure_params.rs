@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::services::requests::run_simulation;
+use crate::services::requests::{run_simulation, run_coverage};
 use crate::structs::state::{EchoState, PathState, SimulationUiState};
 use crate::pages::student::components::transport::TransportParams;
 use crate::pages::student::components::echosounder::EchosounderParams;
@@ -43,14 +43,36 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
         );
     });
 
+    let echo_state_handle_cov = state.clone();
+    let path_state_handle_cov = props.path_state.clone();
+    let ui_state_handle_cov = props.ui_state.clone();
+    let limits_handle_cov = props.limits.clone();
+
+    let on_coverage_click = Callback::from(move |_| {
+        run_coverage(
+            &*echo_state_handle_cov,
+            &*path_state_handle_cov,
+            ui_state_handle_cov.clone(),
+            &*limits_handle_cov
+        );
+    });
+
+
     html! {
         <div class={classes!("space-y-3", "relative", disabled_buttons)}>
             
             <TransportParams echo_state={state.clone()} />
-
+ 
             <EchosounderParams echo_state={state} />
-
-            <div class="pb-1 px-3">
+ 
+            <div class="pb-1 px-3 flex flex-col gap-2">
+                <button 
+                    disabled={!is_form_complete || is_loading} 
+                    onclick={on_coverage_click}
+                    class="uppercase text-center disabled:opacity-30 bg-zinc-600 p-3 text-white font-bold w-full hover:bg-zinc-500 transition-all rounded shadow-xl disabled:bg-zinc-700"
+                >
+                    {"Ver Cobertura"}
+                </button>
                 <button 
                     disabled={!is_form_complete || is_loading} 
                     onclick={on_simulate_click}

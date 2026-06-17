@@ -100,7 +100,11 @@ pub fn init(
         VALUES (1, 'Grupo Alumnos Test', 'ABC1J5', 1, 1)
         ON CONFLICT (id) DO NOTHING;
 
-        -- TODO: Los indices.
+        CREATE INDEX IF NOT EXISTS idx_projects_professor_id ON projects(professor_id);
+        CREATE INDEX IF NOT EXISTS idx_students_project_id ON students(project_id);
+        CREATE INDEX IF NOT EXISTS idx_students_professor_id ON students(professor_id);
+        CREATE INDEX IF NOT EXISTS idx_students_code ON students(code);
+        CREATE INDEX IF NOT EXISTS idx_professors_username ON professors(username);
     ")?;
 
     Ok(())

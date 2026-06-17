@@ -3,10 +3,10 @@ use crate::utils::helpers::generate_code;
 use crate::db::engine::DBEngine;
 use crate::db::queries::student::{NewStudent};
 use crate::db::queries_interface::{student, projects};
-use crate::requests::endpoints::auth::{check_profesor_auth};
 use crate::requests::http_helper::parse_json_body;
-use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{server_error, string_response};
+use crate::structs::request::HandlerResult;
+use crate::utils::helpers_endpoints::check_profesor_auth;
 use std::sync::{Arc, Mutex};
 use serde_json;
 
@@ -23,7 +23,6 @@ pub fn create_new_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Ha
         Err(err) => return string_response(format!("Bad Request: {}", err), 400),
     };
 
-    // TODO: Chquear q pasa si no existe.
     let Ok(projects) = projects::get_project_by_id_locked(&db, data.project_id) else {
         return server_error("Error al obtener los proyectos".to_string());
     };

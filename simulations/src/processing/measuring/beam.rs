@@ -189,10 +189,10 @@ fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
 fn calculate_covered_radius(current_point: &(usize, usize), angle_deg: f64, matrix: &DepthMatrix) -> f64 {
     let z = matrix.data[current_point.1][current_point.0];
     let a = z * (angle_deg.to_radians()/2.0).tan();
-    a.abs()
+    (a/matrix.size_x).abs()
 }
 
-fn get_points_circular_to_this(
+pub fn get_points_circular_to_this(
     current_point: &(usize, usize),
     angle: f64,
     matrix: &DepthMatrix,
