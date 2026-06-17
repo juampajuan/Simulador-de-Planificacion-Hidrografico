@@ -2,6 +2,7 @@ use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
 use super::helpers::{depth_color, depth_range, is_valid};
 
+#[allow(dead_code)]
 pub fn makepng_with_matrix_and_path(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
