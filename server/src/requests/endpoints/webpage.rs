@@ -24,8 +24,7 @@ pub fn get_page_file(request: &Request) -> HandlerResult {
 
     let url = request.url();
  
-    // TODO: Modificar, evitar q esto sea hardcoadeado.
-    let path = if url == "/" {
+    let path = if url == "/" || PathBuf::from(&url).extension().is_none() {
         PathBuf::from("client/dist/index.html")
     } else {
         PathBuf::from(format!("client/dist{}", url))
