@@ -5,7 +5,7 @@ use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
 use std::sync::{Arc, Mutex};
 use crate::db::encrypt::{hash_password};
-use crate::db::queries_interface::{professor, auth, student};
+use crate::db::queries_interface::{auth, professor, projects, student};
 use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
 use serde_json::Value;
@@ -26,9 +26,10 @@ pub struct StudentAuthData {
 
 pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    // TODO: Arreglar esto para el CLI.
-    if !is_local_request(&request) {
-        return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
+    match is_admin_request(&request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(err) => return server_error("Error autenticando".into()),
     }
 
     let data: ProfessorAuthData = match parse_json_body(request) {
@@ -56,9 +57,10 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
 
 pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    // TODO: Arreglar esto para el CLI.
-    if !is_local_request(&request) {
-        return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
+    match is_admin_request(&request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(err) => return server_error("Error autenticando".into()),
     }
 
     let data: ProfessorAuthData = match parse_json_body(request) {
@@ -140,9 +142,10 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
 pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    // TODO: Arreglar esto para el CLI.
-    if !is_local_request(&request) {
-        return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
+    match is_admin_request(&request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(err) => return server_error("Error autenticando".into()),
     }
 
     if let Err(_) = auth::delete_all_tokens_locked(&db) {
@@ -173,6 +176,30 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
                 200
     );
 } 
+
+fn is_admin_request(
+    request: &Request,
+    db: &Arc<Mutex<DBEngine>>,
+) -> Result<bool, String> {
+    if is_local_request(request) {
+        return Ok(true);
+    }
+
+    let professor_id = match check_profesor_auth(request, db) {
+        Ok(id) => id,
+        Err(err) => return Err("No se pudo obtener credenciales para validar.".to_string())
+    };
+
+    let admin_id = match professor::get_professor_id_by_username_locked(
+        db,
+        "admin",
+    ) {
+        Ok(id) => id,
+        Err(err) => return Err("Error obteniendo informacion del admin.".to_string())
+    };
+
+    Ok(professor_id == admin_id)
+}
 
 fn is_local_request(request: &Request) -> bool {
     match request.remote_addr() {
