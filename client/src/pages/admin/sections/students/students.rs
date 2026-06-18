@@ -1,10 +1,11 @@
 use yew::prelude::*;
 use crate::components::subtitle::Subtitle;
 use crate::components::confirm_modal::ConfirmModal; 
+use crate::components::modal::Modal;
 use crate::services::requests::{get_all_students, get_all_projects, create_student, delete_student};
 use crate::structs::student::Student;
 use crate::structs::project::Project; 
-use lucide_yew::{Plus, Users, X};
+use lucide_yew::{Plus, Users};
 
 use crate::pages::admin::sections::students::students_table::TablaUsuarios;
 
@@ -19,6 +20,8 @@ pub fn admin_students() -> Html {
     let show_modal = use_state(|| false);
     let input_name = use_state(String::new);
     let input_project_id = use_state(|| 0i64); 
+    
+    let form_error = use_state(String::new);
 
     let delete_target = use_state(|| None::<Student>);
 
@@ -44,10 +47,12 @@ pub fn admin_students() -> Html {
         let show_modal = show_modal.clone();
         let input_name = input_name.clone();
         let input_project_id = input_project_id.clone();
+        let form_error = form_error.clone();
         Callback::from(move |_| {
             show_modal.set(false);
             input_name.set(String::new());
             input_project_id.set(0); 
+            form_error.set(String::new()); // Limpiamos errores del form al cerrar
         })
     };
 
@@ -59,10 +64,19 @@ pub fn admin_students() -> Html {
         let ui_loading = ui_loading.clone();
         let show_modal = show_modal.clone();
         let input_name = input_name.clone();
+        let input_project_id = input_project_id.clone();
+        let form_error = form_error.clone();
 
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default(); 
+            
+            if project_id == 0 {
+                form_error.set("Debes seleccionar un proyecto disponible para el grupo.".to_string());
+                return;
+            }
+
             if !name.is_empty() {
+                form_error.set(String::new());
                 create_student(
                     name.clone(), 
                     project_id, 
@@ -72,6 +86,9 @@ pub fn admin_students() -> Html {
                 );
                 show_modal.set(false);
                 input_name.set(String::new());
+                input_project_id.set(0); 
+            } else {
+                form_error.set("Asigna a un alumno/grupo válido.".to_string());
             }
         })
     };
@@ -102,70 +119,68 @@ pub fn admin_students() -> Html {
         let proyectos_dropdown = (*projects_state).clone();
 
         html! {
-            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div class="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative text-white">
-                    <button onclick={move |_| on_close.emit(())} class="absolute top-4 right-4 text-white/50 hover:text-white cursor-pointer">
-                        <X size={20}/>
-                    </button>
-                    
-                    <h3 class="text-lg font-bold mb-4 text-cyan-200">{"Agregar Nuevo Alumno o Grupo"}</h3>
-                    
-                    <form onsubmit={on_submit_add}>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-white/70 mb-1">{"Nombre del Alumno / Grupo"}</label>
-                                <input 
-                                    type="text" 
-                                    required=true
-                                    value={(*input_name).clone()}
-                                    oninput={Callback::from(move |e: InputEvent| {
-                                        let input: web_sys::HtmlInputElement = e.target_unchecked_into();
-                                        input_name_setter.set(input.value());
-                                    })}
-                                    placeholder="Ej: Grupo 4" 
-                                    class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white"
-                                />
-                            </div>
+            <Modal title="Agregar Nuevo Alumno o Grupo" on_close={Callback::from(move |_| on_close.emit(()))}>
+                <form onsubmit={on_submit_add}>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-white/70 mb-1">{"Nombre del Alumno / Grupo"}</label>
+                            <input 
+                                type="text" 
+                                required=true
+                                value={(*input_name).clone()}
+                                oninput={Callback::from(move |e: InputEvent| {
+                                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+                                    input_name_setter.set(input.value());
+                                })}
+                                placeholder="Ej: Grupo 4" 
+                                class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white"
+                            />
+                        </div>
 
-                            <div>
-                                <label class="block text-xs font-semibold text-white/70 mb-1">{"Seleccionar Proyecto Asignado"}</label>
-                                <select 
-                                    value={(*input_project_id).to_string()}
-                                    onchange={Callback::from(move |e: Event| {
-                                        let select: web_sys::HtmlSelectElement = e.target_unchecked_into();
-                                        if let Ok(val) = select.value().parse::<i64>() {
-                                            input_project_setter.set(val);
-                                        }
-                                    })}
-                                    class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer"
-                                >
-                                    <option value="0" selected={*input_project_id == 0} disabled=true>
-                                        {"-- Elegir Proyecto Disponible --"}
-                                    </option>
-                                    {
-                                        proyectos_dropdown.iter().map(|proy| {
-                                            html! {
-                                                <option value={proy.id.to_string()} selected={*input_project_id == proy.id}>
-                                                    { &proy.name }
-                                                </option>
-                                            }
-                                        }).collect::<Html>()
+                        <div>
+                            <label class="block text-xs font-semibold text-white/70 mb-1">{"Seleccionar Proyecto Asignado"}</label>
+                            <select 
+                                value={(*input_project_id).to_string()}
+                                onchange={Callback::from(move |e: Event| {
+                                    let select: web_sys::HtmlSelectElement = e.target_unchecked_into();
+                                    if let Ok(val) = select.value().parse::<i64>() {
+                                        input_project_setter.set(val);
                                     }
-                                </select>
-                            </div>
+                                })}
+                                class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer"
+                            >
+                                <option value="0" selected={*input_project_id == 0} disabled=true hidden=true>
+                                    {"-- Elegir Proyecto Disponible --"}
+                                </option>
+                                {
+                                    proyectos_dropdown.iter().map(|proy| {
+                                        html! {
+                                            <option value={proy.id.to_string()} selected={*input_project_id == proy.id}>
+                                                { &proy.name }
+                                            </option>
+                                        }
+                                    }).collect::<Html>()
+                                }
+                            </select>
                         </div>
+                    </div>
 
-                        <div class="flex justify-end gap-3 mt-6">
-                            <button type="button" onclick={move |_| on_close_add_modal.emit(())} class="px-4 py-2 text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors">
-                                {"Cancelar"}
-                            </button>
-                            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-200 text-black/90 hover:bg-cyan-300 cursor-pointer transition-colors">
-                                {"Crear Grupo"}
-                            </button>
+                    if !form_error.is_empty() {
+                        <div class="mt-4 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-semibold flex items-center gap-1.5">
+                            <span>{ &*form_error }</span>
                         </div>
-                    </form>
-                </div>
-            </div>
+                    }
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick={move |_| on_close_add_modal.emit(())} class="px-4 py-2 text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors">
+                            {"Cancelar"}
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-200 text-black/90 hover:bg-cyan-300 cursor-pointer transition-colors">
+                            {"Crear Grupo"}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         }
     } else {
         html! {}

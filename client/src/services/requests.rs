@@ -1,31 +1,128 @@
-use crate::services::api_client::{send_blob_request, send_json_get_request, send_login_request, send_project_update_request, send_project_create_request, send_project_delete_request, send_logout_request, send_student_delete_request};
+use yew::prelude::UseStateHandle;
 use crate::parser::{parse_path_parameters, parse_echosounder_parameters, parse_transport_parameters};
 use crate::structs::state::{PathState, EchoState, FullSimulationRequest, SimulationUiState, CreatePathRequest};
 use crate::structs::limits::ConfigLimits;
+use crate::structs::student::{Student, NewStudent};
+use crate::structs::project::{Project, AdminProjectView};
 use common::StudentMeasuringParameters;
-use yew::prelude::UseStateHandle;
-use crate::structs::project::Project;
-use crate::services::utils::set_local_storage;
-use crate::structs::student::Student;
-use crate::structs::student::NewStudent;
-use crate::structs::project::AdminProjectView;
+use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
+use crate::services::api_utils::{process_local_login, process_local_logout};
 
+// --- SERVICIOS DE ESTUDIANTES ---
 
-
-pub fn delete_project(
-    project_id: i64,
-    projects_state: UseStateHandle<Vec<Project>>,
+pub fn get_all_students(
+    students_handle: UseStateHandle<Vec<Student>>,
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    send_project_delete_request(
-        project_id,
-        projects_state,
-        ui_mensaje,
-        ui_loading
+    send_native_request(
+        "http://localhost:3000/api/v1/students",
+        "GET",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |response_text| {
+            if let Ok(lista) = serde_json::from_str::<Vec<Student>>(&response_text) {
+                students_handle.set(lista);
+                ui_mensaje.set(String::new());
+            } else {
+                ui_mensaje.set("Error de lectura de datos de estudiantes".to_string());
+            }
+        },
+        Some(|_| {})
     );
 }
 
+pub fn create_student(
+    name: String,
+    project_id: i64,
+    students_state: UseStateHandle<Vec<Student>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    let payload = serde_json::to_string(&NewStudent { name, project_id }).unwrap_or_default();
+    send_native_request(
+        "http://localhost:3000/api/v1/students",
+        "POST",
+        Some(&payload),
+        Some(ui_mensaje.clone()),
+        Some(ui_loading.clone()),
+        move |_| {
+            ui_mensaje.set("Grupo creado con éxito".to_string());
+            get_all_students(students_state, ui_mensaje, ui_loading);
+        },
+        Some(|_| {})
+    );
+}
+
+pub fn update_student(
+    student_id: i64,
+    updated_name: String,
+    updated_project_id: i64,
+    students_state: UseStateHandle<Vec<Student>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    let url = format!("http://localhost:3000/api/v1/students/{}", student_id);
+    let body = serde_json::json!({ "name": updated_name, "project_id": updated_project_id }).to_string();
+
+    send_native_request(
+        &url,
+        "PUT",
+        Some(&body),
+        Some(ui_mensaje.clone()),
+        Some(ui_loading.clone()),
+        move |_| {
+            ui_mensaje.set("Estudiante actualizado con éxito".to_string());
+            get_all_students(students_state, ui_mensaje, ui_loading);
+        },
+        Some(|_| {})
+    );
+}
+
+pub fn delete_student(
+    student_id: i64,
+    students_state: UseStateHandle<Vec<Student>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    let url = format!("http://localhost:3000/api/v1/students/{}", student_id);
+    send_native_request(
+        &url,
+        "DELETE",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading.clone()),
+        move |_| {
+            ui_mensaje.set("Grupo eliminado con éxito".to_string());
+            get_all_students(students_state, ui_mensaje, ui_loading);
+        },
+        Some(|_| {})
+    );
+}
+
+// --- SERVICIOS DE PROYECTOS Y CONFIGURACIÓN ---
+
+pub fn get_all_projects(
+    projects_handle: UseStateHandle<Vec<Project>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    send_native_request(
+        "http://localhost:3000/api/v1/projects",
+        "GET",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |response_text| {
+            if let Ok(lista) = serde_json::from_str::<Vec<Project>>(&response_text) {
+                projects_handle.set(lista);
+                ui_mensaje.set(String::new());
+            }
+        },
+        Some(|_| {})
+    );
+}
 
 pub fn create_project(
     name: String,
@@ -42,7 +139,6 @@ pub fn create_project(
     ui_loading: UseStateHandle<bool>,
 ) {
     let form_data = web_sys::FormData::new().unwrap();
-
     let metadata_json = serde_json::json!({
         "name": name,
         "description": if description.is_empty() { None } else { Some(description) },
@@ -58,12 +154,16 @@ pub fn create_project(
     let _ = form_data.append_with_str("metadata", &metadata_json);
     let _ = form_data.append_with_blob("file", &file);
 
-    send_project_create_request(
+    let msg = ui_mensaje.clone();
+    let load = ui_loading.clone();
+    send_native_formdata_request(
         "http://localhost:3000/api/v1/projects",
         form_data,
-        projects_state,
         ui_mensaje,
-        ui_loading
+        ui_loading,
+        move || {
+            get_all_projects(projects_state, msg, load);
+        }
     );
 }
 
@@ -75,27 +175,46 @@ pub fn update_project(
     ui_loading: UseStateHandle<bool>,
 ) {
     let url = format!("http://localhost:3000/api/v1/projects/{}", project_id);
-    send_project_update_request(
+    let body = serde_json::to_string(&updated_project).unwrap_or_default();
+
+    send_native_request(
         &url,
-        updated_project,
-        projects_state,
-        ui_mensaje,
-        ui_loading
+        "PUT",
+        Some(&body),
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |_| {
+            let mut list = (*projects_state).clone();
+            if let Some(pos) = list.iter().position(|p| p.id == updated_project.id) {
+                list[pos] = updated_project;
+                projects_state.set(list);
+            }
+            ui_mensaje.set("Proyecto modificado con éxito".to_string());
+        },
+        Some(|_| {})
     );
 }
 
-pub fn get_all_projects(
-    projects_handle: UseStateHandle<Vec<Project>>,
+pub fn delete_project(
+    project_id: i64,
+    projects_state: UseStateHandle<Vec<Project>>,
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    ui_loading.set(true);
-    send_json_get_request(
-        "http://localhost:3000/api/v1/projects", 
-        projects_handle, 
-        ui_mensaje, 
-        ui_loading,
-        None
+    let url = format!("http://localhost:3000/api/v1/projects/{}", project_id);
+    send_native_request(
+        &url,
+        "DELETE",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |_| {
+            let mut current_list = (*projects_state).clone();
+            current_list.retain(|p| p.id != project_id);
+            projects_state.set(current_list);
+            ui_mensaje.set(String::new());
+        },
+        Some(|_| {})
     );
 }
 
@@ -104,184 +223,19 @@ pub fn get_system_limits(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    send_json_get_request(
-        "http://localhost:3000/api/v1/limits", 
-        limits_handle, 
-        ui_mensaje, 
-        ui_loading,
-        Some("Seleccione parámetros para el recorrido".to_string())
-    );
-}
-
-pub fn trigger_path_generation(
-    state: &PathState, 
-    ui: SimulationUiState,
-    limits: &ConfigLimits
-) {
-    if state.separacion.is_empty() || state.azimut.is_empty() { return; }
-
-    let params = match parse_path_parameters(&state, &limits) {
-        Ok(p) => p,
-        Err(err_msg) => {
-            ui.mensaje.set(err_msg);
-            return;
-        }
-    };
-
-    ui.mensaje.set("Generando recorrido...".to_string());
-    ui.loading.set(true);
-
-    let request_body = CreatePathRequest {path_parameters: params};
-
-    send_blob_request("http://localhost:3000/api/v1/create_path", &request_body, ui.mensaje, ui.image_url, ui.loading);
-}
-
-pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
-    let echo_params = match parse_echosounder_parameters(echo_state, &limits) {
-        Ok(p) => p,
-        Err(err) => { ui.mensaje.set(err); return; }
-    };
-
-    let path_params = match parse_path_parameters(path_state, &limits) {
-        Ok(p) => p,
-        Err(err) => { ui.mensaje.set(err); return; }
-    };
-
-    let transport_params = match parse_transport_parameters(echo_state, &limits) {
-        Ok(t) => t,
-        Err(e) => { ui.mensaje.set(e); return; }
-    };
-
-    ui.mensaje.set("Simulando medición...".to_string());
-    ui.loading.set(true);
-
-    let simulation_params = FullSimulationRequest {
-        echo_parameters: StudentMeasuringParameters {
-            transport_parameters: transport_params,
-            echo_sounder_parameters: echo_params,
+    send_native_request(
+        "http://localhost:3000/api/v1/limits",
+        "GET",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |response_text| {
+            if let Ok(parsed) = serde_json::from_str::<ConfigLimits>(&response_text) {
+                limits_handle.set(parsed);
+                ui_mensaje.set("Seleccione parámetros para el recorrido".to_string());
+            }
         },
-        path_parameters: path_params,
-    };
-
-    send_blob_request("http://localhost:3000/api/v1/run_simulation",&simulation_params, ui.mensaje, ui.image_url, ui.loading);
-}
-
-pub fn trigger_login(
-    student_code: &str,
-    teacher_user: &str,
-    teacher_password: &str,
-    ui_mensaje: UseStateHandle<String>,
-    ui_loading: UseStateHandle<bool>
-) {
-    let (credentials, display_name,redirection) = if !student_code.is_empty() {
-        (
-            serde_json::json!({ "code": student_code }),
-            student_code.to_string(),
-            "/".to_string()
-        )
-    } else if !teacher_user.is_empty() && !teacher_password.is_empty() {
-        (
-            serde_json::json!({ "user": teacher_user, "pass": teacher_password }),
-            teacher_user.to_string(),
-            "/admin".to_string()
-        )
-    } else {
-        return;
-    };
-
-    ui_mensaje.set("Autenticando...".to_string());
-    ui_loading.set(true);
-
-    send_login_request(
-        "http://localhost:3000/api/v1/auth/login",
-        &credentials,
-        ui_mensaje,
-        ui_loading,
-        display_name,
-        redirection
-    );
-}
-
-pub fn trigger_logout() {
-    set_local_storage("group_or_user_name", "");
-
-    send_logout_request(
-        "http://localhost:3000/api/v1/auth/close_session",
-        "/login"
-    );
-}
-
-pub fn get_all_students(
-    students_handle: UseStateHandle<Vec<Student>>,
-    ui_mensaje: UseStateHandle<String>,
-    ui_loading: UseStateHandle<bool>,
-) {
-    ui_loading.set(true);
-    send_json_get_request(
-        "http://localhost:3000/api/v1/students", 
-        students_handle, 
-        ui_mensaje, 
-        ui_loading,
-        None
-    );
-}
-
-pub fn create_student(
-    name: String,
-    project_id: i64,
-    students_state: UseStateHandle<Vec<Student>>,
-    ui_mensaje: UseStateHandle<String>,
-    ui_loading: UseStateHandle<bool>,
-) {
-    let payload = NewStudent { name, project_id };
-    crate::services::api_client::send_student_create_request(
-        "http://localhost:3000/api/v1/students",
-        &payload,
-        students_state,
-        ui_mensaje,
-        ui_loading,
-    );
-}
-
-pub fn delete_student(
-    student_id: i64,
-    students_state: UseStateHandle<Vec<Student>>,
-    ui_mensaje: UseStateHandle<String>,
-    ui_loading: UseStateHandle<bool>,
-) {
-    let url = format!("http://localhost:3000/api/v1/students/{}", student_id);
-    
-    send_student_delete_request(
-        &url,
-        students_state,
-        ui_mensaje,
-        ui_loading,
-    );
-}
-
-pub fn update_student(
-    student_id: i64,
-    updated_name: String,
-    updated_project_id: i64,
-    students_state: UseStateHandle<Vec<Student>>,
-    ui_mensaje: UseStateHandle<String>,
-    ui_loading: UseStateHandle<bool>,
-) {
-    let url = format!("http://localhost:3000/api/v1/students/{}", student_id);
-    
-    let body = serde_json::json!({
-        "name": updated_name,
-        "project_id": updated_project_id
-    });
-
-    let body_string = body.to_string();
-
-    crate::services::api_client::send_student_update_request(
-        &url,
-        &body_string,
-        students_state,
-        ui_mensaje,
-        ui_loading,
+        Some(|_| {})
     );
 }
 
@@ -290,13 +244,109 @@ pub fn get_student_project(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    ui_loading.set(true);
-    
-    send_json_get_request(
-        "http://localhost:3000/api/v1/student_project", 
-        project_handle, 
-        ui_mensaje, 
-        ui_loading,
-        None
+    send_native_request(
+        "http://localhost:3000/api/v1/student_project",
+        "GET",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |response_text| {
+            if let Ok(parsed) = serde_json::from_str::<Option<AdminProjectView>>(&response_text) {
+                project_handle.set(parsed);
+                ui_mensaje.set(String::new());
+            }
+        },
+        Some(|_| {})
+    );
+}
+
+// --- HIDROGRAFÍA / SIMULADOR GRÁFICO (BLOBS) ---
+
+pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
+    if state.separacion.is_empty() || state.azimut.is_empty() { return; }
+    let params = match parse_path_parameters(&state, &limits) {
+        Ok(p) => p,
+        Err(err_msg) => { ui.mensaje.set(err_msg); return; }
+    };
+    ui.mensaje.set("Generando recorrido...".to_string());
+    let request_body = serde_json::to_string(&CreatePathRequest { path_parameters: params }).unwrap_or_default();
+
+    send_native_blob_request("http://localhost:3000/api/v1/create_path", &request_body, ui.image_url, ui.mensaje, ui.loading);
+}
+
+pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
+    let echo_params = match parse_echosounder_parameters(echo_state, &limits) {
+        Ok(p) => p,
+        Err(err) => { ui.mensaje.set(err); return; }
+    };
+    let path_params = match parse_path_parameters(path_state, &limits) {
+        Ok(p) => p,
+        Err(err) => { ui.mensaje.set(err); return; }
+    };
+    let transport_params = match parse_transport_parameters(echo_state, &limits) {
+        Ok(t) => t,
+        Err(e) => { ui.mensaje.set(e); return; }
+    };
+
+    ui.mensaje.set("Simulando medición...".to_string());
+    let simulation_params = FullSimulationRequest {
+        echo_parameters: StudentMeasuringParameters { transport_parameters: transport_params, echo_sounder_parameters: echo_params },
+        path_parameters: path_params,
+    };
+    let request_body = serde_json::to_string(&simulation_params).unwrap_or_default();
+
+    send_native_blob_request("http://localhost:3000/api/v1/run_simulation", &request_body, ui.image_url, ui.mensaje, ui.loading);
+}
+
+// --- AUTENTICACIÓN ---
+
+pub fn trigger_login(
+    student_code: &str,
+    teacher_user: &str,
+    teacher_password: &str,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>
+) {
+    let (credentials, display_name, redirection) = if !student_code.is_empty() {
+        (serde_json::json!({ "code": student_code }), student_code.to_string(), "/".to_string())
+    } else if !teacher_user.is_empty() && !teacher_password.is_empty() {
+        (serde_json::json!({ "user": teacher_user, "pass": teacher_password }), teacher_user.to_string(), "/admin".to_string())
+    } else {
+        return;
+    };
+
+    ui_mensaje.set("Autenticando...".to_string());
+    let msg_err = ui_mensaje.clone();
+
+    send_native_request(
+        "http://localhost:3000/api/v1/auth/login",
+        "POST",
+        Some(&credentials.to_string()),
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |_| {
+            process_local_login(&display_name, &redirection, ui_mensaje);
+        },
+        Some(move |status_code| {
+            if status_code == 401 {
+                msg_err.set("Error de conexión o credenciales inválidas".to_string());
+            } else {
+                msg_err.set(format!("Error de autenticación: {}", status_code));
+            }
+        })
+    );
+}
+
+pub fn trigger_logout() {
+    send_native_request(
+        "http://localhost:3000/api/v1/auth/close_session",
+        "POST",
+        None,
+        None,
+        None,
+        move |_| {
+            process_local_logout("/login");
+        },
+        Some(|_| {})
     );
 }

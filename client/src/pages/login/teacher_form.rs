@@ -41,6 +41,7 @@ pub fn teacher_form(props: &TeacherFormProps) -> Html {
                     {"Nombre de usuario"}
                 </span>
                 <input
+                    type="text"
                     disabled={props.loading}
                     value={(*props.teacher_user).clone()}
                     oninput={on_user_input}
@@ -54,10 +55,10 @@ pub fn teacher_form(props: &TeacherFormProps) -> Html {
                     {"Clave"}
                 </span>
                 <input
+                    type="password"
                     disabled={props.loading}
                     value={(*props.teacher_password).clone()}
                     oninput={on_password_input}
-                    type="password"
                     placeholder="●●●●●●●●●"
                     class={props.input_cls}
                 />

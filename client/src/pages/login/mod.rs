@@ -64,7 +64,8 @@ pub fn login_page() -> Html {
         let loading = loading.clone();
         let mensaje = login_mensaje.clone();
 
-        Callback::from(move |_| {
+        Callback::from(move |e: SubmitEvent| {
+            e.prevent_default();
             trigger_login(
                 &student_code,
                 &teacher_user,
@@ -104,7 +105,7 @@ pub fn login_page() -> Html {
                 <LoginWelcome />
 
                 <div class="flex-1 flex items-center justify-center dot-grid relative dark:dot-grid-dark">
-                    <div class="bg-cyan-100 dark:bg-slate-950/70 backdrop-blur w-[420px] border border-white/25 rounded-md shadow-xl">
+                    <form onsubmit={on_submit} class="bg-cyan-100 dark:bg-slate-950/70 backdrop-blur w-[420px] border border-white/25 rounded-md shadow-xl">
                         
                         <div class="p-6 border-b border-white/20 space-y-2">
                             <Title text={"Acceso al simulador"} />
@@ -147,15 +148,15 @@ pub fn login_page() -> Html {
                                 </div>
                             }
                             <button
+                                type="submit"
                                 disabled={*loading}        
-                                onclick={on_submit}
-                                class="text-center w-full disabled:opacity-30 bg-cyan-200 p-2 px-6 text-black text-sm font-bold hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100"
+                                class="text-center w-full disabled:opacity-30 bg-cyan-200 p-2 px-6 text-black text-sm font-bold hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100 cursor-pointer"
                             >
                                 {"Acceder"}
                             </button>
                         </div>
 
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

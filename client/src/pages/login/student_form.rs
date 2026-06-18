@@ -33,6 +33,7 @@ pub fn student_form(props: &StudentFormProps) -> Html {
                 </span>
 
                 <input
+                    type="text"
                     disabled={props.loading}
                     value={(*props.student_code).clone()}
                     oninput={on_student_input}
