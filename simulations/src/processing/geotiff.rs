@@ -1,4 +1,4 @@
-use gdal::{Dataset, raster::Buffer};
+use gdal::{Dataset, raster::Buffer, spatial_ref::SpatialRef};
 
 use crate::structs::depth_matrix::DepthMatrix;
 
@@ -11,6 +11,15 @@ fn load_geotiff(path: &str) -> LoadGeotiffResult{
     let dataset = Dataset::open(path)?;
     let geo_transform = dataset.geo_transform()?;
     let projection = dataset.projection();
+
+    let spatial_ref = SpatialRef::from_definition(&projection)
+        .map_err(|_| gdal::errors::GdalError::BadArgument("No se pudo leer el sistema de coordenadas".to_string()))?;
+
+    if spatial_ref.is_geographic() {
+        return Err(gdal::errors::GdalError::BadArgument(
+            "El GeoTIFF tiene coordenadas geográficas (grados). Se requieren coordenadas proyectadas (metros).".to_string()
+        ));
+    }
 
     // Extraemos las resoluciones (metros por píxel)
     let res_x = geo_transform[1];

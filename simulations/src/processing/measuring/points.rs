@@ -22,7 +22,9 @@ pub fn find_measuring_points(
 
         if distance_progress >= distance_between_points {
             distance_progress -= distance_between_points;
-            measuring_points.push(*next_point);
+            if measuring_points.last() != Some(next_point) {
+                measuring_points.push(*next_point);
+            }
         }
         current_point = next_point;
     }
