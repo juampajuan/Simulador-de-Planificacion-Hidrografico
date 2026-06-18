@@ -1,11 +1,12 @@
 use tiny_http::{Header, Response, Request};
-use crate::utils::helpers::check_password;
+use crate::utils::helpers::{check_password, get_cookie};
 use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
+use crate::utils::helpers_endpoints::check_profesor_auth;
 use std::sync::{Arc, Mutex};
 use crate::db::encrypt::{hash_password};
-use crate::db::queries_interface::{professor, auth, student};
+use crate::db::queries_interface::{auth, professor, student};
 use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
 use serde_json::Value;
@@ -27,9 +28,10 @@ pub struct StudentAuthData {
 
 pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    // TODO: Arreglar esto para el CLI.
-    if !is_local_request(&request) {
-        return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
+    match is_admin_request(&request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(_err) => return server_error("Error autenticando".into()),
     }
 
     let data: ProfessorAuthData = match parse_json_body(request) {
@@ -57,9 +59,10 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
 
 pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    // TODO: Arreglar esto para el CLI.
-    if !is_local_request(&request) {
-        return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
+    match is_admin_request(&request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(_err) => return server_error("Error autenticando".into()),
     }
 
     let data: ProfessorAuthData = match parse_json_body(request) {
@@ -141,9 +144,10 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
 pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    // TODO: Arreglar esto para el CLI.
-    if !is_local_request(&request) {
-        return string_response("Solo permitido en localhost (Por ahora).".to_string(), 403)
+    match is_admin_request(&request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(_err) => return server_error("Error autenticando".into()),
     }
 
     if let Err(_) = auth::delete_all_tokens_locked(&db) {
@@ -183,6 +187,30 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
     return response;
 } 
 
+fn is_admin_request(
+    request: &Request,
+    db: &Arc<Mutex<DBEngine>>,
+) -> Result<bool, String> {
+    if is_local_request(request) {
+        return Ok(true);
+    }
+
+    let professor_id = match check_profesor_auth(request, db) {
+        Ok(id) => id,
+        Err(_err) => return Err("No se pudo obtener credenciales para validar.".to_string())
+    };
+
+    let admin_id = match professor::get_professor_id_by_username_locked(
+        db,
+        "admin",
+    ) {
+        Ok(id) => id,
+        Err(_err) => return Err("Error obteniendo informacion del admin.".to_string())
+    };
+
+    Ok(professor_id == admin_id)
+}
+
 fn is_local_request(request: &Request) -> bool {
     match request.remote_addr() {
         Some(addr) => addr.ip().is_loopback(),
@@ -206,52 +234,4 @@ fn create_auth_cookie(
 fn generate_token() -> String {
     let bytes: [u8; 32] = rand :: rng().random();
     hex::encode(bytes)
-}
-
-pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
-    let cookie_header = request
-        .headers()
-        .iter()
-        .find(|h| h.field.equiv("Cookie"))?;
-
-    cookie_header
-        .value
-        .as_str()
-        .split(';')
-        .find_map(|cookie| {
-            let (key, value) = cookie.trim().split_once('=')?;
-            if key == name {
-                Some(value.to_string())
-            } else {
-                None
-            }
-        })
-}
-
-// TODO: Mover a algun lugar generico
-pub fn check_profesor_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
-
-    let Some(token) = get_cookie(request, "auth_token") else {
-        return Ok(None);
-    };
-
-    match auth::get_user_by_token_locked(&db, &token) {
-        Ok(Some(TokenOwner::Professor(id))) => Ok(Some(id)),
-        Ok(_) => Ok(None),
-        Err(e) => Err(e.to_string())
-    }
-}
-
-// TODO: Mover a algun lugar generico
-pub fn check_student_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
-
-    let Some(token) = get_cookie(request, "auth_token") else {
-        return Ok(None);
-    };
-
-    match auth::get_user_by_token_locked(&db, &token) {
-        Ok(Some(TokenOwner::Student(id))) => Ok(Some(id)),
-        Ok(_) => Ok(None),
-        Err(e) => Err(e.to_string())
-    }
 }

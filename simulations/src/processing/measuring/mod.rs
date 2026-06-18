@@ -1,5 +1,5 @@
 mod points;
-mod beam;
+pub mod beam;
 mod disturbances;
  
 pub use points::{find_measuring_points, calculate_distance_between_points};

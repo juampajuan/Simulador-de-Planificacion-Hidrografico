@@ -2,11 +2,11 @@ use tiny_http::Request;
 use crate::db::engine::DBEngine;
 use crate::db::queries::proyects::{ProjectMetadata};
 use crate::db::queries_interface::projects;
-use crate::requests::endpoints::auth::{check_profesor_auth, check_student_auth};
 use crate::structs::request::HandlerResult;
+use crate::structs::settings::Settings;
 use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
-use crate::structs::settings::Settings;
+use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
 use std::sync::{Arc, Mutex};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -78,7 +78,7 @@ pub fn create(
     // TODO: Re hacer el codigo mas feo que hice en mi vida
     // Transformarlo en un metodo, no iterativo, solo hay 2 entries que leer. 
     // Y hacer que comprueba si el tipo de archivo es .geotiff
-    if let Err(e) = multipart.foreach_entry(|mut field| {
+    if let Err(_e) = multipart.foreach_entry(|mut field| {
 
         match field.headers.name.as_ref() {
 
@@ -278,3 +278,4 @@ pub fn update_a_project(
         Err(_) => server_error("Error al actualizar el proyecto.".to_string()),
     }
 }
+

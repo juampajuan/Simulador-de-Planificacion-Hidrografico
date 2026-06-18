@@ -298,7 +298,49 @@ pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: Simula
     send_native_blob_request("http://localhost:3000/api/v1/run_simulation", &request_body, ui.image_url, ui.mensaje, ui.loading);
 }
 
-// --- AUTENTICACIÓN ---
+pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
+    let echo_params = match parse_echosounder_parameters(echo_state, limits) {
+        Ok(p) => p,
+        Err(err) => { ui.mensaje.set(err); return; }
+    };
+ 
+    let path_params = match parse_path_parameters(path_state, limits) {
+        Ok(p) => p,
+        Err(err) => { ui.mensaje.set(err); return; }
+    };
+ 
+    let transport_params = match parse_transport_parameters(echo_state, limits) {
+        Ok(t) => t,
+        Err(e) => { ui.mensaje.set(e); return; }
+    };
+ 
+    ui.mensaje.set("Calculando cobertura...".to_string());
+    ui.loading.set(true);
+ 
+    let simulation_params = FullSimulationRequest {
+        echo_parameters: StudentMeasuringParameters {
+            transport_parameters: transport_params,
+            echo_sounder_parameters: echo_params,
+        },
+        path_parameters: path_params,
+    };
+
+    match serde_json::to_string(&simulation_params) {
+        Ok(body_json) => {
+            send_native_blob_request(
+                "http://localhost:3000/api/v1/coverage_image", 
+                &body_json, 
+                ui.image_url, 
+                ui.mensaje, 
+                ui.loading
+            );
+        },
+        Err(_) => {
+            ui.mensaje.set("Error interno al preparar los datos de simulación".to_string());
+            ui.loading.set(false);
+        }
+    }
+}
 
 pub fn trigger_login(
     student_code: &str,

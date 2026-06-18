@@ -26,3 +26,23 @@ pub fn generate_code() -> String {
         })
         .collect()
 }
+
+pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
+    let cookie_header = request
+        .headers()
+        .iter()
+        .find(|h| h.field.equiv("Cookie"))?;
+
+    cookie_header
+        .value
+        .as_str()
+        .split(';')
+        .find_map(|cookie| {
+            let (key, value) = cookie.trim().split_once('=')?;
+            if key == name {
+                Some(value.to_string())
+            } else {
+                None
+            }
+        })
+}
