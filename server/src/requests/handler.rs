@@ -16,7 +16,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
         match (request.method(), api_path) {
 
             (Method::Options, _) => {
-                (Response::empty(200).boxed(), 200)
+                (Response::empty(200).boxed(), 200, None)
             }
 
             _ => {
@@ -92,7 +92,7 @@ fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
     let method = request.method().to_string();
     let path = request.url().to_string();
 
-    let (mut response, status) = result;
+    let (mut response, status, error) = result;
 
     if let Ok(h) = tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"http://localhost:8080") {
         response = response.with_header(h);
@@ -111,11 +111,12 @@ fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
         Ok(_) => status,
         Err(_) => 499,
     };
-
+ 
     RequestLog {
         method,
         path,
         status_code,
+        error,
     }
 }
 

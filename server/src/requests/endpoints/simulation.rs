@@ -42,7 +42,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
     let image = simulations::create_path_image(&matrix, &path);
     let response = create_png_response(image);
 
-    (response.boxed(), 200)
+    (response.boxed(), 200, None)
 }
 
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
@@ -70,12 +70,12 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     }
     
     let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters.clone());
-    let png_bytes = simulations::create_simulation_image(&matrix, &interpolation);
+    let (png_image, _min_depth, _max_depth) = simulations::create_simulation_image(&matrix, &interpolation);
 
-    let response = create_png_response(png_bytes);
+    let response = create_png_response(png_image);
     println!("Simulación completada con éxito.");
     
-    (response.boxed(), 200)
+    (response.boxed(), 200, None)
 }
 
 pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
@@ -104,7 +104,7 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
     let response = create_png_response(image);
  
     println!("Imagen de cobertura generada.");
-    (response.boxed(), 200)
+    (response.boxed(), 200, None)
 }
  
 

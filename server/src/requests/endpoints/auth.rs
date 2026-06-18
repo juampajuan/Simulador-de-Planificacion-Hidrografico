@@ -48,10 +48,12 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
         Err(_) =>  return server_error("No se pudo hashear la contraseña.".to_string())
     };
 
-    // TODO: Cambiar para chequear si existe o modificar, para separar error de lock a si existe ya el username
     let _ = match professor::create_professor_locked(&db, &data.user, &password_hash) {
         Ok(id) => id,
-        Err(_) =>  return server_error("Ya existe un profesor con ese username.".to_string())
+        Err(e) if e.message.as_deref() == Some("Cannot lock db") => {
+            return server_error("Error interno: no se pudo acceder a la base de datos.".to_string())
+        }
+        Err(_) => return string_response("Ya existe un profesor con ese username.".to_string(), 409),
     };
 
     string_response("Usuario creado correctamente".to_string(), 200)
@@ -139,7 +141,7 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
     };
 
     let re = Response::from_string(username).with_header(cookie);
-    (re.boxed(), 200)
+    (re.boxed(), 200, None)
 }
 
 pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {

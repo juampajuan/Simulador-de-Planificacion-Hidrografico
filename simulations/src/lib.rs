@@ -86,7 +86,7 @@ pub fn create_path_image(
     makepng_transparent_with_path(matrix, path)
 }
 
-pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> RgbaImage {
+pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &Vec<Vec<f64>>) -> (RgbaImage, f64, f64) {
     println!("Generando PNG ...");
 
     makepng_with_matrix_and_interpolation(student_interpolation, matrix)
@@ -121,7 +121,7 @@ pub fn create_path_with_shadows(
                     params.echo_sounder_parameters.angle,
                     matrix,
                 );
-                println!("Covered points: {}", circle_points.len());
+
                 for p in circle_points {
                     covered.push((p, matrix.data[p.1][p.0]));
                 }
