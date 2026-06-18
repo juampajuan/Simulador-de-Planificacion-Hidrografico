@@ -5,17 +5,17 @@ use super::helpers::{depth_color,depth_range};
 pub fn makepng_with_matrix_and_interpolation(
     matrix: &Vec<Vec<f64>>,
     geotiff: &DepthMatrix,
-) -> RgbaImage {
+) -> (RgbaImage, f64, f64) {
     let no_data = geotiff.no_data.unwrap_or(f64::MAX);
-
+ 
     let height = matrix.len() as u32;
     let width  = matrix[0].len() as u32;
-
+ 
     let (min_val, max_val) = depth_range(geotiff);
     let range = if (max_val - min_val).abs() < 1e-10 { 1.0 } else { max_val - min_val };
-
+ 
     let mut img = RgbaImage::new(width, height);
-
+ 
     for (y, row) in matrix.iter().enumerate() {
         for (x, &val) in row.iter().enumerate() {
             let color = if val == no_data {
@@ -28,6 +28,6 @@ pub fn makepng_with_matrix_and_interpolation(
             img.put_pixel(x as u32, y as u32, color);
         }
     }
-
-    img
+ 
+    (img, min_val, max_val)
 }

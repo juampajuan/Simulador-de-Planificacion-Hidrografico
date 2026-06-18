@@ -90,7 +90,6 @@ fn get_points_perpendicular_to_this(
     let dx = reference.0 as f64 - current_point.0 as f64;
     let dy = reference.1 as f64 - current_point.1 as f64;
     let magnitude = (dx * dx + dy * dy).sqrt();
-    if magnitude == 0.0 { println!("Hola hubo error magnitud es 0"); return [vec![], vec![], vec![]] }
 
     let dx_norm = dx / magnitude;
     let dy_norm = dy / magnitude;

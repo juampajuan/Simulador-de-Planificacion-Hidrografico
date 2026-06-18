@@ -74,10 +74,10 @@ pub fn create(
 
     let mut metadata_json = None::<String>;
     let mut filename_saved = None::<String>;
+    let mut invalid_extension = false;
 
     // TODO: Re hacer el codigo mas feo que hice en mi vida
     // Transformarlo en un metodo, no iterativo, solo hay 2 entries que leer. 
-    // Y hacer que comprueba si el tipo de archivo es .geotiff
     if let Err(_e) = multipart.foreach_entry(|mut field| {
 
         match field.headers.name.as_ref() {
@@ -101,6 +101,18 @@ pub fn create(
                         .as_secs();
 
                     let path = Path::new(&original_filename);
+
+                    // Validamos que la extension sea .tif o .tiff antes de guardar nada.
+                    let ext_ok = path
+                        .extension()
+                        .and_then(|s| s.to_str())
+                        .map(|ext| ext.eq_ignore_ascii_case("tif") || ext.eq_ignore_ascii_case("tiff"))
+                        .unwrap_or(false);
+
+                    if !ext_ok {
+                        invalid_extension = true;
+                        return;
+                    }
 
                     let filename = match (
                         path.file_stem().and_then(|s| s.to_str()),
@@ -131,6 +143,13 @@ pub fn create(
 
     }) {
         return server_error("No se pudo subir el archivo".to_string());
+    }
+
+    if invalid_extension {
+        return string_response(
+            "El archivo debe ser un GeoTIFF (.tif o .tiff).".to_string(),
+            400,
+        );
     }
 
     let json = match metadata_json {
@@ -269,4 +288,3 @@ pub fn update_a_project(
         Err(_) => server_error("Error al actualizar el proyecto.".to_string()),
     }
 }
-
