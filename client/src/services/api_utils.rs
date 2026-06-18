@@ -5,7 +5,8 @@ use js_sys::{Uint8Array, Array, Function, Reflect};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use crate::structs::project::Project;
-
+use crate::services::utils::set_local_storage;
+use web_sys::window;
 
 pub fn get_window_fetch(mensaje: &UseStateHandle<String>, loading: &UseStateHandle<bool>) -> Option<web_sys::Window> {
     match web_sys::window() {
@@ -31,6 +32,44 @@ pub fn build_native_post_request(url: &str, body: &str) -> Result<Request, JsVal
     Ok(request)
 }
 
+pub fn create_new_project_closure(
+    projects_state: UseStateHandle<Vec<Project>>,
+    loading: UseStateHandle<bool>,
+    mensaje: UseStateHandle<String>,
+) -> Closure<dyn FnMut(JsValue) -> JsValue> {
+    Closure::new(move |_js_val: JsValue| -> JsValue {
+        loading.set(false);
+        mensaje.set(String::new());
+
+        crate::services::requests::get_all_projects(
+            projects_state.clone(),
+            mensaje.clone(),
+            loading.clone(),
+        );
+
+        JsValue::UNDEFINED
+    })
+}
+
+pub fn create_delete_project_closure(
+    project_id: i64,
+    projects_state: UseStateHandle<Vec<Project>>,
+    loading: UseStateHandle<bool>,
+    mensaje: UseStateHandle<String>,
+) -> Closure<dyn FnMut(JsValue) -> JsValue> {
+    Closure::new(move |_js_val: JsValue| -> JsValue {
+        loading.set(false);
+        
+        let mut current_list = (*projects_state).clone();
+        current_list.retain(|p| p.id != project_id);
+        
+        projects_state.set(current_list);
+        mensaje.set(String::new());
+
+        JsValue::UNDEFINED
+    })
+}
+
 pub fn create_login_closure(
     mensaje: UseStateHandle<String>, 
     loading: UseStateHandle<bool>,
@@ -40,15 +79,59 @@ pub fn create_login_closure(
     Closure::wrap(Box::new(move |_text_val: JsValue| -> JsValue {
         mensaje.set("Login exitoso. Redirigiendo...".to_string());
         loading.set(false);
+        set_local_storage("group_or_user_name", &display_name);
 
         if let Some(w) = web_sys::window() {
-            if let Ok(Some(storage)) = w.local_storage() {
-                let _ = storage.set_item("group_or_user_name", &display_name);
-                let _ = w.location().set_pathname(&redirection); 
-            }
+            let _ = w.location().set_href(&redirection); 
         }
+        
         JsValue::UNDEFINED
     }) as Box<dyn FnMut(JsValue) -> JsValue>)
+}
+
+pub fn create_logout_final_closure(redirection: String) -> Closure<dyn FnMut(JsValue)> {
+    Closure::wrap(Box::new(move |_res: JsValue| {
+        if let Some(w) = window() {
+            let _ = w.location().set_href(&redirection);
+        }
+    }) as Box<dyn FnMut(JsValue)>)
+}
+
+pub fn create_new_student_closure(
+    students_state: UseStateHandle<Vec<crate::structs::student::Student>>,
+    loading: UseStateHandle<bool>,
+    mensaje: UseStateHandle<String>,
+) -> Closure<dyn FnMut(wasm_bindgen::JsValue)> {
+    Closure::wrap(Box::new(move |_res| {
+        loading.set(false);
+        mensaje.set("Grupo creado con éxito".to_string());
+        crate::services::requests::get_all_students(students_state.clone(), mensaje.clone(), loading.clone());
+    }) as Box<dyn FnMut(wasm_bindgen::JsValue)>)
+}
+
+pub fn create_delete_student_closure(
+    students_state: UseStateHandle<Vec<crate::structs::student::Student>>,
+    loading: UseStateHandle<bool>,
+    mensaje: UseStateHandle<String>,
+) -> Closure<dyn FnMut(wasm_bindgen::JsValue)> {
+    Closure::wrap(Box::new(move |_res| {
+        loading.set(false);
+        mensaje.set("Grupo eliminado con éxito".to_string());
+        crate::services::requests::get_all_students(students_state.clone(), mensaje.clone(), loading.clone());
+    }) as Box<dyn FnMut(wasm_bindgen::JsValue)>)
+}
+
+pub fn create_update_student_closure(
+    students_state: UseStateHandle<Vec<crate::structs::student::Student>>,
+    loading: UseStateHandle<bool>,
+    mensaje: UseStateHandle<String>,
+) -> Closure<dyn FnMut(wasm_bindgen::JsValue)> {
+    Closure::wrap(Box::new(move |_res| {
+        loading.set(false);
+        mensaje.set("Estudiante actualizado con éxito".to_string());
+        // Refrescamos la lista completa para sincronizar cambios
+        crate::services::requests::get_all_students(students_state.clone(), mensaje.clone(), loading.clone());
+    }) as Box<dyn FnMut(wasm_bindgen::JsValue)>)
 }
 
 // el closure de la respuesta. Se encarga de verificar el status y extraer el ArrayBuffer del cuerpo.
@@ -175,5 +258,22 @@ pub fn execute_promise_chain(
     
     let catch_fn: Function = Reflect::get(&promise_3, &JsValue::from_str("catch"))?.dyn_into()?;
     catch_fn.call1(&promise_3, cb_err.as_ref())?;
+    Ok(())
+}
+
+// Encadena una promesa simple (.then().catch()) sin procesar datos intermedios
+pub fn execute_simple_chain(
+    root_promise: &JsValue,
+    cb_success: &Closure<dyn FnMut(JsValue)>,
+    cb_err: &Closure<dyn FnMut(JsValue)>
+) -> Result<(), JsValue> {
+    // Obtenemos el método .then nativo de JS
+    let then_fn: Function = Reflect::get(root_promise, &JsValue::from_str("then"))?.dyn_into()?;
+    let promise_2 = then_fn.call1(root_promise, cb_success.as_ref())?;
+    
+    // Obtenemos el método .catch nativo de JS
+    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch"))?.dyn_into()?;
+    catch_fn.call1(&promise_2, cb_err.as_ref())?;
+    
     Ok(())
 }

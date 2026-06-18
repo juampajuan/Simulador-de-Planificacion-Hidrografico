@@ -178,11 +178,20 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> H
         Err(err) => return server_error(err),
     };
 
-    let Ok(projects) = projects::get_project_by_id_locked(&db, student_id) else {
-        return server_error("Error al obtener los proyectos".to_string());
+    let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {
+        Ok(id_opt) => id_opt,
+        Err(_) => return server_error("Error al obtener la relación del alumno".to_string()),
     };
 
-    let Some(project) = projects else {
+    let Some(project_id_real) = project_id_opt else {
+        return string_response("Alumno no tiene asignado un proyecto".to_string(), 404);
+    };
+
+    let Ok(projects_opt) = projects::get_project_by_id_locked(&db, project_id_real) else {
+        return server_error("Error al obtener los detalles del proyecto".to_string());
+    };
+
+    let Some(project) = projects_opt else {
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 

@@ -1,19 +1,10 @@
 use crate::db::engine::DBEngine;
 use serde::{Serialize, Deserialize};
-
-#[derive(Serialize)]
-pub struct Project {
-    pub id: usize,
-    pub name: String,
-    pub description: Option<String>,
-    pub filename: String, 
-    pub professor_id: i64
-}
  
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProjectMetadata {
     name: String,
-    description: String,
+    pub description: Option<String>,
     attempts_limit: i64,
     weather: String,
     seabed_hardness: String,
@@ -57,7 +48,10 @@ pub fn create_project(
     )?;
 
     statement.bind((1, metadata.name.as_str()))?;
-    statement.bind((2, metadata.description.as_str()))?;
+    match &metadata.description {
+        Some(desc) => statement.bind((2, desc.as_str()))?,
+        None => statement.bind((2, ""))?, 
+    };
     statement.bind((3, filename))?;
     statement.bind((4, metadata.attempts_limit))?;
     statement.bind((5, metadata.weather.as_str()))?;
@@ -99,7 +93,7 @@ pub fn get_all_by_professor_id(
             professor_id: statement.read::<i64, _>("professor_id")?, 
             metadata: ProjectMetadata {
                 name: statement.read::<String, _>("name")?,
-                description: statement.read::<Option<String>, _>("description")?.unwrap_or_default(),
+                description: statement.read::<Option<String>, _>("description")?,
                 attempts_limit: statement.read::<i64, _>("attempts_limit")?,
                 weather: statement.read::<String, _>("weather")?,
                 seabed_hardness: statement.read::<String, _>("seabed_hardness")?,
@@ -117,10 +111,11 @@ pub fn get_all_by_professor_id(
 pub fn get_project_by_id(
     db: &DBEngine,
     id: i64,
-) -> Result<Option<Project>, sqlite::Error> {
+) -> Result<Option<AdminProjectView>, sqlite::Error> {
     let mut statement = db.run_query(
         "
-        SELECT id, name, description, filename, professor_id
+        SELECT id, name, description, filename, professor_id,
+               attempts_limit, weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth
         FROM projects
         WHERE id = ?
         "
@@ -129,12 +124,20 @@ pub fn get_project_by_id(
     statement.bind((1, id))?;
 
     if let sqlite::State::Row = statement.next()? {
-        Ok(Some(Project {
+        Ok(Some(AdminProjectView {
             id: statement.read::<i64, _>("id")? as usize,
-            name: statement.read::<String, _>("name")?,
-            description: statement.read::<Option<String>, _>("description")?,
             filename: statement.read::<String, _>("filename")?,
             professor_id: statement.read::<i64, _>("professor_id")?,
+            metadata: ProjectMetadata {
+                name: statement.read::<String, _>("name")?,
+                description: statement.read::<Option<String>, _>("description")?,
+                attempts_limit: statement.read::<i64, _>("attempts_limit")?,
+                weather: statement.read::<String, _>("weather")?,
+                seabed_hardness: statement.read::<String, _>("seabed_hardness")?,
+                budget: statement.read::<f64, _>("budget")?,
+                geotiff_min_depth: statement.read::<f64, _>("geotiff_min_depth")?,
+                geotiff_max_depth: statement.read::<f64, _>("geotiff_max_depth")?,
+            }
         }))
     } else {
         Ok(None)
@@ -156,8 +159,8 @@ pub fn get_project_id_by_student(
 
     statement.bind((1, student_id))?;
 
-    if let Ok(sqlite::State::Row) = statement.next() {
-        return Ok(Some(statement.read::<i64, _>("project_id")?));
+    if let sqlite::State::Row = statement.next()? {
+        Ok(Some(statement.read::<i64, _>("project_id")?))
     } else {
         Ok(None)
     }
@@ -209,7 +212,10 @@ pub fn update_project(
     )?;
 
     statement.bind((1, metadata.name.as_str()))?;
-    statement.bind((2, metadata.description.as_str()))?;
+    match &metadata.description {
+        Some(desc) => statement.bind((2, desc.as_str()))?,
+        None => statement.bind((2, ""))?, 
+    };
     statement.bind((3, metadata.attempts_limit))?;
     statement.bind((4, metadata.weather.as_str()))?;
     statement.bind((5, metadata.seabed_hardness.as_str()))?;
