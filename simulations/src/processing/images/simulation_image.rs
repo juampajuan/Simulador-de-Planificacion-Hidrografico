@@ -31,3 +31,23 @@ pub fn makepng_with_matrix_and_interpolation(
  
     (img, min_val, max_val)
 }
+
+pub fn create_scale_image() -> RgbaImage {
+    let width = 20u32;
+    let height = 300u32;
+    
+    let mut img = RgbaImage::new(width, height);
+    
+    for y in 0..height {
+        let t = (y as f64) / ((height - 1) as f64);
+        
+        let c = depth_color(t);
+        let color = Rgba([c[0], c[1], c[2], 255u8]);
+        
+        for x in 0..width {
+            img.put_pixel(x, y, color);
+        }
+    }
+    
+    img
+}

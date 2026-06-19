@@ -1,12 +1,13 @@
 use crate::db::queries::proyects;
 use crate::db::engine::DBEngine;
 use std::sync::{Arc, Mutex};
+use crate::db::queries::proyects::AdminProjectView;
 
 
 pub fn get_project_by_id_locked(
     db: &Arc<Mutex<DBEngine>>,
     id: i64,
-) -> Result<Option<proyects::Project>, sqlite::Error> {
+) -> Result<Option<AdminProjectView>, sqlite::Error> { 
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
@@ -17,7 +18,7 @@ pub fn get_project_by_id_locked(
         }
     };
 
-    proyects::get_project_by_id(
+    crate::db::queries::proyects::get_project_by_id(
         &db_connection,
         id,
     )

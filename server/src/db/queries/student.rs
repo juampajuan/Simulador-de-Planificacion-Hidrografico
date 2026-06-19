@@ -55,7 +55,7 @@ pub fn delete_student(
     )?;
 
     statement.bind((1, id))?;
-    statement.bind((1, professor_id))?;
+    statement.bind((2, professor_id))?;
     statement.next()?;
 
     Ok(db.connection.change_count() > 0)

@@ -3,13 +3,15 @@ use crate::components::subtitle::Subtitle;
 use crate::structs::project::Project;
 use lucide_yew::{FolderOpenDot, Plus};
 use crate::services::requests::get_all_projects;
-use crate::pages::admin::sections::projects_row::ProjectRow;
+use crate::pages::admin::sections::projects::projects_row::ProjectRow;
+use crate::pages::admin::sections::projects::projects_create::CreateProjectModal;
 
 #[function_component(AdminProjects)]
 pub fn admin_projects() -> Html {
     let projects = use_state(Vec::<Project>::new);
     let ui_mensaje = use_state(String::new);
     let ui_loading = use_state(|| false);
+    let is_modal_open = use_state(|| false);
 
     {
         let projects = projects.clone();
@@ -21,6 +23,11 @@ pub fn admin_projects() -> Html {
             || ()
         });
     }
+
+    let on_click_add = {
+        let is_modal_open = is_modal_open.clone();
+        Callback::from(move |_| is_modal_open.set(true))
+    };
 
     html! {<> 
         <div class="text-white flex justify-between p-2 pr-1">
@@ -38,7 +45,10 @@ pub fn admin_projects() -> Html {
                     <p class="text-red-400 text-xs">{ &*ui_mensaje }</p>
                 }
             </div>
-            <button class="flex items-center px-3 py-0 gap-2 bg-cyan-200 text-black/90 rounded-full hover:bg-cyan-300 transition-colors">
+            <button 
+                onclick={on_click_add}
+                class="flex items-center px-4 py-2 gap-2 bg-cyan-200 text-black/90 rounded-full hover:bg-cyan-300 transition-colors cursor-pointer"
+            >
                 <Plus size={18}/>
                 <p class="text-sm font-semibold pt-0.5">{"Agregar"}</p>
             </button>
@@ -47,6 +57,13 @@ pub fn admin_projects() -> Html {
         <div class="h-full overflow-y-auto pb-16 mt-4">
             <ProjectsTable projects_state={projects.clone()}/>
         </div>
+
+        if *is_modal_open {
+            <CreateProjectModal 
+                is_open={is_modal_open.clone()} 
+                projects_state={projects.clone()} 
+            />
+        }
     </>}
 }
 
@@ -62,7 +79,7 @@ pub fn projects_table(props: &ProjectsTableProps) -> Html {
             <table class="min-w-full border-separate border-spacing-y-2">
                 <thead class="text-xs bg-slate-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] rounded-lg">
                     <tr>
-                        <th class="px-4 py-2 text-left rounded-l-lg">{"ID"}</th>
+                        <th class="px-4 py-2 text-left rounded-l-lg">{"#"}</th>
                         <th class="px-4 py-2 text-left">{"Nombres/descripcion"}</th>
                         <th class="px-4 py-2 text-left">{"Archivo"}</th>
                         <th class="px-4 py-2 text-end rounded-r-lg">{"Acciones"}</th>
@@ -70,10 +87,11 @@ pub fn projects_table(props: &ProjectsTableProps) -> Html {
                 </thead>
                 <tbody>
                     {
-                        props.projects_state.iter().map(|item| {
+                        props.projects_state.iter().enumerate().map(|(index, item)| {
                             html! {
                                 <ProjectRow 
-                                    key={item.id} 
+                                    key={item.id}
+                                    row_number={index + 1}
                                     project={item.clone()} 
                                     projects_state={props.projects_state.clone()} 
                                 />

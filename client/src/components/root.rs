@@ -1,5 +1,6 @@
 use yew::prelude::*;
 use crate::services::utils::get_local_storage;
+use crate::services::requests::trigger_logout;
 
 use super::title::Title;
 use super::darkmode_btn::DarkModeButton;
@@ -65,15 +66,20 @@ pub fn user_button() -> Html {
         .is_some_and(|l| l.path() == "/login");
     let token = get_local_storage("group_or_user_name").unwrap_or_default();
 
-    
+    let on_logout_click = Callback::from(move |_| {
+        trigger_logout();
+    });
 
-    if is_login {
+    if is_login || token.is_empty() {
         html! {}
     } else {
         html! {
             <div class="flex pl-3 gap-3 p-1 items-center rounded-full dark:text-white bg-black/10 dark:bg-white/10">
                 <p class="text-sm">{token}</p>
-                <button class="hover:text-white rounded-full p-2 hover:bg-red-400">
+                <button 
+                    onclick={on_logout_click}
+                    class="hover:text-white rounded-full p-2 hover:bg-red-400 cursor-pointer transition-colors"
+                >
                     <LogOut size={18}/>
                 </button>
             </div>

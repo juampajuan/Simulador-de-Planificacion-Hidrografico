@@ -2,27 +2,17 @@ use tiny_http::Request;
 use std::sync::{Arc, Mutex};
 use crate::db::queries_interface::projects;
 use crate::structs::filecache::FileCache;
-use crate::structs::request::HandlerResult;
+use crate::structs::request::{HandlerResult, FullSimulationRequest, RequestContext};
 use crate::requests::http_helper::{parse_json_body, create_png_response};
 use crate::requests::endpoints::generic;
+use crate::requests::endpoints::generic::{string_response};
 use crate::db::engine::DBEngine;
 use crate::structs::settings::Settings;
 use crate::utils::helpers_endpoints::check_student_auth;
-use common::{StudentMeasuringParameters, PathParameters};
+use common::{PathParameters, SimulationBase64Response};
 use simulations::structs::depth_matrix::DepthMatrix;
-
-#[derive(serde::Deserialize)]
-pub struct FullSimulationRequest {
-    #[serde(default)]
-    pub echo_parameters: Option<StudentMeasuringParameters>,
-    pub path_parameters: PathParameters,
-}
-
-struct RequestContext {
-    cache_key: String,
-    file_path: String,
-    data: FullSimulationRequest,
-}
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+use std::io::Cursor;
 
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
@@ -70,12 +60,31 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     }
     
     let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters.clone());
-    let (png_image, _min_depth, _max_depth) = simulations::create_simulation_image(&matrix, &interpolation);
+    
+    // aca cambia con respecto a las otras req que usan blob
+    // los pixeles rgb se pasan a bytes png y luego a strings de base 64, para mandarlos en el struct
+    let (map_image, min_depth, max_depth) = simulations::create_simulation_image(&matrix, &interpolation);
+    let scale_image = simulations::create_scale_pure_image();
 
-    let response = create_png_response(png_image);
+    let mut map_bytes = Vec::new();
+    let mut scale_bytes = Vec::new();
+    let _ = map_image.write_to(&mut Cursor::new(&mut map_bytes), image::ImageFormat::Png);
+    let _ = scale_image.write_to(&mut Cursor::new(&mut scale_bytes), image::ImageFormat::Png);
+
+    let map_encoded = STANDARD.encode(map_bytes);
+    let scale_encoded = STANDARD.encode(scale_bytes); //base64
+
+    let response_data = SimulationBase64Response {
+        min_depth,
+        max_depth,
+        map_base64: map_encoded,
+        scale_base64: scale_encoded,
+    };
+
+    let json_payload = serde_json::to_string(&response_data).unwrap();
     println!("Simulación completada con éxito.");
     
-    (response.boxed(), 200, None)
+    string_response(json_payload, 200)
 }
 
 pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {

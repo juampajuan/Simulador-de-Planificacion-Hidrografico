@@ -3,8 +3,8 @@ use yew_router::prelude::*;
 
 use crate::pages::{
     admin::sections::{
-        projects::AdminProjects,
-        students::AdminStudents,
+        projects::projects::AdminProjects,
+        students::students::AdminStudents,
         config::AdminConfig
     },
     admin::AdminLayout,

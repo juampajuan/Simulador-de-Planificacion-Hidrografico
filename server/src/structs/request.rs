@@ -40,3 +40,17 @@ impl RequestLog {
 }
  
 pub type HandlerResult = (ResponseBox, u16, Option<String>);
+use common::{StudentMeasuringParameters, PathParameters};
+
+#[derive(serde::Deserialize)]
+pub struct FullSimulationRequest {
+    #[serde(default)]
+    pub echo_parameters: Option<StudentMeasuringParameters>,
+    pub path_parameters: PathParameters,
+}
+
+pub struct RequestContext {
+    pub cache_key: String,
+    pub file_path: String,
+    pub data: FullSimulationRequest,
+}

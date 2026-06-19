@@ -11,6 +11,7 @@ use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
 use serde_json::Value;
 use rand::Rng;
+use std::str::FromStr;
 
 #[derive(serde::Deserialize)]
 pub struct ProfessorAuthData {
@@ -174,10 +175,18 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
         return server_error("Internal error.".to_string());
     }
 
-    return string_response(
-                "Sesión cerrada.".to_string(),
-                200
+    let mut response = string_response(
+        "Sesión cerrada.".to_string(),
+        200
     );
+    let cookie_killer = "Set-Cookie: auth_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; SameSite=Lax";
+    if let Ok(header) = tiny_http::Header::from_str(cookie_killer) {
+        response.0.add_header(header);
+    } else {
+        return server_error("Internal error.".to_string());
+    }
+
+    return response;
 } 
 
 fn is_admin_request(
