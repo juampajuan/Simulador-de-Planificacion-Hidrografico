@@ -1,6 +1,7 @@
 use tiny_http::Request;
 use std::sync::{Arc, Mutex};
 use crate::db::queries_interface::projects;
+use crate::db::queries_interface::student;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, FullSimulationRequest, RequestContext};
 use crate::requests::http_helper::{parse_json_body, create_png_response};
@@ -40,6 +41,14 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         Ok(context) => context,
         Err(response) => return response,
     };
+
+    let limit = ctx.project.metadata.attempts_limit;
+    if limit != -1 && ctx.student.attempts >= limit {
+        return generic::string_response(
+            "Has alcanzado el límite máximo de intentos permitidos para este proyecto.".to_string(), 
+            403 
+        );
+    }
 
     let echo_parameters = match ctx.data.echo_parameters {
         Some(params) => params,
@@ -83,7 +92,10 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
 
     let json_payload = serde_json::to_string(&response_data).unwrap();
     println!("Simulación completada con éxito.");
-    
+    if let Err(e) = crate::db::queries_interface::student::increment_student_attempts_locked(&db, ctx.student_id) {
+        eprintln!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e);
+        return generic::server_error("Error interno al registrar el intento".to_string());
+    }
     string_response(json_payload, 200)
 }
 
@@ -125,19 +137,25 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
         Err(err) => return Err(generic::server_error(err)),
     };
 
+    let student = match student::get_student_by_id_locked(db, student_id) {
+        Ok(Some(s)) => s,
+        Ok(None) => return Err(generic::string_response("Estudiante no encontrado".to_string(), 404)),
+        Err(_) => return Err(generic::server_error("Error al obtener datos del estudiante".to_string())),
+    };
+
     let project_id = match projects::get_project_id_by_student_locked(db, student_id) {
         Ok(Some(id)) => id,
         Ok(None) => return Err(generic::string_response("Proyecto no encontrado".to_string(), 404)),
         Err(_) => return Err(generic::server_error("Error al obtener el proyecto del estudiante".to_string())),
     };
 
-    let filename = match projects::get_project_by_id_locked(db, project_id) {
-        Ok(Some(project)) => project.filename,
+    let project = match projects::get_project_by_id_locked(db, project_id) {
+        Ok(Some(project)) => project,
         Ok(None) => return Err(generic::string_response("Proyecto no encontrado".to_string(), 404)),
         Err(_) => return Err(generic::server_error("Error al obtener el proyecto".to_string())),
     };
 
-    let file_path = format!("{}/geotiffs/{}", settings.upload_path, filename);
+    let file_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
 
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
@@ -146,7 +164,14 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
 
     let cache_key = format!("{}-{}", student_id, project_id);
 
-    Ok(RequestContext { cache_key, file_path, data })
+    Ok(RequestContext { 
+        cache_key, 
+        file_path, 
+        data, 
+        student_id, 
+        student, 
+        project 
+    })
 }
 
 // Reutilizan, o crean y guardan.

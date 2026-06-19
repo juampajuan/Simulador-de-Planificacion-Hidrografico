@@ -112,3 +112,27 @@ pub fn create_student_locked(
         professor_id,
     )
 }
+
+pub fn get_student_by_id_locked(
+    db: &Arc<Mutex<DBEngine>>,
+    student_id: i64,
+) -> Result<Option<student::Student>, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => return Err(sqlite::Error { code: None, message: Some("Cannot lock db".to_string()) }),
+    };
+
+    student::get_student_by_id(&db_connection, student_id)
+}
+
+pub fn increment_student_attempts_locked(
+    db: &Arc<Mutex<DBEngine>>,
+    student_id: i64,
+) -> Result<bool, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => return Err(sqlite::Error { code: None, message: Some("Cannot lock db".to_string()) }),
+    };
+
+    student::increment_attempts(&db_connection, student_id)
+}

@@ -2,6 +2,7 @@ use tiny_http::Request;
 use crate::db::engine::DBEngine;
 use crate::db::queries::proyects::{ProjectMetadata};
 use crate::db::queries_interface::projects;
+use crate::db::queries_interface::student;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::requests::endpoints::generic::{server_error, string_response};
@@ -189,12 +190,25 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
     string_response(response, 200)
 }
 
+#[derive(serde::Serialize)]
+pub struct StudentProjectResponse {
+    #[serde(flatten)]
+    pub project: crate::db::queries::proyects::AdminProjectView, 
+    pub attempts_spent: i64,
+}
+
 pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
         Ok(None) => return string_response("Sin autorizar".to_string(), 401),
         Err(err) => return server_error(err),
+    };
+
+    let student = match student::get_student_by_id_locked(&db, student_id) {
+        Ok(Some(s)) => s,
+        Ok(None) => return string_response("Estudiante no encontrado".to_string(), 404),
+        Err(_) => return server_error("Error al obtener los datos del alumno".to_string()),
     };
 
     let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {
@@ -214,9 +228,14 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> H
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
-    let response = match serde_json::to_string(&project) {
+    let final_response = StudentProjectResponse {
+        project,
+        attempts_spent: student.attempts, // El número real (ej: 1)
+    };
+
+    let response = match serde_json::to_string(&final_response) {
         Ok(json) => json,
-        Err(_) => return server_error("Error serializing limits data".to_string()),
+        Err(_) => return server_error("Error serializing student project data".to_string()),
     };
 
     string_response(response, 200)

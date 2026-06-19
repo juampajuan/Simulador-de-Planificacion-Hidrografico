@@ -5,7 +5,7 @@ pub mod components;
 use self::components::img_viewer::IMGviewer;
 use self::components::parameters_cont::ParamCont;
 use self::components::path_params::PathParams;
-use self::components::measure_params::MeasuresParams;
+use self::components::measure_params::{MeasuresParams, AttemptsState};
 use self::components::info::InfoParams;
 use crate::structs::state::PathState;
 use crate::structs::state::SimulationUiState;
@@ -13,7 +13,7 @@ use crate::services::requests::get_system_limits;
 use crate::structs::limits::ConfigLimits;
 
 use crate::structs::project::AdminProjectView; 
-use crate::services::requests::get_student_project;
+use crate::services::requests::{get_student_project, StudentProjectResponse};
 
 #[derive(PartialEq, Clone, Copy)]
 enum ActiveTab {
@@ -34,8 +34,34 @@ pub fn student_page() -> Html {
     
     let path_state = use_state(PathState::default);
     let limits_state = use_state(ConfigLimits::default);
-    let project_state = use_state(|| None::<AdminProjectView>);
+    
+    let project_state = use_state(|| None::<StudentProjectResponse>);
+    
+    let attempts_state = use_state(AttemptsState::default);
+
+    let info_project_state = use_state(|| None::<AdminProjectView>);
+
     let active_tab = use_state(|| ActiveTab::Parametros);
+
+    {
+        let attempts_handle = attempts_state.clone();
+        let info_project_handle = info_project_state.clone();
+        let project_data = (*project_state).clone();
+
+        use_effect_with(project_state.clone(), move |_| {
+            if let Some(data) = project_data {
+                // Setea los intentos reales extraídos de la DB
+                attempts_handle.set(AttemptsState {
+                    spent: data.attempts_spent,
+                    limit: data.project.metadata.attempts_limit,
+                });
+                
+                // Setea la info limpia del proyecto para el visualizador del entorno
+                info_project_handle.set(Some(data.project));
+            }
+            || ()
+        });
+    }
 
     {
         let limits_handle = limits_state.clone();
@@ -72,65 +98,35 @@ pub fn student_page() -> Html {
 
     html! {
         <Root title={"Simulador de Planificación Hidrográfico"}>
-            
-            <ParamCont
-                header={html! {
-                    <div class="flex gap-2 p-1 bg-zinc-900 border border-white/10 rounded w-full">
-                        <button 
-                            onclick={set_tab_parametros}
-                            class={classes!(
-                                "flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", "flex", "justify-center", "items-center", "gap-2",
-                                if *active_tab == ActiveTab::Parametros {
-                                    vec!["bg-zinc-700", "text-white"]
-                                } else {
-                                    vec!["text-white/40", "hover:text-white/70"]
-                                }
-                            )}
-                        >
-                            <DraftingCompass size={18}/>
-                            {"SIMULACIÓN"}
-                        </button>
-                        <button 
-                            onclick={set_tab_entorno}
-                            class={classes!(
-                                "flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", "flex", "justify-center", "items-center", "gap-2",
-                                if *active_tab == ActiveTab::Entorno {
-                                    vec!["bg-zinc-700", "text-white"]
-                                } else {
-                                    vec!["text-white/40", "hover:text-white/70"]
-                                }
-                            )}
-                        >
-                            <BookText size={18}/>
-                            {"INFORMACIÓN"}
-                        </button>
-                    </div>
-                }}
-            >
+            <ParamCont>
+                <div class="flex gap-2 p-1 mb-4 bg-zinc-900 border border-white/10 rounded w-full">
+                    <button onclick={set_tab_parametros} class={classes!("flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", if *active_tab == ActiveTab::Parametros { vec!["bg-zinc-700", "text-white"] } else { vec!["text-white/40", "hover:text-white/70"] })}>
+                        {"SIMULACIÓN"}
+                    </button>
+                    <button onclick={set_tab_entorno} class={classes!("flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", if *active_tab == ActiveTab::Entorno { vec!["bg-zinc-700", "text-white"] } else { vec!["text-white/40", "hover:text-white/70"] })}>
+                        {"INFORMACIÓN"}
+                    </button>
+                </div>
 
                 {
                     match *active_tab {
                         ActiveTab::Parametros => html! {
                             <>
-                                <PathParams 
-                                    path_state={path_state.clone()}
-                                    ui_state={ui_state.clone()} 
-                                    limits={limits_state.clone()}
-                                />
+                                <PathParams path_state={path_state.clone()} ui_state={ui_state.clone()} limits={limits_state.clone()} />
                                 <MeasuresParams 
                                     ui_state={ui_state.clone()}
                                     path_state={path_state.clone()}
                                     limits={limits_state.clone()}
+                                    attempts={attempts_state.clone()} 
                                 /> 
                             </>
                         },
                         ActiveTab::Entorno => html! {
-                            <InfoParams project_state={project_state.clone()} />
+                            <InfoParams project_state={info_project_state.clone()} />
                         }
                     }
                 }
             </ParamCont>
-
             <IMGviewer ui_state={ui_state.clone()} />
         </Root>
     }
