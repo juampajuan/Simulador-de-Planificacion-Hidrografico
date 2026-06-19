@@ -415,7 +415,7 @@ pub fn trigger_login(
 
     ui_mensaje.set("Autenticando...".to_string());
     let msg_err = ui_mensaje.clone();
-
+    let redirection_clone = redirection.clone();
     send_native_request(
         "http://localhost:3000/api/v1/auth/login",
         "POST",
@@ -423,6 +423,12 @@ pub fn trigger_login(
         Some(ui_mensaje.clone()),
         Some(ui_loading),
         move |_| {
+            if let Some(window) = web_sys::window() {
+                if let Ok(Some(storage)) = window.local_storage() {
+                    let role = if redirection_clone == "/admin" { "admin" } else { "student" };
+                    let _ = storage.set_item("user_role", role);
+                }
+            }
             process_local_login(&display_name, &redirection, ui_mensaje);
         },
         Some(move |status_code| {

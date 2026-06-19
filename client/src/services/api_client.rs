@@ -82,6 +82,19 @@ pub fn send_native_request(
             on_text_ready.forget();
         } else {
             if let Some(ref l) = load { l.set(false); }
+
+            if status == 401 || status == 403 {
+                if let Some(win) = web_sys::window() {
+                    if let Ok(Some(storage)) = win.local_storage() {
+                        let _ = storage.remove_item("group_or_user_name");
+                        let _ = storage.remove_item("user_role");
+                    }
+                    
+                    let location = win.location(); 
+                    let _ = location.set_href("/login");
+                    return;
+                }
+            }
             
             if let Some(cb_err) = on_error_opt.take() {
                 // Si la función de negocio nos pasó un manejador personalizado, se lo delegamos
