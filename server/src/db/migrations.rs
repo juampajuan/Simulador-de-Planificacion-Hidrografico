@@ -9,7 +9,6 @@ pub fn init(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            is_admin INTEGER NOT NULL DEFAULT 0,
 
             price_boat REAL NOT NULL DEFAULT 0.0,
             price_launch REAL NOT NULL DEFAULT 0.0, 
@@ -82,22 +81,8 @@ pub fn init(
             )
         );
 
-        INSERT INTO professors (id, username, password_hash, is_admin)
-        VALUES (1, 'admin', '$2b$12$df1235sa8sf8kffddnasnb9qpnpoiznaswq2', 1)
-        ON CONFLICT (id) DO NOTHING;
-
-        INSERT INTO projects (
-            id, name, description, filename, attempts_limit, 
-            weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth, professor_id
-        )
-        VALUES (
-            1, 'Proyecto Test', 'Descripción de prueba', 'Darsena_20cm_v2.tif', 5, 
-            'Favorable', 'Duro', 10000.0, 0.0, 13.0, 1
-        )
-        ON CONFLICT (id) DO NOTHING;
-
-        INSERT INTO students (id, name, code, professor_id, project_id)
-        VALUES (1, 'Grupo Alumnos Test', 'ABC1J5', 1, 1)
+        INSERT INTO professors (id, username, password_hash)
+        VALUES (1, 'admin', '$2b$12$df1235sa8sf8kffddnasnb9qpnpoiznaswq2')
         ON CONFLICT (id) DO NOTHING;
 
         CREATE INDEX IF NOT EXISTS idx_projects_professor_id ON projects(professor_id);
