@@ -16,3 +16,4 @@ rand = "0.9"
 hex = "0.4"
 cli = { path = "../cli" } 
 multipart = "0.18"
+base64.workspace = true

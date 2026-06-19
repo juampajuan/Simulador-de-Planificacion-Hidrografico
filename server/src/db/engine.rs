@@ -11,7 +11,7 @@ impl DBEngine {
     ) -> Result<Self, sqlite::Error> {
 
         let connection = sqlite::open(name)?;
-
+        connection.execute("PRAGMA foreign_keys = ON;")?;
         let engine = Self {
             connection
         };

@@ -1,4 +1,6 @@
 use tiny_http::ResponseBox;
+use crate::db::queries::student::Student;
+use crate::db::queries::proyects::AdminProjectView;
  
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
@@ -40,3 +42,20 @@ impl RequestLog {
 }
  
 pub type HandlerResult = (ResponseBox, u16, Option<String>);
+use common::{StudentMeasuringParameters, PathParameters};
+
+#[derive(serde::Deserialize)]
+pub struct FullSimulationRequest {
+    #[serde(default)]
+    pub echo_parameters: Option<StudentMeasuringParameters>,
+    pub path_parameters: PathParameters,
+}
+
+pub struct RequestContext {
+    pub cache_key: String,
+    pub file_path: String,
+    pub data: FullSimulationRequest,
+    pub student_id: i64,
+    pub student: Student, 
+    pub project: AdminProjectView,
+}

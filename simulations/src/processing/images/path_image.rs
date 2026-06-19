@@ -49,8 +49,7 @@ pub fn makepng_transparent_with_path(
 
     // grosor proporcional a la resolucion: fino en rasters chicos, visible en grandes
     let hw = matrix.width.max(matrix.height) / 1500;
-
-    println!("grosor: {}",hw);
+    
     for &(x, y) in path {
         if y < matrix.height && x < matrix.width {
             let y_min = y.saturating_sub(hw);

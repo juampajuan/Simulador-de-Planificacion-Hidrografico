@@ -56,3 +56,11 @@ pub struct StudentMeasuringParameters {
     pub echo_sounder_parameters: EchosounderParameters,
     pub transport_parameters: TransportParameters,
 }
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct SimulationBase64Response {
+    pub min_depth: f64,
+    pub max_depth: f64,
+    pub map_base64: String,
+    pub scale_base64: String,
+}

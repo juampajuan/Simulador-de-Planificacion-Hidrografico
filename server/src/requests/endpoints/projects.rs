@@ -1,11 +1,13 @@
 use tiny_http::Request;
 use crate::db::engine::DBEngine;
-use crate::db::queries::proyects::{Project, ProjectMetadata};
+use crate::db::queries::proyects::{ProjectMetadata};
 use crate::db::queries_interface::projects;
+use crate::db::queries_interface::student;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
+use crate::structs::strudentProjectResponse::{StudentProjectResponse,GeoCorners};
 use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
 use std::sync::{Arc, Mutex};
 use std::path::Path;
@@ -16,15 +18,6 @@ use std::{
     io::{Read},
 }; 
 use multipart::server::Multipart;
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct ProjectWithCoordinates {
-    #[serde(flatten)]
-    project: Project,
-    coordinates: ((f64, f64), (f64, f64), (f64, f64), (f64, f64), (f64, f64)),
-}
- 
 
 pub fn get_boundary(request: &Request) -> Result<String, &str> {
 
@@ -197,6 +190,7 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
     string_response(response, 200)
 }
 
+
 pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let student_id = match check_student_auth(request, &db) {
@@ -205,28 +199,46 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
         Err(err) => return server_error(err),
     };
 
-    let Ok(projects) = projects::get_project_by_id_locked(&db, student_id) else {
-        return server_error("Error al obtener los proyectos".to_string());
+    let student = match student::get_student_by_id_locked(&db, student_id) {
+        Ok(Some(s)) => s,
+        Ok(None) => return string_response("Estudiante no encontrado".to_string(), 404),
+        Err(_) => return server_error("Error al obtener los datos del alumno".to_string()),
     };
 
-    let Some(project) = projects else {
+    let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {
+        Ok(id_opt) => id_opt,
+        Err(_) => return server_error("Error al obtener la relación del alumno".to_string()),
+    };
+
+    let Some(project_id_real) = project_id_opt else {
+        return string_response("Alumno no tiene asignado un proyecto".to_string(), 404);
+    };
+
+    let Ok(projects_opt) = projects::get_project_by_id_locked(&db, project_id_real) else {
+        return server_error("Error al obtener los detalles del proyecto".to_string());
+    };
+
+    let Some(project) = projects_opt else {
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
-    //Al json que ya venia de projectos, le pego tmb las coordenadas del tiff
-    
+    // Le enchufo al Json las coordenadas del tiff en lat,lon
     let geotiff_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
 
-    let coordinates = match simulations::get_geotiff_corners(&geotiff_path) {
+    let (sup_izq, sup_der, inf_izq, inf_der, centro) = match simulations::get_geotiff_corners(&geotiff_path) {
         Ok(c) => c,
         Err(e) => return server_error(format!("No se pudieron calcular las coordenadas: {}", e)),
     };
 
-    let response_data = ProjectWithCoordinates { project, coordinates };
+    let final_response = StudentProjectResponse {
+        project,
+        attempts_spent: student.attempts, // El número real (ej: 1)
+        coordinates: GeoCorners { sup_izq, sup_der, inf_izq, inf_der, centro },
+    };
 
-    let response = match serde_json::to_string(&response_data) {
+    let response = match serde_json::to_string(&final_response) {
         Ok(json) => json,
-        Err(_) => return server_error("Error serializing limits data".to_string()),
+        Err(_) => return server_error("Error serializing student project data".to_string()),
     };
 
     string_response(response, 200)

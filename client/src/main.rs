@@ -4,7 +4,7 @@ mod components;
 mod services;
 mod parser;
 mod structs;
-
+mod protected_route;
 use yew::prelude::*;
 
 #[function_component(App)]

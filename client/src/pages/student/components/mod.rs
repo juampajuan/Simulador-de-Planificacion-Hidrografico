@@ -4,3 +4,4 @@ pub mod path_params;
 pub mod measure_params;
 pub mod transport;
 pub mod echosounder;
+pub mod info;

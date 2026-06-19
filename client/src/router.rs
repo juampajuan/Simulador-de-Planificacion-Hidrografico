@@ -3,8 +3,8 @@ use yew_router::prelude::*;
 
 use crate::pages::{
     admin::sections::{
-        projects::AdminProjects,
-        students::AdminStudents,
+        projects::projects::AdminProjects,
+        students::students::AdminStudents,
         config::AdminConfig
     },
     admin::AdminLayout,
@@ -12,6 +12,7 @@ use crate::pages::{
     not_found::NotFound,
     student::StudentPage,
 };
+use crate::protected_route::{ProtectedRoute, Role}; 
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -38,7 +39,9 @@ pub enum Route {
 fn switch(route: Route) -> Html {
     match route {
         Route::Student => html! {
-            <StudentPage />
+            <ProtectedRoute required_role={Role::Student}>
+                <StudentPage />
+            </ProtectedRoute>
         },
 
         Route::Login => html! {
@@ -46,21 +49,27 @@ fn switch(route: Route) -> Html {
         },
 
         Route::AdminStudents => html! {
-            <AdminLayout>
-                <AdminStudents />
-            </AdminLayout>
+            <ProtectedRoute required_role={Role::Admin}>
+                <AdminLayout>
+                    <AdminStudents />
+                </AdminLayout>
+            </ProtectedRoute>
         },
 
         Route::AdminProjects => html! {
-            <AdminLayout>
-                <AdminProjects />
-            </AdminLayout>
+            <ProtectedRoute required_role={Role::Admin}>
+                <AdminLayout>
+                    <AdminProjects />
+                </AdminLayout>
+            </ProtectedRoute>
         },
 
         Route::AdminConfig => html! {
-            <AdminLayout>
-                <AdminConfig />
-            </AdminLayout>
+            <ProtectedRoute required_role={Role::Admin}>
+                <AdminLayout>
+                    <AdminConfig />
+                </AdminLayout>
+            </ProtectedRoute>
         },
 
         Route::NotFound => html! {
