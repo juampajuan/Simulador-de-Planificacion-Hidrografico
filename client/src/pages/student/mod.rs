@@ -98,15 +98,40 @@ pub fn student_page() -> Html {
 
     html! {
         <Root title={"Simulador de Planificación Hidrográfico"}>
-            <ParamCont>
-                <div class="flex gap-2 p-1 mb-4 bg-zinc-900 border border-white/10 rounded w-full">
-                    <button onclick={set_tab_parametros} class={classes!("flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", if *active_tab == ActiveTab::Parametros { vec!["bg-zinc-700", "text-white"] } else { vec!["text-white/40", "hover:text-white/70"] })}>
-                        {"SIMULACIÓN"}
-                    </button>
-                    <button onclick={set_tab_entorno} class={classes!("flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", if *active_tab == ActiveTab::Entorno { vec!["bg-zinc-700", "text-white"] } else { vec!["text-white/40", "hover:text-white/70"] })}>
-                        {"INFORMACIÓN"}
-                    </button>
-                </div>
+            <ParamCont
+                header={html! {
+                    <div class="flex gap-2 p-1 bg-zinc-900 border border-white/10 rounded w-full">
+                        <button 
+                            onclick={set_tab_parametros}
+                            class={classes!(
+                                "flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", "flex", "justify-center", "items-center", "gap-2",
+                                if *active_tab == ActiveTab::Parametros {
+                                    vec!["bg-zinc-700", "text-white"]
+                                } else {
+                                    vec!["text-white/40", "hover:text-white/70"]
+                                }
+                            )}
+                        >
+                            <DraftingCompass size={18}/>
+                            {"SIMULACIÓN"}
+                        </button>
+                        <button 
+                            onclick={set_tab_entorno}
+                            class={classes!(
+                                "flex-1", "py-2", "text-xs", "font-semibold", "rounded", "transition-all", "cursor-pointer", "text-center", "flex", "justify-center", "items-center", "gap-2",
+                                if *active_tab == ActiveTab::Entorno {
+                                    vec!["bg-zinc-700", "text-white"]
+                                } else {
+                                    vec!["text-white/40", "hover:text-white/70"]
+                                }
+                            )}
+                        >
+                            <BookText size={18}/>
+                            {"INFORMACIÓN"}
+                        </button>
+                    </div>
+                }}
+            >
 
                 {
                     match *active_tab {
