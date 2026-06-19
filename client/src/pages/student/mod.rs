@@ -5,7 +5,7 @@ use self::components::img_viewer::IMGviewer;
 use self::components::parameters_cont::ParamCont;
 use self::components::path_params::PathParams;
 use self::components::measure_params::MeasuresParams;
-use self::components::info::InfoParams; // Nuevo import
+use self::components::info::InfoParams;
 use crate::structs::state::PathState;
 use crate::structs::state::SimulationUiState;
 use crate::services::requests::get_system_limits;
@@ -25,6 +25,11 @@ pub fn student_page() -> Html {
     let mensaje = use_state(|| "Seleccione parametros para el recorrido".to_string());
     let image_url = use_state(|| None::<String>);
     let loading = use_state(|| true);
+    
+    let map_base64 = use_state(|| None::<String>);
+    let scale_base64 = use_state(|| None::<String>);
+    let min_depth = use_state(|| 0.0f64);
+    let max_depth = use_state(|| 0.0f64);
     
     let path_state = use_state(PathState::default);
     let limits_state = use_state(ConfigLimits::default);
@@ -48,6 +53,10 @@ pub fn student_page() -> Html {
         mensaje: mensaje.clone(),
         image_url: image_url.clone(),
         loading: loading.clone(),
+        map_base64: map_base64.clone(),
+        scale_base64: scale_base64.clone(),
+        min_depth: min_depth.clone(),
+        max_depth: max_depth.clone(),
     };
 
     let set_tab_parametros = {

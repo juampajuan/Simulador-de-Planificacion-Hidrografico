@@ -4,11 +4,9 @@ use crate::structs::state::{PathState, EchoState, FullSimulationRequest, Simulat
 use crate::structs::limits::ConfigLimits;
 use crate::structs::student::{Student, NewStudent};
 use crate::structs::project::{Project, AdminProjectView};
-use common::StudentMeasuringParameters;
+use common::{StudentMeasuringParameters, SimulationBase64Response};
 use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
 use crate::services::api_utils::{process_local_login, process_local_logout};
-
-// --- SERVICIOS DE ESTUDIANTES ---
 
 pub fn get_all_students(
     students_handle: UseStateHandle<Vec<Student>>,
@@ -100,8 +98,6 @@ pub fn delete_student(
         Some(|_| {})
     );
 }
-
-// --- SERVICIOS DE PROYECTOS Y CONFIGURACIÓN ---
 
 pub fn get_all_projects(
     projects_handle: UseStateHandle<Vec<Project>>,
@@ -260,14 +256,16 @@ pub fn get_student_project(
     );
 }
 
-// --- HIDROGRAFÍA / SIMULADOR GRÁFICO (BLOBS) ---
-
 pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
     let params = match parse_path_parameters(&state, &limits) {
         Ok(p) => p,
         Err(err_msg) => { ui.mensaje.set(err_msg); return; }
     };
+    ui.map_base64.set(None);
+    ui.scale_base64.set(None);
+    ui.min_depth.set(0.0);
+    ui.max_depth.set(0.0);
     ui.mensaje.set("Generando recorrido...".to_string());
     let request_body = serde_json::to_string(&CreatePathRequest { path_parameters: params }).unwrap_or_default();
 
@@ -287,15 +285,44 @@ pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: Simula
         Ok(t) => t,
         Err(e) => { ui.mensaje.set(e); return; }
     };
-
+    ui.image_url.set(None);
     ui.mensaje.set("Simulando medición...".to_string());
+    ui.loading.set(true);
+
     let simulation_params = FullSimulationRequest {
         echo_parameters: StudentMeasuringParameters { transport_parameters: transport_params, echo_sounder_parameters: echo_params },
         path_parameters: path_params,
     };
     let request_body = serde_json::to_string(&simulation_params).unwrap_or_default();
 
-    send_native_blob_request("http://localhost:3000/api/v1/run_simulation", &request_body, ui.image_url, ui.mensaje, ui.loading);
+    let map_handle = ui.map_base64.clone();
+    let scale_handle = ui.scale_base64.clone();
+    let min_handle = ui.min_depth.clone();
+    let max_handle = ui.max_depth.clone();
+    let msg_handle = ui.mensaje.clone();
+
+    send_native_request(
+        "http://localhost:3000/api/v1/run_simulation",
+        "POST",
+        Some(&request_body),
+        Some(ui.mensaje.clone()),
+        Some(ui.loading.clone()),
+        move |response_text| {
+            // deserializo el JSON de respuesta con los strings base64 y los metros
+            if let Ok(data) = serde_json::from_str::<SimulationBase64Response>(&response_text) {
+                map_handle.set(Some(data.map_base64));
+                scale_handle.set(Some(data.scale_base64));
+                min_handle.set(data.min_depth);
+                max_handle.set(data.max_depth);
+                msg_handle.set(String::new());
+            } else {
+                msg_handle.set("Error al interpretar la respuesta de simulación".to_string());
+            }
+        },
+        Some(|status_code| {
+            println!("Error en simulación. Status code: {}", status_code);
+        })
+    );
 }
 
 pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
@@ -313,7 +340,10 @@ pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: Simulati
         Ok(t) => t,
         Err(e) => { ui.mensaje.set(e); return; }
     };
- 
+    ui.map_base64.set(None);
+    ui.scale_base64.set(None);
+    ui.min_depth.set(0.0);
+    ui.max_depth.set(0.0);
     ui.mensaje.set("Calculando cobertura...".to_string());
     ui.loading.set(true);
  

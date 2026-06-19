@@ -10,7 +10,13 @@ pub struct IMGviewerProps {
 pub fn imgviewer(props: &IMGviewerProps) -> Html {
     let mensaje = &*props.ui_state.mensaje;
     let loading = *props.ui_state.loading;
+    
     let image_url = (*props.ui_state.image_url).as_ref();
+
+    let map_base64 = (*props.ui_state.map_base64).as_ref();
+    let scale_base64 = (*props.ui_state.scale_base64).as_ref();
+    let min_depth = *props.ui_state.min_depth;
+    let max_depth = *props.ui_state.max_depth;
 
     html! {
         <div
@@ -20,22 +26,41 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 rounded-md dot-grid relative dark:dot-grid-dark
             "
         >
-
-            // <div class="absolute w-full h-full scale-110 opacity-60 no-interaction">
-            //     <iframe width="100%" height="100%" allow="geolocation" src="https://api.maptiler.com/maps/dataviz-v4/?key=EVEAYM1Cx9nGoDR5OVX6#16.7/-34.59543331/-58.36668597"></iframe>
-            //     // winter-v4
-            //     // backdrop
-            // </div>
-
             <div class="flex
                 items-center
                 justify-center
                 h-full w-full overflow-hidden
-                p-8
+                p-8 relative
             ">
 
             {
-                if let Some(url) = image_url {
+                if let (Some(m_b64), Some(s_b64)) = (map_base64, scale_base64) { //esto para la simulacion
+                    html! {
+                        <div class="relative flex items-center justify-center h-full w-full">
+                            <img
+                                src={format!("data:image/png;base64,{}", m_b64)}
+                                class="h-full object-contain rounded-lg"
+                            />
+
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center z-50">
+                                
+                                <span class="px-3 py-1 text-[11px] font-sans font-medium text-white bg-zinc-800/80 rounded-full border border-white/5 shadow-md mb-[-6px] z-10 min-w-[50px] text-center">
+                                    { format!("{:.1}m", min_depth) }
+                                </span>
+                                
+                                <img //LA barra
+                                    src={format!("data:image/png;base64,{}", s_b64)} 
+                                    class="h-[520px] w-[10px] rounded-full border border-white/10" 
+                                />
+                                
+                                <span class="px-3 py-1 text-[11px] font-sans font-medium text-white bg-zinc-800/80 rounded-full border border-white/5 shadow-md mt-[-6px] z-10 min-w-[50px] text-center">
+                                    { format!("{:.1}m", max_depth) }
+                                </span>
+
+                            </div>
+                        </div>
+                    }
+                } else if let Some(url) = image_url { //esto para path, usa el blob
                     html! {
                         <img
                             key={url.to_string()}
@@ -67,7 +92,6 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 }
             }
             </div>
-
         </div>
     }
 }
