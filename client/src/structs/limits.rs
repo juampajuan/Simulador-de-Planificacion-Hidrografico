@@ -15,6 +15,8 @@ pub struct ConfigLimits {
     pub echo_umbral_max: f64,
     pub sound_speed_min: f64,
     pub sound_speed_max: f64,
+    pub attempts_spent: i64,
+    pub attempts_limit: i64,
 }
 
 impl Default for ConfigLimits {
@@ -33,6 +35,8 @@ impl Default for ConfigLimits {
             echo_umbral_max: 90.0,
             sound_speed_min: 1450.0,
             sound_speed_max: 1500.0,
+            attempts_spent: 0,
+            attempts_limit: -1,
         }
     }
 }

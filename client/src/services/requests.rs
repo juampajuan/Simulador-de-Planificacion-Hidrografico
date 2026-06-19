@@ -7,6 +7,14 @@ use crate::structs::project::{Project, AdminProjectView};
 use common::{StudentMeasuringParameters, SimulationBase64Response};
 use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
 use crate::services::api_utils::{process_local_login, process_local_logout};
+use crate::pages::student::components::measure_params::AttemptsState;
+
+#[derive(serde::Deserialize, Clone, PartialEq, Debug)]
+pub struct StudentProjectResponse {
+    #[serde(flatten)]
+    pub project: AdminProjectView,  // Esto absorbe id, filename, metadata, etc.
+    pub attempts_spent: i64,       // Esto absorbe los intentos actuales (ej: 0)
+}
 
 pub fn get_all_students(
     students_handle: UseStateHandle<Vec<Student>>,
@@ -236,7 +244,7 @@ pub fn get_system_limits(
 }
 
 pub fn get_student_project(
-    project_handle: UseStateHandle<Option<AdminProjectView>>,
+    project_handle: UseStateHandle<Option<StudentProjectResponse>>,
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
@@ -247,9 +255,11 @@ pub fn get_student_project(
         Some(ui_mensaje.clone()),
         Some(ui_loading),
         move |response_text| {
-            if let Ok(parsed) = serde_json::from_str::<Option<AdminProjectView>>(&response_text) {
-                project_handle.set(parsed);
+            if let Ok(parsed) = serde_json::from_str::<StudentProjectResponse>(&response_text) {
+                project_handle.set(Some(parsed));
                 ui_mensaje.set(String::new());
+            } else {
+                ui_mensaje.set("Error al interpretar los datos del proyecto y sus intentos".to_string());
             }
         },
         Some(|_| {})
@@ -272,7 +282,13 @@ pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits:
     send_native_blob_request("http://localhost:3000/api/v1/create_path", &request_body, ui.image_url, ui.mensaje, ui.loading);
 }
 
-pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
+pub fn run_simulation(
+    echo_state: &EchoState, 
+    path_state: &PathState, 
+    ui: SimulationUiState, 
+    limits: &ConfigLimits,
+    attempts_handle: UseStateHandle<AttemptsState>,
+) {
     let echo_params = match parse_echosounder_parameters(echo_state, &limits) {
         Ok(p) => p,
         Err(err) => { ui.mensaje.set(err); return; }
@@ -299,7 +315,10 @@ pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: Simula
     let scale_handle = ui.scale_base64.clone();
     let min_handle = ui.min_depth.clone();
     let max_handle = ui.max_depth.clone();
-    let msg_handle = ui.mensaje.clone();
+    let msg_handle_success = ui.mensaje.clone(); 
+    let msg_handle_error = ui.mensaje.clone();
+    
+    let attempts_handle_success = attempts_handle.clone(); 
 
     send_native_request(
         "http://localhost:3000/api/v1/run_simulation",
@@ -308,19 +327,26 @@ pub fn run_simulation(echo_state: &EchoState, path_state: &PathState, ui: Simula
         Some(ui.mensaje.clone()),
         Some(ui.loading.clone()),
         move |response_text| {
-            // deserializo el JSON de respuesta con los strings base64 y los metros
             if let Ok(data) = serde_json::from_str::<SimulationBase64Response>(&response_text) {
                 map_handle.set(Some(data.map_base64));
                 scale_handle.set(Some(data.scale_base64));
                 min_handle.set(data.min_depth);
                 max_handle.set(data.max_depth);
-                msg_handle.set(String::new());
+                msg_handle_success.set(String::new());
+
+                let mut current_attempts = (*attempts_handle_success).clone();
+                current_attempts.spent += 1;
+                attempts_handle_success.set(current_attempts);
             } else {
-                msg_handle.set("Error al interpretar la respuesta de simulación".to_string());
+                msg_handle_success.set("Error al interpretar la respuesta de simulación".to_string());
             }
         },
-        Some(|status_code| {
-            println!("Error en simulación. Status code: {}", status_code);
+        Some(move |status_code| {
+            if status_code == 403 {
+                msg_handle_error.set("Has alcanzado el límite máximo de intentos permitidos para este proyecto.".to_string());
+            } else {
+                msg_handle_error.set(format!("Error en el servidor: Código {}", status_code));
+            }
         })
     );
 }

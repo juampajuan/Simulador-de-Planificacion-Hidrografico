@@ -1,4 +1,6 @@
 use tiny_http::ResponseBox;
+use crate::db::queries::student::Student;
+use crate::db::queries::proyects::AdminProjectView;
  
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
@@ -53,4 +55,7 @@ pub struct RequestContext {
     pub cache_key: String,
     pub file_path: String,
     pub data: FullSimulationRequest,
+    pub student_id: i64,
+    pub student: Student, 
+    pub project: AdminProjectView,
 }
