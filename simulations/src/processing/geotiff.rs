@@ -92,7 +92,6 @@ fn calculate_coordinate(gt : [f64; 6],col: f64, row: f64) -> (f64,f64) {
 
 pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
 
-    println!("path: {}", path);
     let dataset = Dataset::open(path)?;
     let geo_transform = dataset.geo_transform()?;
     let projection = dataset.projection();
