@@ -5,3 +5,4 @@ pub mod measure_params;
 pub mod transport;
 pub mod echosounder;
 pub mod info;
+pub mod depthcolors;

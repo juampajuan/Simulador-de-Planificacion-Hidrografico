@@ -3,6 +3,9 @@ use yew::prelude::*;
 #[derive(Properties, PartialEq)]
 pub struct ParamContProps {
     #[prop_or_default]
+    pub header: Html,
+
+    #[prop_or_default]
     pub children: Children,
 }
 
@@ -22,11 +25,16 @@ pub fn param_cont(props: &ParamContProps) -> Html {
                     border
                     border-white/20
                     rounded-xl
-                    py-2 
+                    pb-2 
                     shadow-xl
                 "
             > 
-                <div class="  space-y-2">
+
+                <div class="shrink-0 sticky top-0 z-10 dark:bg-slate-950/60 backdrop-blur border-b border-white/20 shadow  p-2">
+                    { props.header.clone() }
+                </div>
+
+                <div class="space-y-2 pt-2">
                     { for props.children.iter() }
                 </div>
 
