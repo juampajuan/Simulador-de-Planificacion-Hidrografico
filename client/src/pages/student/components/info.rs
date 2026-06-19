@@ -10,7 +10,7 @@ pub struct InfoProps {
 
 #[function_component(InfoParams)]
 pub fn info_params(props: &InfoProps) -> Html {
-    let input_cls = "rounded p-2 text-sm bg-zinc-700 text-white border border-white/5 disabled:dark:text-white/50 disabled:dark:bg-zinc-600 w-full";
+    let input_cls = "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full";
 
     let is_project_open = use_state(|| true);
     let is_restrictions_open = use_state(|| true);
