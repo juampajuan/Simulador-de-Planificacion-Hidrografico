@@ -46,7 +46,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                         projects::update_a_project(&mut request, db),
 
                     (Method::Get, "/student_project") =>
-                        projects::get_student_project(&mut request, db),  
+                        projects::get_student_project(&mut request, db, settings),  
 
                     (Method::Get, "/students") =>
                         students::get_all_students(&mut request, db),

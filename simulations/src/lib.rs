@@ -2,7 +2,7 @@
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
-use crate::{processing::{interpolation::interpolation_handler:: interpolate, measuring::apply_disturbances}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
+use crate::{processing::{geotiff::GeotiffCoordinates, interpolation::interpolation_handler:: interpolate, measuring::apply_disturbances}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
 use image::{RgbaImage};
 use crate::{processing::{images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 mod processing;
@@ -148,4 +148,18 @@ pub fn create_path_with_shadows(
     };
 
     make_shaded_png(matrix, &covered_points, path)
+}
+
+pub fn get_geotiff_corners(
+    file_path: &str,
+) -> GeotiffCoordinates {
+    // (sup_izq, sup_der, inf_izq, inf_der, centro), cada uno (lat, lon)
+    let coordinates = match processing::geotiff::get_geotiff_coordinates(file_path) {
+        Ok(coordinates) => coordinates,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    Ok(coordinates)
 }
