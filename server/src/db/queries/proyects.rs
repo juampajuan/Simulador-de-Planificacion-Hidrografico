@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 pub struct ProjectMetadata {
     name: String,
     pub description: Option<String>,
-    attempts_limit: i64,
+    pub attempts_limit: i64,
     weather: String,
     seabed_hardness: String,
     budget: f64,

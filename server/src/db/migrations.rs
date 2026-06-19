@@ -44,7 +44,7 @@ pub fn init(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             code TEXT UNIQUE NOT NULL,
-
+            attempts INTEGER NOT NULL DEFAULT 0,
             professor_id INTEGER NOT NULL,
             project_id INTEGER NOT NULL, 
             FOREIGN KEY (project_id)
