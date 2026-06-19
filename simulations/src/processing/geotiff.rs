@@ -1,8 +1,9 @@
-use gdal::{Dataset, raster::Buffer, spatial_ref::SpatialRef};
+use gdal::{Dataset, raster::Buffer, spatial_ref::{CoordTransform, SpatialRef}};
 
 use crate::structs::depth_matrix::DepthMatrix;
 
 type LoadGeotiffResult = Result<(Buffer<f64>, usize, usize, Option<f64>, f64, f64, [f64; 6], String), gdal::errors::GdalError>;
+pub type GeotiffCoordinates = Result<((f64, f64), (f64, f64), (f64, f64), (f64, f64), (f64, f64)), gdal::errors::GdalError>;
 
 // Carga los metadatos del geotiff en un Buffer y los retorna
 fn load_geotiff(path: &str) -> LoadGeotiffResult{
@@ -84,3 +85,43 @@ pub fn processing_geotiff(path: &str) -> Result<DepthMatrix, gdal::errors::GdalE
         projection}
     )
 }
+
+fn calculate_coordinate(gt : [f64; 6],col: f64, row: f64) -> (f64,f64) {
+    (gt[0] + col * gt[1] + row * gt[2] ,  gt[3] + col * gt[4] + row * gt[5])
+}
+
+pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
+    let dataset = Dataset::open(path)?;
+    let geo_transform = dataset.geo_transform()?;
+    let projection = dataset.projection();
+    
+    let (cols, rows) = dataset.raster_size();
+    let (w, h) = (cols as f64, rows as f64);
+
+    let ul = calculate_coordinate(geo_transform,0.0, 0.0);     // superior izquierda
+    let ur = calculate_coordinate(geo_transform,w, 0.0);     // superior derecha
+    let ll = calculate_coordinate(geo_transform,0.0, h);       // inferior izquierda
+    let lr = calculate_coordinate(geo_transform,w, h);       // inferior derecha
+    let ce = calculate_coordinate(geo_transform,w / 2.0, h / 2.0); // centro
+
+    // reproyectar de proyectado -> lat/lon (WGS84)
+    let src = SpatialRef::from_definition(&projection)?;
+    let dst = SpatialRef::from_epsg(4326)?;
+    let ct = CoordTransform::new(&src, &dst)?;
+
+    let mut xs = [ul.0, ur.0, ll.0, lr.0, ce.0];
+    let mut ys = [ul.1, ur.1, ll.1, lr.1, ce.1];
+    let mut zs = [0.0; 5];
+    ct.transform_coords(&mut xs, &mut ys, &mut zs)?;
+
+
+    //(latitud, longitud).
+    Ok((
+        (xs[0],ys[0]), 
+        (xs[1],ys[1]), 
+        (xs[2],ys[2]), 
+        (xs[3],ys[3]), 
+        (xs[4],ys[4])
+    ))
+}
+

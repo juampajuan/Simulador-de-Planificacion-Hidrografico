@@ -83,7 +83,7 @@ fn get_points_perpendicular_to_this(
         }
         (Some(prev), None) => prev,
         (None, Some(next)) => next,
-        (None, None) => { println!("Hola hubo error ambos son none"); return [vec![], vec![], vec![]]}
+        (None, None) => {return [vec![], vec![], vec![]]}
     };
 
     //Forma el vector
@@ -203,9 +203,9 @@ pub fn get_points_circular_to_this(
 
     // Definimos los límites de búsqueda controlando que no bajen de 0 (protección contra underflow)
     let min_x = if center_x > radius { (center_x - radius).floor() as usize } else { 0 };
-    let max_x = (center_x + radius).ceil() as usize;
+    let max_x = ((center_x + radius).ceil() as usize).min(matrix.width - 1);
     let min_y = if center_y > radius { (center_y - radius).floor() as usize } else { 0 };
-    let max_y = (center_y + radius).ceil() as usize;
+    let max_y = ((center_y + radius).ceil() as usize).min(matrix.height - 1);
 
     let mut points = Vec::new();
     for x in min_x..=max_x {

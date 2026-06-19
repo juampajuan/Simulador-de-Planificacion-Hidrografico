@@ -7,6 +7,7 @@ use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
+use crate::structs::strudentProjectResponse::{StudentProjectResponse,GeoCorners};
 use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
 use std::sync::{Arc, Mutex};
 use std::path::Path;
@@ -17,7 +18,6 @@ use std::{
     io::{Read},
 }; 
 use multipart::server::Multipart;
- 
 
 pub fn get_boundary(request: &Request) -> Result<String, &str> {
 
@@ -190,14 +190,8 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
     string_response(response, 200)
 }
 
-#[derive(serde::Serialize)]
-pub struct StudentProjectResponse {
-    #[serde(flatten)]
-    pub project: crate::db::queries::proyects::AdminProjectView, 
-    pub attempts_spent: i64,
-}
 
-pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -228,9 +222,18 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> H
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
+    // Le enchufo al Json las coordenadas del tiff en lat,lon
+    let geotiff_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
+
+    let (sup_izq, sup_der, inf_izq, inf_der, centro) = match simulations::get_geotiff_corners(&geotiff_path) {
+        Ok(c) => c,
+        Err(e) => return server_error(format!("No se pudieron calcular las coordenadas: {}", e)),
+    };
+
     let final_response = StudentProjectResponse {
         project,
         attempts_spent: student.attempts, // El número real (ej: 1)
+        coordinates: GeoCorners { sup_izq, sup_der, inf_izq, inf_der, centro },
     };
 
     let response = match serde_json::to_string(&final_response) {
