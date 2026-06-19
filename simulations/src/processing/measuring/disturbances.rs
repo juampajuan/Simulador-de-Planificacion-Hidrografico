@@ -232,42 +232,32 @@ fn apply_single_measurement(
     dp: &DisturbanceParams,
 ) -> Option<f64> {
     let echo = &params.echo_sounder_parameters;
-
-    // 2. PRI — si el intervalo es muy corto para la profundidad no se detecta el eco
-    let t_min = 2.0 * p_ideal / SOUND_VELOCITY;
-    let pri_seg = echo.pulse_repetition_interval.recip();
-
-    // let optional_p = if pri_seg < t_min {
-    //     None
-    // } else {
-    //     apply_power_and_gain_noise(p_ideal, dp.potency_value, dp.gain_value, echo.absortion_coefficient)
-    // };
  
-    // 3. Potencia y ganancia (se aplica siempre, sin el gate de PRI)
+    // 2. Potencia y ganancia (se aplica siempre, sin el gate de PRI)
     let optional_p =
         apply_power_and_gain_noise(p_ideal, dp.potency_value, dp.gain_value, echo.absortion_coefficient);
  
-    // 4. Filtro de límites
+    // 3. Filtro de límites
     let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
  
     match optional_p {
         None => None,
         Some(mut p) => {
-            // 5. Velocidad del sonido
+            // 4. Velocidad del sonido
             p = if params.transport_parameters.uses_sound_profiler {
                 p
             } else {
                 apply_sound_velocity_noise(p, echo.sound_speed)
             };
  
-            // 6. Marea — mismo nivel para central, izquierda y derecha del mismo ping
+            // 5. Marea — mismo nivel para central, izquierda y derecha del mismo ping
             p = if params.transport_parameters.uses_mareograph {
                 p
             } else {
                 apply_tide_error(p, dp.tide_levels.as_ref(), i)
             };
  
-            // 7. Umbral
+            // 6. Umbral
             p = apply_threshold_error(p, echo.threshold);
  
             Some(p)

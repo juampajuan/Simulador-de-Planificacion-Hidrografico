@@ -1,4 +1,4 @@
-use gdal::{Dataset, raster::Buffer, spatial_ref::{CoordTransform, SpatialRef}};
+use gdal::{Dataset, raster::Buffer, spatial_ref::{AxisMappingStrategy, CoordTransform, SpatialRef}};
 
 use crate::structs::depth_matrix::DepthMatrix;
 
@@ -91,6 +91,8 @@ fn calculate_coordinate(gt : [f64; 6],col: f64, row: f64) -> (f64,f64) {
 }
 
 pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
+
+    println!("path: {}", path);
     let dataset = Dataset::open(path)?;
     let geo_transform = dataset.geo_transform()?;
     let projection = dataset.projection();
@@ -105,8 +107,10 @@ pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
     let ce = calculate_coordinate(geo_transform,w / 2.0, h / 2.0); // centro
 
     // reproyectar de proyectado -> lat/lon (WGS84)
-    let src = SpatialRef::from_definition(&projection)?;
-    let dst = SpatialRef::from_epsg(4326)?;
+    let mut src = SpatialRef::from_definition(&projection)?;
+    let mut dst = SpatialRef::from_epsg(4326)?;
+    src.set_axis_mapping_strategy(AxisMappingStrategy::TraditionalGisOrder);
+    dst.set_axis_mapping_strategy(AxisMappingStrategy::TraditionalGisOrder);
     let ct = CoordTransform::new(&src, &dst)?;
 
     let mut xs = [ul.0, ur.0, ll.0, lr.0, ce.0];
@@ -114,14 +118,13 @@ pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
     let mut zs = [0.0; 5];
     ct.transform_coords(&mut xs, &mut ys, &mut zs)?;
 
-
     //(latitud, longitud).
     Ok((
-        (xs[0],ys[0]), 
-        (xs[1],ys[1]), 
-        (xs[2],ys[2]), 
-        (xs[3],ys[3]), 
-        (xs[4],ys[4])
+        (ys[0], xs[0]),
+        (ys[1], xs[1]),
+        (ys[2], xs[2]),
+        (ys[3], xs[3]),
+        (ys[4], xs[4]),
     ))
 }
 
