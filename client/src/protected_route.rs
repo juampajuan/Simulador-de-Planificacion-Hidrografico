@@ -22,7 +22,9 @@ pub fn protected_route(props: &ProtectedProps) -> Html {
     let storage = window.local_storage().unwrap().unwrap();
     
     let session = storage.get_item("group_or_user_name").unwrap_or(None);
-    let is_admin = session.as_deref() == Some("admin");
+    let role_saved = storage.get_item("user_role").unwrap_or(None);
+    
+    let is_admin = role_saved.as_deref() == Some("admin");
 
     if session.is_none() {
         navigator.replace(&Route::Login);
@@ -34,12 +36,12 @@ pub fn protected_route(props: &ProtectedProps) -> Html {
     }
 
     match props.required_role {
-        Role::Admin if !is_admin => {
-            navigator.replace(&Route::Student);
-            return html! {};
-        }
         Role::Student if is_admin => {
             navigator.replace(&Route::AdminProjects);
+            return html! {};
+        }
+        Role::Admin if !is_admin => {
+            navigator.replace(&Route::Student);
             return html! {};
         }
         _ => {}
