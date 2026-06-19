@@ -1,6 +1,6 @@
 use tiny_http::Request;
 use crate::db::engine::DBEngine;
-use crate::db::queries::proyects::{ProjectMetadata};
+use crate::db::queries::proyects::{Project, ProjectMetadata};
 use crate::db::queries_interface::projects;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
@@ -16,6 +16,14 @@ use std::{
     io::{Read},
 }; 
 use multipart::server::Multipart;
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct ProjectWithCoordinates {
+    #[serde(flatten)]
+    project: Project,
+    coordinates: ((f64, f64), (f64, f64), (f64, f64), (f64, f64), (f64, f64)),
+}
  
 
 pub fn get_boundary(request: &Request) -> Result<String, &str> {
@@ -189,7 +197,7 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
     string_response(response, 200)
 }
 
-pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -205,7 +213,18 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> H
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
-    let response = match serde_json::to_string(&project) {
+    //Al json que ya venia de projectos, le pego tmb las coordenadas del tiff
+    
+    let geotiff_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
+
+    let coordinates = match simulations::get_geotiff_corners(&geotiff_path) {
+        Ok(c) => c,
+        Err(e) => return server_error(format!("No se pudieron calcular las coordenadas: {}", e)),
+    };
+
+    let response_data = ProjectWithCoordinates { project, coordinates };
+
+    let response = match serde_json::to_string(&response_data) {
         Ok(json) => json,
         Err(_) => return server_error("Error serializing limits data".to_string()),
     };
