@@ -51,6 +51,7 @@ fn buffer_to_matrix(buffer: Buffer<f64>, cols: usize ) -> Vec<Vec<f64>>{
 
     let mut iterator = 1;
 
+    #[allow(clippy::explicit_counter_loop)]
     for value in buffer.data(){
 
         row.push(*value);
@@ -125,5 +126,39 @@ pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
         (ys[3], xs[3]),
         (ys[4], xs[4]),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+ 
+    // Geotransform de ejemplo: origen en (1000, 2000), pixel de 0.2m,
+    // sin rotacion (caso comun para nuestros geotiffs).
+    const GT: [f64; 6] = [1000.0, 0.2, 0.0, 2000.0, 0.0, -0.2];
+ 
+    #[test]
+    fn esquina_superior_izquierda_es_el_origen() {
+        // col=0, row=0 tiene que devolver exactamente el origen del geotransform.
+        let (x, y) = calculate_coordinate(GT, 0.0, 0.0);
+        assert_eq!(x, 1000.0);
+        assert_eq!(y, 2000.0);
+    }
+ 
+    #[test]
+    fn avanza_en_x_segun_el_ancho_de_pixel() {
+        // 10 columnas * 0.2m/px = 2m de avance en x, sin tocar y.
+        let (x, y) = calculate_coordinate(GT, 10.0, 0.0);
+        assert_eq!(x, 1002.0);
+        assert_eq!(y, 2000.0);
+    }
+ 
+    #[test]
+    fn avanza_en_y_hacia_abajo_porque_el_alto_de_pixel_es_negativo() {
+        // 10 filas * -0.2m/px = -2m: y decrece a medida que bajamos en la imagen,
+        // que es justo la convencion de los geotiffs (fila 0 = arriba).
+        let (x, y) = calculate_coordinate(GT, 0.0, 10.0);
+        assert_eq!(x, 1000.0);
+        assert_eq!(y, 1998.0);
+    }
 }
 

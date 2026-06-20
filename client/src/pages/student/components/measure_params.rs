@@ -52,10 +52,10 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
 
     let on_simulate_click = Callback::from(move |_| {
         run_simulation(
-            &*echo_state_handle, 
-            &*path_state_handle, 
+            &echo_state_handle, 
+            &path_state_handle, 
             ui_state_handle.clone(),
-            &*limits_handle,
+            &limits_handle,
             attempts_handle.clone()
         );
     });
@@ -67,10 +67,10 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
 
     let on_coverage_click = Callback::from(move |_| {
         run_coverage(
-            &*echo_state_handle_cov,
-            &*path_state_handle_cov,
+            &echo_state_handle_cov,
+            &path_state_handle_cov,
             ui_state_handle_cov.clone(),
-            &*limits_handle_cov
+            &limits_handle_cov
         );
     });
 

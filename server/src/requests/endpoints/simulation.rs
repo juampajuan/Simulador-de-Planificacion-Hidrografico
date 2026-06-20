@@ -68,7 +68,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
     
-    let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters.clone());
+    let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters);
     
     // aca cambia con respecto a las otras req que usan blob
     // los pixeles rgb se pasan a bytes png y luego a strings de base 64, para mandarlos en el struct

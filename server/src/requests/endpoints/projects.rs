@@ -36,11 +36,7 @@ pub fn get_boundary(request: &Request) -> Result<String, &str> {
         .find_map(|part| {
             let part = part.trim();
 
-            if let Some(boundary) = part.strip_prefix("boundary=") {
-                Some(boundary.to_string())
-            } else {
-                None
-            }
+            part.strip_prefix("boundary=").map(|boundary| boundary.to_string())
         })
     {
         Some(b) => b,
@@ -234,6 +230,7 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
         project,
         attempts_spent: student.attempts, // El número real (ej: 1)
         coordinates: GeoCorners { sup_izq, sup_der, inf_izq, inf_der, centro },
+        maptiler_api_key: settings.maptiler_api_key.clone(),
     };
 
     let response = match serde_json::to_string(&final_response) {

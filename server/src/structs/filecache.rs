@@ -55,12 +55,12 @@ impl FileCache {
 
     pub fn get_map(&mut self, cache_key: &str, geotiff_path: &str) -> Option<&DepthMatrix> {
         let now = self.get_now();
-        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
-            if self.items[pos].0.geotiff_path == geotiff_path {
+        if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) 
+            && self.items[pos].0.geotiff_path == geotiff_path {
                 self.items[pos].1 = now;
                 return Some(&self.items[pos].0.matrix);
             }
-        }
+        
         None
     }
 
@@ -78,12 +78,12 @@ impl FileCache {
         if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
             self.items[pos].1 = now;
             
-            if let Some(ref path_data) = self.items[pos].0.last_path {
-                if path_data.parameters == *current_params {
+            if let Some(ref path_data) = self.items[pos].0.last_path 
+                && path_data.parameters == *current_params {
                     return Some(path_data.coordinates.clone());
                 }
-            }
         }
+        
         None
     }
 

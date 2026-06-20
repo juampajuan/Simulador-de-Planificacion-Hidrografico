@@ -9,6 +9,8 @@ CACHE_ITEMS_MAX = 10
 # Pass utilizada para acceder al CLI.
 ADMIN_PASS = "Magicpass2" 
     # Requiere reinicar el servidor, para que se aplique.
+    
+MAPTILER_API_KEY = "EVEAYM1Cx9nGoDR5OVX6"
 
 # Directorio donde se almacenan los archivos. (geofiff)
 # FILE_UPLOAD_PATH = "./uploads"

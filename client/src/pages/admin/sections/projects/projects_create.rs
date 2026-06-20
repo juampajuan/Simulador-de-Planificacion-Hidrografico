@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::structs::project::Project;
+use crate::structs::project::{NewProject, Project};
 use crate::components::modal::Modal;
 use crate::services::requests::create_project;
 use crate::components::form_inputs::FormInput;
@@ -76,9 +76,20 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
             error_msg.set(String::new());
 
             create_project(
-                name.clone(), description.clone(), file, attempts, fields.weather.clone(), 
-                fields.seabed_hardness.clone(), b, mind, maxd, projects_state.clone(), 
-                error_msg.clone(), modal_loading.clone()
+                NewProject {
+                    name: name.clone(),
+                    description: description.clone(),
+                    file,
+                    attempts_limit: attempts,
+                    weather: fields.weather.clone(),
+                    seabed_hardness: fields.seabed_hardness.clone(),
+                    budget: b,
+                    geotiff_min_depth: mind,
+                    geotiff_max_depth: maxd,
+                },
+                projects_state.clone(),
+                error_msg.clone(),
+                modal_loading.clone(),
             );
 
             is_open.set(false); 
@@ -106,9 +117,8 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                         <label class="text-xs font-semibold text-white/80">{"Seleccionar Archivo GeoTIFF"}</label>
                         <input type="file" accept=".tif,.tiff" class="bg-slate-950 text-sm p-2 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-200 file:text-black file:cursor-pointer" 
                             onchange={Callback::from(move |e: Event| {
-                                if let Some(files) = e.target_unchecked_into::<web_sys::HtmlInputElement>().files() {
-                                    if let Some(f) = files.get(0) { selected_file.set(Some(f)); }
-                                }
+                                if let Some(files) = e.target_unchecked_into::<web_sys::HtmlInputElement>().files() 
+                                    && let Some(f) = files.get(0) { selected_file.set(Some(f)); }
                             })} />
                         if !file_name_preview.is_empty() { 
                             <p class="text-[10px] text-cyan-300 truncate mt-0.5">{"Seleccionado: "}{file_name_preview}</p> 

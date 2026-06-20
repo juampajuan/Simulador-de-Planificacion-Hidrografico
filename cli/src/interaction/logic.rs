@@ -17,21 +17,21 @@ pub fn menu(host:&str, client: &Client) {
 
     match args.as_slice() {
         ["create", user, pass] => {
-            match requests::create_user(&client, host, user, pass) {
+            match requests::create_user(client, host, user, pass) {
                 Ok(response) => println!("{}", response),
                 Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
             }
         }
 
         ["newpass", user, pass] => {
-            match requests::change_pass(&client, host, user, pass) {
+            match requests::change_pass(client, host, user, pass) {
                 Ok(response) => println!("{}", response),
                 Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
             }
         }
 
         ["closeall"] => {
-            match requests::close_all(&client, host) {
+            match requests::close_all(client, host) {
                 Ok(response) => println!("{}", response),
                 Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
             }

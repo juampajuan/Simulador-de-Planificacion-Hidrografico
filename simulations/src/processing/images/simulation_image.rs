@@ -3,7 +3,7 @@ use crate::structs::depth_matrix::DepthMatrix;
 use super::helpers::{depth_color,depth_range};
 
 pub fn makepng_with_matrix_and_interpolation(
-    matrix: &Vec<Vec<f64>>,
+    matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
 ) -> (RgbaImage, f64, f64) {
     let no_data = geotiff.no_data.unwrap_or(f64::MAX);

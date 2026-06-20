@@ -25,7 +25,7 @@ pub fn path_params(props: &PathProps) -> Html {
     let limits_clone = props.limits.clone();
 
     let on_visualize_click = Callback::from(move |_| {
-        trigger_path_generation(&*path_state_clone, ui_state_clone.clone(), &*limits_clone);
+        trigger_path_generation(&path_state_clone, ui_state_clone.clone(), &limits_clone);
     });
 
     html! {
@@ -51,7 +51,7 @@ pub fn path_params(props: &PathProps) -> Html {
                         disabled={*props.ui_state.loading}
                         placeholder="10"
                         class={input_cls}
-                        value={(*props.path_state).separacion.clone()}
+                        value={(props.path_state).separacion.clone()}
                         onchange={{
                             let s_handle = props.path_state.clone();
                             Callback::from(move |e: Event| {
@@ -74,7 +74,7 @@ pub fn path_params(props: &PathProps) -> Html {
                         disabled={*props.ui_state.loading}
                         placeholder="45"
                         class={input_cls}
-                        value={(*props.path_state).azimut.clone()}
+                        value={(props.path_state).azimut.clone()}
                         onchange={{
                             let a_handle = props.path_state.clone();
                             Callback::from(move |e: Event| {
@@ -117,7 +117,7 @@ pub fn path_params(props: &PathProps) -> Html {
                         .map(|opt| html! {
                             <option
                                 value={*opt}
-                                selected={(*props.path_state).gnss_type == *opt}
+                                selected={(props.path_state).gnss_type == *opt}
                             >
                                 { opt }
                             </option>

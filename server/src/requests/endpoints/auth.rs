@@ -28,7 +28,7 @@ pub struct StudentAuthData {
 
 pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    match is_admin_request(&request, &db) {
+    match is_admin_request(request, &db) {
         Ok(true) => {}
         Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
         Err(_err) => return server_error("Error autenticando".into()),
@@ -61,7 +61,7 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
 
 pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    match is_admin_request(&request, &db) {
+    match is_admin_request(request, &db) {
         Ok(true) => {}
         Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
         Err(_err) => return server_error("Error autenticando".into()),
@@ -131,7 +131,7 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let token = generate_token();
 
-    if let Err(_) = auth::create_token_locked(&db, owner, &token, 7) {
+    if auth::create_token_locked(&db, owner, &token, 7).is_err() {
         return server_error("Internal error.".to_string());
     }
 
@@ -146,13 +146,13 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
 pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
-    match is_admin_request(&request, &db) {
+    match is_admin_request(request, &db) {
         Ok(true) => {}
         Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
         Err(_err) => return server_error("Error autenticando".into()),
     }
 
-    if let Err(_) = auth::delete_all_tokens_locked(&db) {
+    if auth::delete_all_tokens_locked(&db).is_err() {
         return server_error("Internal error.".to_string());
     }
 
@@ -171,7 +171,7 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
         }
     };
 
-    if let Err(_) = auth::delete_token_locked(&db, &auth_token) {
+    if auth::delete_token_locked(&db, &auth_token).is_err() {
         return server_error("Internal error.".to_string());
     }
 
@@ -186,7 +186,7 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
         return server_error("Internal error.".to_string());
     }
 
-    return response;
+    response
 } 
 
 fn is_admin_request(

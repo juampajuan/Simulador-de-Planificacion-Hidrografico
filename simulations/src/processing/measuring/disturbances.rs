@@ -21,10 +21,18 @@ const TIDE_PERIOD_H: f64      = 12.4;
 const TIDE_PHASE: f64         = 0.0;
 
 // ------------------------------------------------------------
+//  Tipos de respuesta
+// ------------------------------------------------------------
+
+
+type Point = (usize, usize);
+type MeasuredBeam = Vec<(Point, Option<f64>)>;
+
+
+// ------------------------------------------------------------
 //  Parámetros de perturbación pre-calculados
 //  Se calculan una sola vez antes del loop de mediciones.
 // ------------------------------------------------------------
-
 struct DisturbanceParams {
     tide_levels: Option<Vec<f64>>,
     potency_value: f64,
@@ -90,7 +98,7 @@ fn calculate_disturbance_params(
             100 => 250.0,
             _   => 200.0,
         },
-        gain_value: params.echo_sounder_parameters.gain as f64,
+        gain_value: params.echo_sounder_parameters.gain,
         angle_std: get_inertial_angle_std(
             params.transport_parameters.transport,
             params.transport_parameters.speed,
@@ -179,9 +187,9 @@ fn apply_disturbances_multihaz(
     matrix: &DepthMatrix,
     dp: &DisturbanceParams,
 ) -> (
-    Vec<((usize, usize), Option<f64>)>,
-    Vec<((usize, usize), Option<f64>)>,
-    Vec<((usize, usize), Option<f64>)>,
+    MeasuredBeam,
+    MeasuredBeam,
+    MeasuredBeam,
 ) {
     let mut result_central = Vec::with_capacity(central.len());
     let mut result_izq     = Vec::with_capacity(izquierda.len());
@@ -209,10 +217,9 @@ fn apply_disturbances_multihaz(
         let (punto_der, p_der) = apply_inertial_angles(punto_der, matrix, angulo_theta_x, angulo_theta_y);
 
         // Aplicamos el resto de los errores a cada punto por separado
-        // (PRI, potencia, ganancia, marea — la marea usa el mismo índice i para los tres)
         result_central.push((punto_c,   apply_single_measurement(i, punto_c,   p_c,   params, matrix, dp)));
-        result_izq.push(    (punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp)));
-        result_der.push(    (punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp)));
+        result_izq.push((punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp)));
+        result_der.push((punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp)));
     }
 
     (result_central, result_izq, result_der)
@@ -361,4 +368,39 @@ pub fn apply_threshold_error(p: f64, threshold_percent: f64) -> f64 {
     // 10% = 10% más cerca, 90% = 10% más lejos
     let factor = (threshold_percent - 50.0) / 400.0;
     p * (1.0 + factor)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+ 
+    #[test]
+    fn con_mareografo_no_modifica_la_profundidad() {
+        // tide_levels = None simula uses_mareograph = true (la marea se anula)
+        let resultado = apply_tide_error(10.0, None, 0);
+        assert_eq!(resultado, 10.0);
+    }
+ 
+    #[test]
+    fn sin_mareografo_suma_el_nivel_de_marea_del_indice() {
+        let niveles = vec![0.5, -0.3, 1.2];
+        assert_eq!(apply_tide_error(10.0, Some(&niveles), 0), 10.5);
+        assert_eq!(apply_tide_error(10.0, Some(&niveles), 1), 9.7);
+        assert_eq!(apply_tide_error(10.0, Some(&niveles), 2), 11.2);
+    }
+ 
+    #[test]
+    fn umbral_50_por_ciento_no_desplaza_la_medicion() {
+        // 50% es el caso "correcto".
+        let resultado = apply_threshold_error(10.0, 50.0);
+        assert!((resultado - 10.0).abs() < 1e-9);
+    }
+ 
+    #[test]
+    fn umbral_bajo_acerca_la_medicion_umbral_alto_la_aleja() {
+        let cerca = apply_threshold_error(10.0, 10.0);
+        let lejos = apply_threshold_error(10.0, 90.0);
+        assert!(cerca < 10.0, "con umbral 10% deberia acercarse, dio {cerca}");
+        assert!(lejos > 10.0, "con umbral 90% deberia alejarse, dio {lejos}");
+    }
 }

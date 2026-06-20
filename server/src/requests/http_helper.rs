@@ -18,7 +18,7 @@ pub fn parse_json_body<T: DeserializeOwned>(request: &mut Request) -> Result<T, 
 pub fn create_png_response(rgb_image: RgbaImage) -> Response<Cursor<Vec<u8>>> {
     let mut bytes = Vec::new();
     
-    if let Err(_) = rgb_image.write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png) {
+    if rgb_image.write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png).is_err() {
         return Response::from_string("Error encoding PNG").with_status_code(500);
     }
 

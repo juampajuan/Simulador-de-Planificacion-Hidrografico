@@ -47,7 +47,7 @@ pub fn print_help() {
         ),
     ];
 
-    print!("\n");
+    println!();
     for (description, command, params) in commands {
         print_command(description, command, params);
     }

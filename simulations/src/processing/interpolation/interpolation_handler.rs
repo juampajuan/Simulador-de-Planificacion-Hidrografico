@@ -2,7 +2,7 @@ use crate::processing::interpolation::helpers::create_matrix_with_measurments_an
 use crate::processing::interpolation::interpolation_method::old_interpolations::idw::interpolation_idw_kdtrees;
 use crate::processing::interpolation::interpolation_method::old_interpolations::kriging::interpolation_kriging;
 use crate::processing::interpolation::interpolation_method::old_interpolations::tin::interpolation_tin;
-use crate::processing::interpolation::interpolation_method::tin_gdal_grid::interpolation_gdal_tin;
+use crate::processing::interpolation::interpolation_method::tin_gdal::interpolation_gdal_tin;
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::structs::interpolation_type::InterpolationMethod;
 use crate::structs::measurement_type::MeasurementsTypeWithError;

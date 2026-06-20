@@ -3,7 +3,7 @@ use crate::parser::{parse_path_parameters, parse_echosounder_parameters, parse_t
 use crate::structs::state::{PathState, EchoState, FullSimulationRequest, SimulationUiState, CreatePathRequest};
 use crate::structs::limits::ConfigLimits;
 use crate::structs::student::{Student, NewStudent};
-use crate::structs::project::{Project, AdminProjectView};
+use crate::structs::project::{AdminProjectView, NewProject, Project};
 use common::{StudentMeasuringParameters, SimulationBase64Response};
 use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
 use crate::services::api_utils::{process_local_login, process_local_logout};
@@ -14,6 +14,17 @@ pub struct StudentProjectResponse {
     #[serde(flatten)]
     pub project: AdminProjectView,  // Esto absorbe id, filename, metadata, etc.
     pub attempts_spent: i64,       // Esto absorbe los intentos actuales (ej: 0)
+    pub coordinates: GeoCorners,
+    pub maptiler_api_key: String,
+}
+
+#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
+pub struct GeoCorners {
+    pub sup_izq: (f64, f64),
+    pub sup_der: (f64, f64),
+    pub inf_izq: (f64, f64),
+    pub inf_der: (f64, f64),
+    pub centro: (f64, f64),
 }
 
 pub fn get_all_students(
@@ -129,19 +140,23 @@ pub fn get_all_projects(
 }
 
 pub fn create_project(
-    name: String,
-    description: String,
-    file: web_sys::File,
-    attempts_limit: i64,
-    weather: String,
-    seabed_hardness: String,
-    budget: f64,
-    geotiff_min_depth: f64,
-    geotiff_max_depth: f64,
+    project: NewProject,
     projects_state: UseStateHandle<Vec<Project>>,
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
+    let NewProject {
+        name,
+        description,
+        file,
+        attempts_limit,
+        weather,
+        seabed_hardness,
+        budget,
+        geotiff_min_depth,
+        geotiff_max_depth,
+    } = project;
+
     let form_data = web_sys::FormData::new().unwrap();
     let metadata_json = serde_json::json!({
         "name": name,
@@ -268,7 +283,7 @@ pub fn get_student_project(
 
 pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
-    let params = match parse_path_parameters(&state, &limits) {
+    let params = match parse_path_parameters(state, limits) {
         Ok(p) => p,
         Err(err_msg) => { ui.mensaje.set(err_msg); return; }
     };
@@ -289,15 +304,15 @@ pub fn run_simulation(
     limits: &ConfigLimits,
     attempts_handle: UseStateHandle<AttemptsState>,
 ) {
-    let echo_params = match parse_echosounder_parameters(echo_state, &limits) {
+    let echo_params = match parse_echosounder_parameters(echo_state, limits) {
         Ok(p) => p,
         Err(err) => { ui.mensaje.set(err); return; }
     };
-    let path_params = match parse_path_parameters(path_state, &limits) {
+    let path_params = match parse_path_parameters(path_state, limits) {
         Ok(p) => p,
         Err(err) => { ui.mensaje.set(err); return; }
     };
-    let transport_params = match parse_transport_parameters(echo_state, &limits) {
+    let transport_params = match parse_transport_parameters(echo_state, limits) {
         Ok(t) => t,
         Err(e) => { ui.mensaje.set(e); return; }
     };
@@ -422,14 +437,22 @@ pub fn trigger_login(
         Some(&credentials.to_string()),
         Some(ui_mensaje.clone()),
         Some(ui_loading),
-        move |_| {
-            if let Some(window) = web_sys::window() {
-                if let Ok(Some(storage)) = window.local_storage() {
+        move |response_text| { 
+            let real_name = if !response_text.trim().is_empty() {
+                response_text.trim().to_string()
+            } else {
+                display_name
+            };
+
+            if let Some(window) = web_sys::window() 
+                && let Ok(Some(storage)) = window.local_storage() {
                     let role = if redirection_clone == "/admin" { "admin" } else { "student" };
                     let _ = storage.set_item("user_role", role);
+                    let _ = storage.set_item("group_or_user_name", &real_name);
                 }
-            }
-            process_local_login(&display_name, &redirection, ui_mensaje);
+            
+
+            process_local_login(&real_name, &redirection, ui_mensaje);
         },
         Some(move |status_code| {
             if status_code == 401 {
