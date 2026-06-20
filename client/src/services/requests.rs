@@ -15,6 +15,7 @@ pub struct StudentProjectResponse {
     pub project: AdminProjectView,  // Esto absorbe id, filename, metadata, etc.
     pub attempts_spent: i64,       // Esto absorbe los intentos actuales (ej: 0)
     pub coordinates: GeoCorners,
+    pub maptiler_api_key: String,
 }
 
 #[derive(serde::Deserialize, Debug, Clone, PartialEq)]

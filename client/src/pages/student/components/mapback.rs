@@ -1,7 +1,6 @@
 use gloo_timers::callback::Timeout;
 use crate::services::requests::StudentProjectResponse;
 use wasm_bindgen::{closure::Closure, JsCast};
-use web_sys::console;
 use yew::prelude::*;
 use crate::services::requests::GeoCorners;
 const EARTH_RADIUS: f64 = 6378137.0;
@@ -15,6 +14,7 @@ pub struct MapBackgroundProps {
 pub fn map_background(props: &MapBackgroundProps) -> Html {
     let centro = use_state(|| None::<(f64, f64)>);
     let zoom = use_state(|| None::<f64>);
+    let api_key = use_state(|| None::<String>);
 
     let resize_timeout = use_mut_ref(|| None::<Timeout>);
 
@@ -75,6 +75,7 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
     {
         let centro = centro.clone();
         let zoom = zoom.clone();
+        let api_key = api_key.clone();
         let project_state = props.project_state.clone();
         let window_size = window_size.clone();
 
@@ -93,6 +94,7 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
                     // console::log_1(&format!("zoom: {:?}", z).into());
                     centro.set(Some(c));
                     zoom.set(Some(z));
+                    api_key.set(Some(project.maptiler_api_key.clone()));
                 }
                 || ()
             },
@@ -102,18 +104,16 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
     html! {
         <div class="absolute w-full h-full scale-110 opacity-25 no-interaction">
             {
-                if let (Some((lat, lng)), Some(z)) = (*centro, *zoom) {
+                if let (Some((lat, lng)), Some(z), Some(key)) = (*centro, *zoom, (*api_key).clone()) {
                     html! {
                         <iframe
                             width="100%"
                             height="100%"
                             allow="geolocation"
-                            // TODO: Que la api llega por parametro de GEOLOCATION
                             src={format!(
-                                "https://api.maptiler.com/maps/backdrop/?key=EVEAYM1Cx9nGoDR5OVX6#{}/{}/{}",
-                                z,
-                                lat,
-                                lng
+                                "https://api.maptiler.com/maps/backdrop/?key={}#{}/{}/{}",
+                                key,    // antes era: EVEAYM1Cx9nGoDR5OVX6
+                                z, lat, lng
                             )}
                         />
                     }

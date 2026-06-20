@@ -234,6 +234,7 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
         project,
         attempts_spent: student.attempts, // El número real (ej: 1)
         coordinates: GeoCorners { sup_izq, sup_der, inf_izq, inf_der, centro },
+        maptiler_api_key: settings.maptiler_api_key.clone(),
     };
 
     let response = match serde_json::to_string(&final_response) {

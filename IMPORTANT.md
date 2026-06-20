@@ -18,7 +18,8 @@ trunk serve
 
 # En la segunda
 # Con la ruta en /src/client/ui
-npx tailwindcss -i ./styles.css -o ./tailwind.css --watch
+npm install
+./node_modules/.bin/tailwindcss -i ./styles.css -o ./tailwind.css
 ```
 
 Para el __server__:

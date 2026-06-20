@@ -1,2 +1,2 @@
 pub mod old_interpolations;
-pub mod tin_gdal_grid;
+pub mod tin_gdal;

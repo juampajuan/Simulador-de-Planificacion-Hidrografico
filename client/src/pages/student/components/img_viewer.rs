@@ -1,9 +1,5 @@
 use yew::prelude::*;
 use crate::{pages::student::components::{depthcolors::DepthLegend, mapback::MapBackground}, services::requests::StudentProjectResponse, structs::state::SimulationUiState};
-use web_sys::console;
-
-
-use wasm_bindgen::{closure::Closure, JsCast};
 
 #[derive(Properties, PartialEq)]
 pub struct IMGviewerProps {
