@@ -152,7 +152,7 @@ pub fn student_page() -> Html {
                     }
                 }
             </ParamCont>
-            <IMGviewer ui_state={ui_state.clone()} />
+            <IMGviewer ui_state={ui_state.clone()} project_state={project_state.clone()}/>
         </Root>
     }
 }

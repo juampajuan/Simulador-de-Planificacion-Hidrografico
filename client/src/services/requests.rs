@@ -14,6 +14,16 @@ pub struct StudentProjectResponse {
     #[serde(flatten)]
     pub project: AdminProjectView,  // Esto absorbe id, filename, metadata, etc.
     pub attempts_spent: i64,       // Esto absorbe los intentos actuales (ej: 0)
+    pub coordinates: GeoCorners,
+}
+
+#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
+pub struct GeoCorners {
+    pub sup_izq: (f64, f64),
+    pub sup_der: (f64, f64),
+    pub inf_izq: (f64, f64),
+    pub inf_der: (f64, f64),
+    pub centro: (f64, f64),
 }
 
 pub fn get_all_students(
@@ -422,14 +432,22 @@ pub fn trigger_login(
         Some(&credentials.to_string()),
         Some(ui_mensaje.clone()),
         Some(ui_loading),
-        move |_| {
+        move |response_text| { 
+            let real_name = if !response_text.trim().is_empty() {
+                response_text.trim().to_string()
+            } else {
+                display_name
+            };
+
             if let Some(window) = web_sys::window() {
                 if let Ok(Some(storage)) = window.local_storage() {
                     let role = if redirection_clone == "/admin" { "admin" } else { "student" };
                     let _ = storage.set_item("user_role", role);
+                    let _ = storage.set_item("group_or_user_name", &real_name);
                 }
             }
-            process_local_login(&display_name, &redirection, ui_mensaje);
+
+            process_local_login(&real_name, &redirection, ui_mensaje);
         },
         Some(move |status_code| {
             if status_code == 401 {

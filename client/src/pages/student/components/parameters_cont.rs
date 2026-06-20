@@ -18,23 +18,21 @@ pub fn param_cont(props: &ParamContProps) -> Html {
                     w-[380px] 
                     max-h-full
                     overflow-hidden
-                    overflow-y-auto
                     flex
                     flex-col
                     dark:bg-slate-950
                     border
                     border-white/20
                     rounded-xl
-                    pb-2 
                     shadow-xl
                 "
             > 
 
-                <div class="shrink-0 sticky top-0 z-10 dark:bg-slate-950/60 backdrop-blur border-b border-white/20 shadow  p-2">
+                <div class="shrink-0 sticky top-0 z-10 dark:bg-slate-950/60 backdrop-blur border-b border-white/20 shadow p-2">
                     { props.header.clone() }
                 </div>
 
-                <div class="space-y-2 pt-2">
+                <div class="space-y-2 py-2 overflow-hidden overflow-y-auto">
                     { for props.children.iter() }
                 </div>
 
