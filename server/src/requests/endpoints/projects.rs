@@ -7,7 +7,7 @@ use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
-use crate::structs::strudentProjectResponse::{StudentProjectResponse,GeoCorners};
+use crate::structs::strudent_project_response::{StudentProjectResponse,GeoCorners};
 use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
 use std::sync::{Arc, Mutex};
 use std::path::Path;
