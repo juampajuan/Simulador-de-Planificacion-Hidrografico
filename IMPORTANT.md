@@ -32,10 +32,6 @@ rustup target add wasm32-unknown-unknown
 cargo install trunk
 ```
 
-```bash
-cargo add gloo-net -p client
-```
-
 ### Limitaciones/Aclaraciones
 
 - Las coordenadas deben ser proyectadas
