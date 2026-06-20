@@ -7,9 +7,7 @@ use crate::structs::settings::{Settings, ConfigValue};
 pub fn load_settings() -> Result<Settings, String> {
     let file = match File::open("config.toml") {
         Ok(file) => file,
-        Err(_) => return Err(format!(
-            "No se pudo abrir config.toml",
-        ))  
+        Err(_) => return Err("No se pudo abrir config.toml".to_string()),
     };
 
     let config = file_parser(file)?;
@@ -24,15 +22,10 @@ fn file_parser(file: File) -> Result<HashMap<String, ConfigValue>, String> {
     for line in reader.lines() {
         let line = match line {
             Ok(l) => l,
-            Err(_) => return Err(format!(
-                "Error leyendo una línea"
-            ))
+            Err(_) => return Err("Error leyendo una línea".to_string()),
         };
 
-        if let Err(err) = parse_line(line, &mut config) {
-            return Err(err);
-        }
-
+        parse_line(line, &mut config)?;
     }
 
     Ok(config)
@@ -53,7 +46,7 @@ fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<
 
     let (key, value) = match line.split_once('=') {
         Some(parts) => parts,
-        None =>  return Err(format!("Archivo corrupto"))
+        None =>  return Err("Archivo corrupto".to_string())
     };
 
     let key = key.trim().to_string();
@@ -93,5 +86,5 @@ fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<
         return Ok(());
     }
 
-    Err(format!("Archivo Corrupto"))
+    Err("Archivo Corrupto".to_string())
 }

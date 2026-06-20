@@ -9,7 +9,7 @@ pub fn check_profesor_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine
         return Ok(None);
     };
 
-    match auth::get_user_by_token_locked(&db, &token) {
+    match auth::get_user_by_token_locked(db, &token) {
         Ok(Some(TokenOwner::Professor(id))) => Ok(Some(id)),
         Ok(_) => Ok(None),
         Err(e) => Err(e.to_string())
@@ -22,7 +22,7 @@ pub fn check_student_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>
         return Ok(None);
     };
 
-    match auth::get_user_by_token_locked(&db, &token) {
+    match auth::get_user_by_token_locked(db, &token) {
         Ok(Some(TokenOwner::Student(id))) => Ok(Some(id)),
         Ok(_) => Ok(None),
         Err(e) => Err(e.to_string())

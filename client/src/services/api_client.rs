@@ -70,10 +70,9 @@ pub fn send_native_request(
             
             let on_text_ready = Closure::wrap(Box::new(move |text: JsValue| {
                 if let Some(ref l) = load { l.set(false); }
-                if let Some(txt_str) = text.as_string() {
-                    if let Some(cb) = cb_container.take() {
+                if let Some(txt_str) = text.as_string() 
+                    && let Some(cb) = cb_container.take() {
                         cb(txt_str); 
-                    }
                 }
             }) as Box<dyn FnMut(JsValue)>);
 
@@ -83,17 +82,17 @@ pub fn send_native_request(
         } else {
             if let Some(ref l) = load { l.set(false); }
 
-            if status == 401 || status == 403 {
-                if let Some(win) = web_sys::window() {
-                    if let Ok(Some(storage)) = win.local_storage() {
-                        let _ = storage.remove_item("group_or_user_name");
-                        let _ = storage.remove_item("user_role");
-                    }
-                    
-                    let location = win.location(); 
-                    let _ = location.set_href("/login");
-                    return;
+            if (status == 401 || status == 403)
+                && let Some(win) = web_sys::window()
+            {
+                if let Ok(Some(storage)) = win.local_storage() {
+                    let _ = storage.remove_item("group_or_user_name");
+                    let _ = storage.remove_item("user_role");
                 }
+
+                let location = win.location();
+                let _ = location.set_href("/login");
+                return;
             }
             
             if let Some(cb_err) = on_error_opt.take() {
@@ -214,15 +213,15 @@ pub fn send_native_blob_request(
                 let uint8_array = Uint8Array::new(&buffer);
                 let array = Array::of1(&uint8_array.buffer());
                 
-                if let Ok(blob) = Blob::new_with_u8_array_sequence(&array) {
-                    if let Ok(url) = Url::create_object_url_with_blob(&blob) {
+                if let Ok(blob) = Blob::new_with_u8_array_sequence(&array) 
+                    && let Ok(url) = Url::create_object_url_with_blob(&blob) {
                         if let Some(old_url) = (*img).clone() {
                             let _ = Url::revoke_object_url(&old_url);
                         }
                         img.set(Some(url));
                         msg.set(String::new());
-                    }
                 }
+                
                 load.set(false);
             }) as Box<dyn FnMut(JsValue)>);
 

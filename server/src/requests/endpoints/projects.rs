@@ -36,11 +36,7 @@ pub fn get_boundary(request: &Request) -> Result<String, &str> {
         .find_map(|part| {
             let part = part.trim();
 
-            if let Some(boundary) = part.strip_prefix("boundary=") {
-                Some(boundary.to_string())
-            } else {
-                None
-            }
+            part.strip_prefix("boundary=").map(|boundary| boundary.to_string())
         })
     {
         Some(b) => b,

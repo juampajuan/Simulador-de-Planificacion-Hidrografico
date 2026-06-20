@@ -32,7 +32,7 @@ pub fn create_new_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Ha
     };
 
     if project.professor_id != professor_id {
-        return string_response(format!("No te pertenece el proyecto"), 400)
+        return string_response("No te pertenece el proyecto".to_string(), 400)
     }
 
     match student::create_student_locked(&db, &generate_code(), &data.name, data.project_id, professor_id) {
