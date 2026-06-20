@@ -164,6 +164,7 @@ pub fn interpolation_gdal_tin(
     let no_data = geotiff.no_data.unwrap_or(f64::MAX);
     let mut result = result_matrix_struct.data;
 
+    #[allow(clippy::needless_range_loop)]
     for j in 0..geotiff.height {
         for i in 0..geotiff.width {
             if geotiff.data[j][i] == no_data {

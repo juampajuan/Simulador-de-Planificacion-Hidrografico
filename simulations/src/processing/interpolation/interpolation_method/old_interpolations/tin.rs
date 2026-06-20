@@ -1,5 +1,6 @@
 use spade::{DelaunayTriangulation, HasPosition, Point2, PositionInTriangulation, Triangulation};
-use crate::{processing::interpolation::helpers::build_kdtree, structs::depth_matrix::DepthMatrix};
+use crate::processing::interpolation::interpolation_method::old_interpolations::old_helpers::build_kdtree;
+use crate::{structs::depth_matrix::DepthMatrix};
 
 #[derive(Clone, Copy, Debug)]
 struct TinVertex {

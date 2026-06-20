@@ -51,6 +51,7 @@ fn buffer_to_matrix(buffer: Buffer<f64>, cols: usize ) -> Vec<Vec<f64>>{
 
     let mut iterator = 1;
 
+    #[allow(clippy::explicit_counter_loop)]
     for value in buffer.data(){
 
         row.push(*value);

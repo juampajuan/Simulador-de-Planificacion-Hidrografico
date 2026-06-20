@@ -72,32 +72,20 @@ pub fn makepng_transparent_with_path(
 pub fn make_shaded_png(
     matrix: &DepthMatrix,
     covered_points: &[((usize, usize), f64)],
-    path: &Vec<(usize, usize)>,
+    path: &[(usize, usize)],
 ) -> RgbaImage {
+    
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
 
-    // Fondo transparente — sin pintar el GeoTIFF a color
-    for (y, row) in matrix.data.iter().enumerate() {
-        for (x, &val) in row.iter().enumerate() {
-            let color = if is_valid(val, matrix) {
-                Rgba([0u8, 0u8, 0u8, 0u8])
-            } else {
-                Rgba([0u8, 0u8, 0u8, 0u8])
-            };
-            img.put_pixel(x as u32, y as u32, color);
-        }
-    }
-
-    // Puntos cubiertos en azul oscuro (estilo de la página)
+    // Puntos cubiertos en azul oscuro
     for &((x, y), _) in covered_points {
         if y < matrix.height && x < matrix.width {
-            img.put_pixel(x as u32, y as u32, Rgba([14u8, 116u8, 144u8, 180u8]));
+            img.put_pixel(x as u32, y as u32, Rgba([14, 116, 144, 180]));
         }
     }
 
     // Recorrido blanco semitransparente encima
     let hw = matrix.width.max(matrix.height) / 1500;
-
     for &(x, y) in path {
         if y < matrix.height && x < matrix.width {
             let y_min = y.saturating_sub(hw);
@@ -106,7 +94,7 @@ pub fn make_shaded_png(
             let x_max = (x + hw).min(matrix.width - 1);
             for ny in y_min..=y_max {
                 for nx in x_min..=x_max {
-                    img.put_pixel(nx as u32, ny as u32, Rgba([255, 255, 255, 180u8]));
+                    img.put_pixel(nx as u32, ny as u32, Rgba([255, 255, 255, 180]));
                 }
             }
         }

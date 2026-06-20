@@ -1,6 +1,6 @@
 use kiddo::{NearestNeighbour, SquaredEuclidean};
-
-use crate::{processing::interpolation::helpers::build_kdtree, structs::depth_matrix::DepthMatrix};
+use crate::processing::interpolation::interpolation_method::old_interpolations::old_helpers::build_kdtree;
+use crate::{structs::depth_matrix::DepthMatrix};
 
 fn gaussian_elimination(mat_a: &[Vec<f64>], vec_b: &[f64]) -> Option<Vec<f64>> {
     let n = vec_b.len();

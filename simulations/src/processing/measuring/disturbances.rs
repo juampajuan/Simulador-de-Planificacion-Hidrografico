@@ -21,10 +21,22 @@ const TIDE_PERIOD_H: f64      = 12.4;
 const TIDE_PHASE: f64         = 0.0;
 
 // ------------------------------------------------------------
+//  Tipos de respuesta
+// ------------------------------------------------------------
+
+
+type Point = (usize, usize);
+type MeasuredBeam = Vec<(Point, Option<f64>)>;
+
+// ------------------------------------------------------------
+//  Otras constantes
+// ------------------------------------------------------------
+
+
+// ------------------------------------------------------------
 //  Parámetros de perturbación pre-calculados
 //  Se calculan una sola vez antes del loop de mediciones.
 // ------------------------------------------------------------
-
 struct DisturbanceParams {
     tide_levels: Option<Vec<f64>>,
     potency_value: f64,
@@ -90,7 +102,7 @@ fn calculate_disturbance_params(
             100 => 250.0,
             _   => 200.0,
         },
-        gain_value: params.echo_sounder_parameters.gain as f64,
+        gain_value: params.echo_sounder_parameters.gain,
         angle_std: get_inertial_angle_std(
             params.transport_parameters.transport,
             params.transport_parameters.speed,
@@ -179,9 +191,9 @@ fn apply_disturbances_multihaz(
     matrix: &DepthMatrix,
     dp: &DisturbanceParams,
 ) -> (
-    Vec<((usize, usize), Option<f64>)>,
-    Vec<((usize, usize), Option<f64>)>,
-    Vec<((usize, usize), Option<f64>)>,
+    MeasuredBeam,
+    MeasuredBeam,
+    MeasuredBeam,
 ) {
     let mut result_central = Vec::with_capacity(central.len());
     let mut result_izq     = Vec::with_capacity(izquierda.len());
@@ -209,10 +221,9 @@ fn apply_disturbances_multihaz(
         let (punto_der, p_der) = apply_inertial_angles(punto_der, matrix, angulo_theta_x, angulo_theta_y);
 
         // Aplicamos el resto de los errores a cada punto por separado
-        // (PRI, potencia, ganancia, marea — la marea usa el mismo índice i para los tres)
         result_central.push((punto_c,   apply_single_measurement(i, punto_c,   p_c,   params, matrix, dp)));
-        result_izq.push(    (punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp)));
-        result_der.push(    (punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp)));
+        result_izq.push((punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp)));
+        result_der.push((punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp)));
     }
 
     (result_central, result_izq, result_der)
