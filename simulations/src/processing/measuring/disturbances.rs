@@ -28,10 +28,6 @@ const TIDE_PHASE: f64         = 0.0;
 type Point = (usize, usize);
 type MeasuredBeam = Vec<(Point, Option<f64>)>;
 
-// ------------------------------------------------------------
-//  Otras constantes
-// ------------------------------------------------------------
-
 
 // ------------------------------------------------------------
 //  Parámetros de perturbación pre-calculados
@@ -372,4 +368,39 @@ pub fn apply_threshold_error(p: f64, threshold_percent: f64) -> f64 {
     // 10% = 10% más cerca, 90% = 10% más lejos
     let factor = (threshold_percent - 50.0) / 400.0;
     p * (1.0 + factor)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+ 
+    #[test]
+    fn con_mareografo_no_modifica_la_profundidad() {
+        // tide_levels = None simula uses_mareograph = true (la marea se anula)
+        let resultado = apply_tide_error(10.0, None, 0);
+        assert_eq!(resultado, 10.0);
+    }
+ 
+    #[test]
+    fn sin_mareografo_suma_el_nivel_de_marea_del_indice() {
+        let niveles = vec![0.5, -0.3, 1.2];
+        assert_eq!(apply_tide_error(10.0, Some(&niveles), 0), 10.5);
+        assert_eq!(apply_tide_error(10.0, Some(&niveles), 1), 9.7);
+        assert_eq!(apply_tide_error(10.0, Some(&niveles), 2), 11.2);
+    }
+ 
+    #[test]
+    fn umbral_50_por_ciento_no_desplaza_la_medicion() {
+        // 50% es el caso "correcto".
+        let resultado = apply_threshold_error(10.0, 50.0);
+        assert!((resultado - 10.0).abs() < 1e-9);
+    }
+ 
+    #[test]
+    fn umbral_bajo_acerca_la_medicion_umbral_alto_la_aleja() {
+        let cerca = apply_threshold_error(10.0, 10.0);
+        let lejos = apply_threshold_error(10.0, 90.0);
+        assert!(cerca < 10.0, "con umbral 10% deberia acercarse, dio {cerca}");
+        assert!(lejos > 10.0, "con umbral 90% deberia alejarse, dio {lejos}");
+    }
 }

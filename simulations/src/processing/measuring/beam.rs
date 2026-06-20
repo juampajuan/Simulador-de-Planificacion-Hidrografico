@@ -222,3 +222,50 @@ pub fn get_points_circular_to_this(
 
     points
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+ 
+    // Matriz chica con profundidad grande y size_x grande tambien. 
+    // El radio del haz en pixeles termina siendo enorme
+    // en relacion al tamaño de la matriz
+    fn matriz_chica_y_profunda(width: usize, height: usize, depth: f64, size_x: f64) -> DepthMatrix {
+        DepthMatrix {
+            data: vec![vec![depth; width]; height],
+            width,
+            height,
+            no_data: None,
+            size_x,
+            size_y: size_x,
+            geo_transform: [0.0, size_x, 0.0, 0.0, 0.0, -size_x],
+            projection: String::new(),
+        }
+    }
+ 
+    #[test]
+    fn no_genera_puntos_fuera_de_los_limites_de_la_matriz() {
+        // Caso real que hacia panic con GEBCO: punto pegado al borde
+        // derecho/inferior, con un radio de cobertura mas grande que la
+        // distancia al borde.
+        let matrix = matriz_chica_y_profunda(101, 67, 2500.0, 413.0);
+        let punto_en_el_borde = (100, 66); // ultima columna, ultima fila
+ 
+        let puntos = get_points_circular_to_this(&punto_en_el_borde, 60.0, &matrix);
+ 
+        for (x, y) in puntos {
+            assert!(x < matrix.width, "x={x} se paso del ancho={}", matrix.width);
+            assert!(y < matrix.height, "y={y} se paso del alto={}", matrix.height);
+        }
+    }
+ 
+    #[test]
+    fn el_punto_central_siempre_queda_incluido() {
+        let matrix = matriz_chica_y_profunda(101, 67, 2500.0, 413.0);
+        let centro = (50, 33);
+ 
+        let puntos = get_points_circular_to_this(&centro, 60.0, &matrix);
+ 
+        assert!(puntos.contains(&centro));
+    }
+}
