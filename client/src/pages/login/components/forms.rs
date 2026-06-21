@@ -51,7 +51,7 @@ pub fn render_teacher_form(cls: &'static str, user: String, password: String, on
                         disabled={disabled} 
                         value={user} 
                         oninput={on_user} 
-                        placeholder="granDocente" 
+                        placeholder="fernando_genio" 
                         class={input_cls} 
                     />
                 </div>

@@ -45,7 +45,7 @@ pub fn teacher_form(props: &TeacherFormProps) -> Html {
                     disabled={props.loading}
                     value={(*props.teacher_user).clone()}
                     oninput={on_user_input}
-                    placeholder="granDocente"
+                    placeholder="fernando_genio"
                     class={props.input_cls}
                 />
             </div>

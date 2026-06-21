@@ -87,8 +87,8 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
                     let c = project.coordinates.centro;
                     let z = calculate_zoom(
                         &project.coordinates,
-                        width * 1.11,
-                        height * 1.11,
+                        (width * 1.25) - 400.0,
+                        (height * 1.25) - 70.0,
                     );
  
                     // console::log_1(&format!("zoom: {:?}", z).into());
@@ -101,8 +101,8 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
         );
     }
 
-    html! {
-        <div class="absolute w-full h-full scale-110 opacity-25 no-interaction">
+    html! {<>
+        <div class="absolute w-full h-full scale-110 opacity-20 no-interaction">
             {
                 if let (Some((lat, lng)), Some(z), Some(key)) = (*centro, *zoom, (*api_key).clone()) {
                     html! {
@@ -121,8 +121,12 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
                     Html::default()
                 }
             }
+            
         </div>
-    }
+        <div class="absolute bottom-2 text-xs left-2 italic text-white/60">
+                {"La zona a relevar puede ser mas grande que la representada en el mapa."}
+        </div>
+    </>}
 }
 
 
