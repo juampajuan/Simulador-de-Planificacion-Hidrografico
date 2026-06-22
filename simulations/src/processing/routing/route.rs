@@ -104,6 +104,7 @@ fn build_path(
 //  Helpers
 // ------------------------------------------------------------
 
+/// Construye las piernas del recorrido
 fn build_leg(matrix: &DepthMatrix, geo: &RouteGeometry, leg: i32) -> Vec<(f64, f64)> {
     let offset = leg as f64 * geo.separation_px;
     let origin_x = geo.center_x + geo.perpendicular_x * offset;
@@ -124,6 +125,7 @@ fn build_leg(matrix: &DepthMatrix, geo: &RouteGeometry, leg: i32) -> Vec<(f64, f
     line
 }
 
+/// Conecta las piernas del recorrido
 fn connect(
     matrix: &DepthMatrix,
     start: (f64, f64),
@@ -148,6 +150,7 @@ fn connect(
     }
 }
 
+/// Valida que el punto no se salga fuera de la matriz
 fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
     let xi = x.round() as isize;
     let yi = y.round() as isize;
@@ -157,6 +160,7 @@ fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
         && Some(matrix.data[yi as usize][xi as usize]) != matrix.no_data
 }
 
+/// Busca el final de la pierna anterior para poder crear la union desde ahi
 fn update_previous_end(line: &[(f64, f64)], previous_end: &mut Option<(f64, f64)>) {
     if let Some(last_point) = line.last() {
         *previous_end = Some(*last_point);

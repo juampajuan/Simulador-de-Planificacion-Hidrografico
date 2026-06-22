@@ -2,6 +2,10 @@ use crate::db::queries::auth;
 use crate::db::engine::DBEngine;
 use std::sync::{Arc, Mutex};
 
+//Capa intermedia de autenticación: toma el lock del Mutex de la DB y delega
+//en las queries crudas de `queries::auth`. Si el lock está envenenado, devuelve error.
+
+/// Toma el lock de la DB y crea un token de sesión para el dueño dado.
 pub fn create_token_locked(
     db: &Arc<Mutex<DBEngine>>,
     owner: auth::TokenOwner,
@@ -26,6 +30,7 @@ pub fn create_token_locked(
     )
 }
 
+/// Toma el lock de la DB y borra un token puntual (logout).
 pub fn delete_token_locked(
     db: &Arc<Mutex<DBEngine>>,
     token: &str,
@@ -43,6 +48,7 @@ pub fn delete_token_locked(
     auth::delete_token(&db_connection, token)
 }
 
+/// Toma el lock de la DB y borra todos los tokens (cierra todas las sesiones).
 pub fn delete_all_tokens_locked(
     db: &Arc<Mutex<DBEngine>>,
 ) -> Result<(), sqlite::Error> {
@@ -59,6 +65,7 @@ pub fn delete_all_tokens_locked(
     auth::delete_all_tokens(&db_connection)
 }
 
+/// Toma el lock de la DB y devuelve el dueño de un token vigente, si existe.
 pub fn get_user_by_token_locked(
     db: &Arc<Mutex<DBEngine>>,
     token: &str,

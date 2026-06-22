@@ -2,6 +2,7 @@ use crate::db::queries::professor;
 use crate::db::engine::DBEngine;
 use std::sync::{Arc, Mutex};
 
+/// Toma el lock de la DB y verifica usuario y contraseña de un profesor.
 pub fn verify_professor_credentials_locked(
     db: &Arc<Mutex<DBEngine>>,
     username: &str,
@@ -24,6 +25,7 @@ pub fn verify_professor_credentials_locked(
     )
 }
 
+/// Toma el lock de la DB y cambia la contraseña de un profesor buscándolo por username.
 pub fn change_password_by_username_locked(
     db: &Arc<Mutex<DBEngine>>,
     username: &str,
@@ -46,6 +48,7 @@ pub fn change_password_by_username_locked(
     )
 }
 
+/// Toma el lock de la DB y crea un profesor nuevo, devolviendo su id.
 pub fn create_professor_locked(
     db: &Arc<Mutex<DBEngine>>,
     username: &str,
@@ -68,6 +71,7 @@ pub fn create_professor_locked(
     )
 }
 
+/// Toma el lock de la DB y busca el id de un profesor por su username.
 pub fn get_professor_id_by_username_locked(
     db: &Arc<Mutex<DBEngine>>,
     username: &str,

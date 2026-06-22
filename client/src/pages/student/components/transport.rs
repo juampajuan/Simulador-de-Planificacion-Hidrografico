@@ -9,6 +9,7 @@ pub struct TransportParamsProps {
     pub echo_state: UseStateHandle<EchoState>,
 }
 
+// Setea los parámetros de transporte: Embarcación, velocidad, mareógrafo, sensor, perfilador.
 #[function_component(TransportParams)]
 pub fn transport_params(props: &TransportParamsProps) -> Html {
     let state = props.echo_state.clone();

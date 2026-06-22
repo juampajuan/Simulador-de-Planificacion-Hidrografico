@@ -34,6 +34,12 @@ pub fn login_page() -> Html {
         let counter = counter.clone();
         use_effect_with((), move |_| {
             counter.set(next_counter());
+            if let Some(win) = window() 
+                && let Ok(Some(storage)) = win.local_storage() {
+                    let _ = storage.remove_item("group_or_user_name");
+                    let _ = storage.remove_item("user_role");
+                
+            }
             || ()
         });
     }

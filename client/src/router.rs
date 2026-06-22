@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+// las vistas
 use crate::pages::{
     admin::sections::{
         projects::projects_admin_page::AdminProjects,
@@ -14,6 +15,7 @@ use crate::pages::{
 };
 use crate::protected_route::{ProtectedRoute, Role}; 
 
+// las urls
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
     #[at("/")]

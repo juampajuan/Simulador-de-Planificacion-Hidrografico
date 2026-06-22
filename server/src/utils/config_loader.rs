@@ -3,7 +3,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use crate::structs::settings::{Settings, ConfigValue};
 
-
+/// Carga la configuración desde `config.toml`: abre el archivo, lo parsea y construye
+/// los `Settings`. Devuelve Err si no se puede abrir o si la config es inválida.
 pub fn load_settings() -> Result<Settings, String> {
     let file = match File::open("config.toml") {
         Ok(file) => file,
@@ -14,6 +15,7 @@ pub fn load_settings() -> Result<Settings, String> {
     Settings::try_from(config)
 }
 
+/// Lee el archivo línea por línea y arma el mapa de claves/valores de configuración.
 fn file_parser(file: File) -> Result<HashMap<String, ConfigValue>, String> {
 
     let mut config: HashMap<String, ConfigValue> = HashMap::new();
@@ -31,6 +33,9 @@ fn file_parser(file: File) -> Result<HashMap<String, ConfigValue>, String> {
     Ok(config)
 }
 
+/// Parsea una línea de config con formato `clave = valor`. Ignora líneas vacías y comentarios
+/// (`#`), recorta comentarios al final de línea, e infiere el tipo del valor: string si va
+/// entre comillas, si no entero, y si no float. Devuelve Err si la línea no tiene formato válido.
 fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<(), String> {
 
     let line = line.trim();

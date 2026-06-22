@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+// Structs de student
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct Student {
     pub id: i64,

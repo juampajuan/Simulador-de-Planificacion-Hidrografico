@@ -46,7 +46,7 @@ pub fn get_boundary(request: &Request) -> Result<String, &str> {
     Ok(boundary)
 }
 
-
+///Crea un nuevo archivo en la db
 pub fn create(
     request: &mut Request,
     db: Arc<Mutex<DBEngine>>,
@@ -72,6 +72,7 @@ pub fn create(
     let mut metadata_json = None::<String>;
     let mut filename_saved = None::<String>;
     let mut invalid_extension = false;
+    let mut write_error = None::<String>;
 
     // TODO: Re hacer el codigo mas feo que hice en mi vida
     // Transformarlo en un metodo, no iterativo, solo hay 2 entries que leer. 
@@ -94,8 +95,8 @@ pub fn create(
 
                     let timestamp = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
+                        .map(|d| d.as_secs())
+                        .unwrap_or_else(|_| rand::random::<u64>());
 
                     let path = Path::new(&original_filename);
 
@@ -121,9 +122,15 @@ pub fn create(
                     };
 
 
-                    let mut out = File::create(
+                    let mut out = match File::create(
                         format!("{}/geotiffs/{}", settings.upload_path, filename)
-                    ).unwrap();
+                    ) {
+                        Ok(f) => f,
+                        Err(e) => {
+                            write_error = Some(format!("No se pudo guardar el archivo: {}", e));
+                            return;
+                        }
+                    };
 
                     let _ = std::io::copy(
                         &mut field.data,
@@ -140,6 +147,10 @@ pub fn create(
 
     }) {
         return server_error("No se pudo subir el archivo".to_string());
+    }
+
+    if let Some(err) = write_error {
+        return server_error(err);
     }
 
     if invalid_extension {
@@ -159,13 +170,19 @@ pub fn create(
         Err(_) => return server_error("Metadata incompleta.".to_string()),
     };
 
-    match projects::create_project_locked(&db, &filename_saved.unwrap(), professor_id, &meta) {
+    let filename = match filename_saved {
+        Some(f) => f,
+        None => return server_error("No se recibió ningún archivo.".to_string()),
+    };
+
+    match projects::create_project_locked(&db, &filename, professor_id, &meta) {
         Ok(_) => string_response("ok".into(), 200),
         Err(_) => server_error("NO pudo".into())
     }
     
 }
 
+///Retorna todos los proyectos almacenados en la db
 pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
   
     let professor_id = match check_profesor_auth(request, &db) {
@@ -186,7 +203,7 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
     string_response(response, 200)
 }
 
-
+///Retorna el proyecto de un alumno especifico usando su id.
 pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let student_id = match check_student_auth(request, &db) {
@@ -241,6 +258,7 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
     string_response(response, 200)
 }
 
+///Elimina un proyecto de la base de datos
 pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let professor_id = match check_profesor_auth(request, &db) {
@@ -284,6 +302,7 @@ pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings:
 
 }
 
+///Actualiza la informacion de un proyecto en la db
 pub fn update_a_project(
     request: &mut Request,
     db: Arc<Mutex<DBEngine>>

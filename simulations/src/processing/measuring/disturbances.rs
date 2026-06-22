@@ -74,6 +74,7 @@ fn calculate_tide_levels(
     Some(levels)
 }
 
+///calcula un angulo de inclinacion basados en la velocidad y tipo de embarcacion
 fn get_inertial_angle_std(transport: Transport, speed: f64) -> f64 {
     let base_std = match transport {
         Transport::Ship   => 1.0,
@@ -84,6 +85,8 @@ fn get_inertial_angle_std(transport: Transport, speed: f64) -> f64 {
     base_std * speed_factor
 }
 
+/// Calcula parametros: Potencia, ganancia, y el angulo de absorcion
+/// Segun los parametros seleccionados por el alumno
 fn calculate_disturbance_params(
     mediciones_len: usize,
     params: &StudentMeasuringParameters,
@@ -110,6 +113,7 @@ fn calculate_disturbance_params(
 //  Aplicación de errores
 // ------------------------------------------------------------
 
+///Dados un conjunto de mediciones, aplica todos los errores correspondientes uno por uno.
 pub fn apply_disturbances(
     mediciones: MeasurementsType,
     path: &[(usize, usize)],
@@ -321,12 +325,18 @@ fn apply_inertial_sensor_error(
     apply_inertial_angles(punto, matrix, theta_x, theta_y)
 }
 
+/// Filtrado por limite de profundidad, si el alumno decide relevar en un limite acotado, solo obtendra mediciones en los limites que especifique.
+/// Ejemplo si el min es 5m y el maximo es 10m, cualquier profundidad fuera de ese rango devolvera None
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
     z.and_then(|p| {
         if p >= min_limit && p <= max_limit { Some(p) } else { None }
     })
 }
 
+/// Verifica que segun la potencia y la ganancia asignada la sonda pueda ser detectada
+/// Para detectarla hay un minimo de db que tiene que cumplir (DETECTION_THRESHOLD)
+/// Si no es detectada, la medicion devuelve None
+/// Si se utiliza una ganancia muy alta, la medicion viene redondeada (menor profundidad)
 pub fn apply_power_and_gain_noise(
     p: f64,
     potency: f64,
@@ -345,17 +355,21 @@ pub fn apply_power_and_gain_noise(
     if signal_final < DETECTION_THRESHOLD {
         None
     } else if gain == MAX_GAIN {
-        // Eco falso: profundidad un 10% menor a la real
+        // Eco falso: profundidad un 90% menor a la real
         Some(p * 0.9)
     } else {
         Some(p)
     }
 }
 
+
+/// Si el alumno no utiliza un perfilador de sonido, 
+/// la velocidad del agua tiene un error con respecto a la velocidad de la sonda
 fn apply_sound_velocity_noise(p: f64, v_alumno: f64) -> f64 {
     p * (v_alumno / SOUND_VELOCITY)
 }
 
+/// Si el alumno no utiliza un mareografo, se aplica error de marea
 fn apply_tide_error(p: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64 {
     match tide_levels {
         Some(levels) => p + levels[index],
@@ -363,9 +377,10 @@ fn apply_tide_error(p: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64
     }
 }
 
+/// 50% = correcto, sin desplazamiento
+/// 10% = 10% más cerca, 90% = 10% más lejos
 pub fn apply_threshold_error(p: f64, threshold_percent: f64) -> f64 {
-    // 50% = correcto, sin desplazamiento
-    // 10% = 10% más cerca, 90% = 10% más lejos
+    
     let factor = (threshold_percent - 50.0) / 400.0;
     p * (1.0 + factor)
 }

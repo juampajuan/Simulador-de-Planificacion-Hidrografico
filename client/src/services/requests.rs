@@ -12,8 +12,8 @@ use crate::pages::student::components::measure_params::AttemptsState;
 #[derive(serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct StudentProjectResponse {
     #[serde(flatten)]
-    pub project: AdminProjectView,  // Esto absorbe id, filename, metadata, etc.
-    pub attempts_spent: i64,       // Esto absorbe los intentos actuales (ej: 0)
+    pub project: AdminProjectView,  // toda la info de proyecto
+    pub attempts_spent: i64,
     pub coordinates: GeoCorners,
     pub maptiler_api_key: String,
 }
@@ -27,6 +27,7 @@ pub struct GeoCorners {
     pub centro: (f64, f64),
 }
 
+// Devuelve todos los estudiantes (grupo o individuo).
 pub fn get_all_students(
     students_handle: UseStateHandle<Vec<Student>>,
     ui_mensaje: UseStateHandle<String>,
@@ -50,6 +51,7 @@ pub fn get_all_students(
     );
 }
 
+// Crea estudiante (grupo o individuo) asociando a un proyecto.
 pub fn create_student(
     name: String,
     project_id: i64,
@@ -72,6 +74,7 @@ pub fn create_student(
     );
 }
 
+// Actualiza nombre del estudiante asociado a proyecto o proyecto asignado, dependiendo el caso.
 pub fn update_student(
     student_id: i64,
     updated_name: String,
@@ -97,6 +100,7 @@ pub fn update_student(
     );
 }
 
+// Elimina estudiante
 pub fn delete_student(
     student_id: i64,
     students_state: UseStateHandle<Vec<Student>>,
@@ -118,6 +122,7 @@ pub fn delete_student(
     );
 }
 
+// Devuelve todos los proyectos (asignados o no)
 pub fn get_all_projects(
     projects_handle: UseStateHandle<Vec<Project>>,
     ui_mensaje: UseStateHandle<String>,
@@ -139,6 +144,7 @@ pub fn get_all_projects(
     );
 }
 
+// Crea proyecto
 pub fn create_project(
     project: NewProject,
     projects_state: UseStateHandle<Vec<Project>>,
@@ -186,6 +192,7 @@ pub fn create_project(
     );
 }
 
+// Actualiza info de proyecto
 pub fn update_project(
     project_id: i64,
     updated_project: Project,
@@ -214,6 +221,7 @@ pub fn update_project(
     );
 }
 
+// Borra proyecto
 pub fn delete_project(
     project_id: i64,
     projects_state: UseStateHandle<Vec<Project>>,
@@ -237,6 +245,7 @@ pub fn delete_project(
     );
 }
 
+// Obtiene los limites de parámetros configurables.
 pub fn get_system_limits(
     limits_handle: UseStateHandle<ConfigLimits>,
     ui_mensaje: UseStateHandle<String>,
@@ -258,6 +267,7 @@ pub fn get_system_limits(
     );
 }
 
+// Obtiene el proyecto de un estudiante.
 pub fn get_student_project(
     project_handle: UseStateHandle<Option<StudentProjectResponse>>,
     ui_mensaje: UseStateHandle<String>,
@@ -281,6 +291,7 @@ pub fn get_student_project(
     );
 }
 
+// Pide la creación de un path. Usando CreatePathRequest
 pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
     if state.separacion.is_empty() || state.azimut.is_empty() { return; }
     let params = match parse_path_parameters(state, limits) {
@@ -297,6 +308,7 @@ pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits:
     send_native_blob_request("/api/v1/create_path", &request_body, ui.image_url, ui.mensaje, ui.loading);
 }
 
+// Pide la ejecución de la simulación. Usando tanto echo como path state.
 pub fn run_simulation(
     echo_state: &EchoState, 
     path_state: &PathState, 
@@ -366,6 +378,7 @@ pub fn run_simulation(
     );
 }
 
+// Pide la creacion del area de cobertura, usando tanto echo como path state.
 pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
     let echo_params = match parse_echosounder_parameters(echo_state, limits) {
         Ok(p) => p,
@@ -413,6 +426,7 @@ pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: Simulati
     }
 }
 
+// Ejecuta el login, para ambos roles, si la información es correcta.
 pub fn trigger_login(
     student_code: &str,
     teacher_user: &str,
@@ -464,6 +478,7 @@ pub fn trigger_login(
     );
 }
 
+// Ejecuta el logout
 pub fn trigger_logout() {
     send_native_request(
         "/api/v1/auth/close_session",

@@ -2,6 +2,7 @@ use serde::Serialize;
 use common::{StudentMeasuringParameters, PathParameters, Transport, EcosondaMode};
 use crate::UseStateHandle;
 
+// Structs de states para simulación.
 #[derive(Default, Clone, PartialEq, Serialize)]
 pub struct PathState {
     pub separacion: String,

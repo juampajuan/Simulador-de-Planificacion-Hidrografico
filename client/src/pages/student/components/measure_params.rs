@@ -21,6 +21,7 @@ pub struct MeasuresProps {
     pub attempts: UseStateHandle<AttemptsState>,
 }
 
+// Muestra los parámetros de medición
 #[function_component(MeasuresParams)]
 pub fn measures_params(props: &MeasuresProps) -> Html {
     let state = use_state(EchoState::new);

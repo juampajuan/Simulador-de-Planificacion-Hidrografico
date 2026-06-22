@@ -15,6 +15,7 @@ use simulations::structs::depth_matrix::DepthMatrix;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::io::Cursor;
 
+///Endpoint para la creacion del recorrido. Utiliza contenidos de la cache y la db, si los hay.
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
@@ -28,7 +29,10 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
     };
 
     // reutilizamos el path o lo creamos
-    let path = lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters);
+    let path = match lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters) {
+        Ok(p) => p,
+        Err(err) => return generic::server_error(err),
+    };
 
     let image = simulations::create_path_image(&matrix, &path);
     let response = create_png_response(image);
@@ -36,6 +40,7 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
     (response.boxed(), 200, None)
 }
 
+///Endpoint para la simulacion/interpolacion. Revisa y compara  la cantidad de intentos realizados. Utiliza recursos de la db y cache si los hay, sino debera tambien crear el path.
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
@@ -62,7 +67,10 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     };
 
     // reutilizamos el path o lo creamos
-    let path = lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters);
+    let path = match lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters) {
+        Ok(p) => p,
+        Err(err) => return generic::server_error(err),
+    };
 
     if path.is_empty() {
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
@@ -90,7 +98,12 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         scale_base64: scale_encoded,
     };
 
-    let json_payload = serde_json::to_string(&response_data).unwrap();
+    let json_payload = match serde_json::to_string(&response_data) {
+        Ok(json) => json,
+        Err(_) => return generic::server_error(
+            "Error al serializar la respuesta de la simulación".to_string()
+        ),
+    };
     println!("Simulación completada con éxito.");
     if let Err(e) = crate::db::queries_interface::student::increment_student_attempts_locked(&db, ctx.student_id) {
         eprintln!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e);
@@ -99,6 +112,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     string_response(json_payload, 200)
 }
 
+///genera la imagen de cubrimiento del recorrido con los parametros actuales. Sirve para ver de manera preliminar que areas cubre el recorrido. 
 pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
@@ -115,7 +129,10 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
         Err(err) => return generic::server_error(err),
     };
  
-    let path = lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters);
+    let path = match lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters) {
+        Ok(p) => p,
+        Err(err) => return generic::server_error(err),
+    };
  
     if path.is_empty() {
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
@@ -129,7 +146,7 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
 }
  
 
-
+///Toma los permisos y comprueba la existencia de alumno y proyecto en db. Extrae y prepara los datos esenciales de la request.
 fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> Result<RequestContext, HandlerResult> {
     let student_id = match check_student_auth(request, db) {
         Ok(Some(id)) => id,
@@ -174,9 +191,13 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
     })
 }
 
-// Reutilizan, o crean y guardan.
+// Reutilizan, o crean y guardan. Intenta poner lock en cache para la matriz/geotiff.
 fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, cache_key: &str, file_path: &str) -> Result<DepthMatrix, String> {
-    let mut lock = cache.lock().unwrap();
+    let mut lock = match cache.lock() {
+        Ok(l) => l,
+        Err(_) => return Err("Error interno: no se pudo acceder al cache (500)".to_string()),
+    };
+
     if let Some(m) = lock.get_map(cache_key, file_path) {
         println!("Re-utilizando depth matrix del cache...");
         return Ok(m.clone());
@@ -185,20 +206,28 @@ fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, cache_key: &str, fil
     
     let m = match simulations::create_depth_matrix(file_path) {
         Ok(mat) => mat,
-        Err(_) => return Err("Error processing TIF (500)".to_string()),
+        Err(_) => return Err("Error intero: no se pudo procesar el TIFF (500)".to_string()),
     };
     
-    let mut relock = cache.lock().unwrap();
+    let mut relock = match cache.lock() {
+        Ok(l) => l,
+        Err(_) => return Err("Error interno: no se pudo acceder al cache (500)".to_string()),
+    };
+
     relock.update_map(cache_key.to_string(), file_path.to_string(), m.clone());
     Ok(m)
 }
 
-fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: &str, matrix: &DepthMatrix, path_params: &PathParameters) -> Vec<(usize, usize)> {
-    let mut lock = cache.lock().unwrap();
+///Intenta poner un lock en la cache para el recorrido.
+fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: &str, matrix: &DepthMatrix, path_params: &PathParameters) -> Result<Vec<(usize, usize)>, String> {
+    let mut lock = match cache.lock() {
+        Ok(l) => l,
+        Err(_) => return Err("Error interno: no se pudo acceder al cache".to_string()),
+    };
     
     if let Some(path_coor) = lock.get_path_if_valid(cache_key, path_params) {
         println!("Re-utilizando path del cache...");
-        path_coor
+        Ok(path_coor)
     } else {
         drop(lock);
         
@@ -210,8 +239,11 @@ fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: &str, matri
             path_params.gnss_type
         );
         
-        let mut lock = cache.lock().unwrap();
+        let mut lock = match cache.lock() {
+            Ok(l) => l,
+            Err(_) => return Err("Error interno: no se pudo acceder al cache (mutex corrupto)".to_string()),
+        };
         lock.update_path(cache_key.to_string(), p.clone(), path_params.clone());
-        p
+        Ok(p)
     }
 }

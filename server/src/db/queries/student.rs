@@ -18,6 +18,7 @@ pub struct NewStudent {
     pub project_id: i64,
 }
 
+/// Inserta un alumno nuevo con su código de acceso, nombre, proyecto asignado y profesor dueño.
 pub fn create_student(
     db: &DBEngine,
     code: &str,
@@ -42,6 +43,8 @@ pub fn create_student(
     Ok(())
 }
 
+/// Borra un alumno validando que pertenezca al profesor que lo pide.
+/// Devuelve `true` si borró alguna fila o `false` si no existía o no era suyo.
 pub fn delete_student(
     db: &DBEngine,
     id: i64,
@@ -61,7 +64,9 @@ pub fn delete_student(
 
     Ok(db.connection.change_count() > 0)
 }
-    
+
+/// Valida el código de acceso de un alumno (su "login").
+/// Devuelve `Some((id, nombre))` si el código existe o `None` si no.
 pub fn verify_code(
     db: &DBEngine,
     code: &str,
@@ -86,6 +91,7 @@ pub fn verify_code(
     Ok(None)
 }
 
+/// Trae todos los alumnos que pertenecen a un profesor, uno por fila.
 pub fn get_students_for_professor(
     db: &DBEngine,
     professor_id: i64,
@@ -115,6 +121,8 @@ pub fn get_students_for_professor(
     Ok(students)
 }
 
+/// Actualiza el nombre y el proyecto asignado de un alumno, validando que sea del profesor que lo pide.
+/// Devuelve `true` si modificó alguna fila o `false` si no existía o no era suyo.
 pub fn update_student(
     db: &DBEngine,
     id: i64,
@@ -140,6 +148,8 @@ pub fn update_student(
     Ok(db.connection.change_count() > 0)
 }
 
+/// Busca un alumno puntual por su id.
+/// Devuelve `Some(Student)` si existe o `None` si no.
 pub fn get_student_by_id(
     db: &DBEngine,
     student_id: i64,
@@ -162,6 +172,8 @@ pub fn get_student_by_id(
     }
 }
 
+/// Suma uno al contador de intentos de un alumno (se llama al correr una simulación).
+/// Devuelve `true` si actualizó alguna fila.
 pub fn increment_attempts(
     db: &DBEngine,
     student_id: i64,

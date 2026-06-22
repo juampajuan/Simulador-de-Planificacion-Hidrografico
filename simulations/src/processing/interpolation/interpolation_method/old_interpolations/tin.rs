@@ -3,6 +3,10 @@ use crate::processing::interpolation::interpolation_method::old_interpolations::
 use crate::{structs::depth_matrix::DepthMatrix};
 
 #[derive(Clone, Copy, Debug)]
+
+// ------------------------------------------------------------
+//  Implementacion Vieja de Tin, no se usa
+// ------------------------------------------------------------
 struct TinVertex {
     position: Point2<f64>,
     depth:    f64,

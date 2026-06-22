@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+// Structs de proyectos para cada regla de negocio de las request.
+// A mejorar y refactorizar (atributo de metadata en structs que repitan sus atributos)
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct Project {
     pub id: i64,

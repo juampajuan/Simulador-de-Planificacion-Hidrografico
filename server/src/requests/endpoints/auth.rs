@@ -26,6 +26,8 @@ pub struct StudentAuthData {
     pub code: String, 
 }
 
+///Endpoint para la creacion de profesores. Revisa permisos, datos de la request y los atributos que tendra el nuevo usuario.
+///Intenta acceder a la base de datos con un lock. 
 pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     match is_admin_request(request, &db) {
@@ -59,6 +61,7 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     string_response("Usuario creado correctamente".to_string(), 200)
 }
 
+///Endpoint para el cambio de contrasena de un usuario.
 pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     match is_admin_request(request, &db) {
@@ -89,6 +92,7 @@ pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerRe
 
 }
 
+///Endpoint del login de la pagina; Se usa un token para generar una cookie para retornar. Esta es usada para el seguimiento de la sesion.
 pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let data: Value = match parse_json_body(request) {
@@ -144,6 +148,7 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
     (re.boxed(), 200, None)
 }
 
+///Se eliminan todos los registros de token y cookies para dar por cerradas todas las sesiones.
 pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     match is_admin_request(request, &db) {
@@ -159,6 +164,7 @@ pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResu
     string_response("Todos las sesiones fueron cerradas.".to_string(), 200)
 }
 
+///Se borra un token-cookie especifico para dar por finalizada una sesion.
 pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let auth_token = match get_cookie(request, "auth_token") {
@@ -189,6 +195,7 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
     response
 } 
 
+///Valida si la request fue formada por alguen con permisos de administrador, basandose en el id en la request.
 fn is_admin_request(
     request: &Request,
     db: &Arc<Mutex<DBEngine>>,
@@ -213,6 +220,7 @@ fn is_admin_request(
     Ok(professor_id == admin_id)
 }
 
+///Determina si una request fue formada en el sistema local.
 fn is_local_request(request: &Request) -> bool {
     match request.remote_addr() {
         Some(addr) => addr.ip().is_loopback(),
@@ -220,6 +228,8 @@ fn is_local_request(request: &Request) -> bool {
     }
 }
 
+
+///Genera la cookie usada para la sesion, usando el toke previamente generado.
 fn create_auth_cookie(
     token: &str,
 ) -> Result<Header, ()> {
@@ -233,6 +243,7 @@ fn create_auth_cookie(
         .map_err(|_| ())
 }
 
+///Genera un token random.
 fn generate_token() -> String {
     let bytes: [u8; 32] = rand :: rng().random();
     hex::encode(bytes)

@@ -1,17 +1,15 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
-// Los tipos de datos que se aceptan en el config
+/// Tipos de valores que puede tener una entrada del archivo de configuración.
 pub enum ConfigValue {
     String(String),
     Int(i32), 
     Float(f64),
 }
 
-// Las distintas configs.
-// Se deben agregar a mano.
-// Con esto evitamos un match cada vez que necesitas leerlas.
-// Si no lo puede generar, no arranca la aplicacion
+// get_usize / get_int / get_string / get_float: leen una clave del config y validan su tipo.
+// Devuelven Err con un mensaje claro si la clave falta o no es del tipo esperado.
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
     pub port: i32,
@@ -36,7 +34,9 @@ pub struct Settings {
     pub sound_speed_max: f64,
 }
 
-
+/// Construye los Settings a partir del HashMap leído del config, validando cada clave.
+/// Si falta alguna obligatoria o tiene el tipo equivocado, devuelve Err y la app no arranca
+/// (salvo `FILE_UPLOAD_PATH`, que cae a "./uploads" por defecto).
 impl TryFrom<HashMap<String, ConfigValue>> for Settings {
     type Error = String;
 

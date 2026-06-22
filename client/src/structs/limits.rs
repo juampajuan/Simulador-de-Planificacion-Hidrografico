@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+// Struct para los limites de parámetros configurables.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct ConfigLimits {
     pub azimut_min: f64,

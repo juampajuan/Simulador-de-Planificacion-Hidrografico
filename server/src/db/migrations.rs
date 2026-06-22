@@ -1,5 +1,9 @@
 use crate::db::engine::DBEngine;
 
+/// Crea el esquema de la base si no existe: las tablas professors, projects, students y
+/// auth_tokens (con sus foreign keys en cascada), inserta el usuario 'admin' por defecto
+/// y crea los índices de las columnas más consultadas. Es idempotente: se puede correr en
+/// cada arranque sin romper datos existentes.
 pub fn init(
     db: &DBEngine
 ) -> Result<(), sqlite::Error> {

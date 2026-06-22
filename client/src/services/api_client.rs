@@ -4,18 +4,30 @@ use js_sys::{Function, Reflect, Uint8Array, Array};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub fn get_window_fetch(mensaje: &UseStateHandle<String>, loading: &UseStateHandle<bool>) -> Option<web_sys::Window> {
+pub fn get_window_fetch(
+    mensaje: Option<&UseStateHandle<String>>, 
+    loading: Option<&UseStateHandle<bool>>
+) -> Option<web_sys::Window> {
     match web_sys::window() {
         Some(w) => Some(w),
         None => {
-            mensaje.set("Error crítico: No se detectó el entorno del navegador".to_string());
-            loading.set(false);
+            if let Some(msg) = mensaje {
+                msg.set("Error crítico: No se detectó el entorno del navegador".to_string());
+            }
+            if let Some(load) = loading {
+                load.set(false);
+            }
             None
         }
     }
 }
 
-//peticiones de Texto o JSON Plano
+// Usamos `wasm_bindgen` como puente de comunicación para enlazar Rust con JavaScript.
+// Usamos `web_sys` que nos provee las funciones nativas del navegador (como `fetch` o `window`) traducidas y tipadas en Rust. (porque wasm no nos provee de eso)
+// Manejamos la asincronía de JS (Promesas) envolviendo nuestros callbacks de Rust en `Closure`
+// y usando `.forget()` para mantenerlos vivos en la memoria de JS hasta que el servidor responda.
+
+//envía peticiones de Texto o JSON Plano
 pub fn send_native_request(
     url: &str,
     method: &str,
@@ -41,7 +53,11 @@ pub fn send_native_request(
         opts.set_body(&JsValue::from_str(body));
     }
 
-    let window = web_sys::window().unwrap();
+    let window = match get_window_fetch(mensaje.as_ref(), loading.as_ref()) {
+        Some(w) => w,
+        None => return,
+    };
+
     let request_promise = window.fetch_with_str_and_init(url, &opts);
 
     let msg_err = mensaje.clone();
@@ -105,6 +121,7 @@ pub fn send_native_request(
         }
     }) as Box<dyn FnMut(JsValue)>);
 
+    // function y reflect, para manejar callbacks y .then
     let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then")).unwrap().dyn_into().unwrap();
     let promise_2 = then_fn.call1(&request_promise, on_success.as_ref()).unwrap();
     let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch")).unwrap().dyn_into().unwrap();
@@ -114,7 +131,7 @@ pub fn send_native_request(
     on_error.forget();
 }
 
-//peticiones con archivos Binarios (Multipart FormData)
+//envia peticiones con archivos Binarios (Multipart FormData)
 pub fn send_native_formdata_request(
     url: &str,
     form_data: web_sys::FormData,
@@ -129,7 +146,7 @@ pub fn send_native_formdata_request(
     opts.set_mode(RequestMode::Cors);
     opts.set_body(&form_data);
 
-    let request_promise = match get_window_fetch(&mensaje, &loading) {
+    let request_promise = match get_window_fetch(Some(&mensaje), Some(&loading)) {
         Some(w) => w.fetch_with_str_and_init(url, &opts),
         None => return,
     };
@@ -166,7 +183,7 @@ pub fn send_native_formdata_request(
     on_error.forget();
 }
 
-// peticiones que descargan Blobs de Imágenes (Simulación y Recorridos)
+// envía peticiones que descargan Blobs de Imágenes
 pub fn send_native_blob_request(
     url: &str,
     body_json: &str,
@@ -185,7 +202,7 @@ pub fn send_native_blob_request(
     opts.set_headers(&headers);
     opts.set_body(&JsValue::from_str(body_json));
 
-    let request_promise = match get_window_fetch(&mensaje, &loading) {
+    let request_promise = match get_window_fetch(Some(&mensaje), Some(&loading)) {
         Some(w) => w.fetch_with_str_and_init(url, &opts),
         None => return,
     };

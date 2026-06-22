@@ -51,6 +51,7 @@ pub fn get_measures(
     }
 }
 
+///Esta funcion seria la simulacion de la sonda en un punto de medicion. Dados todos los puntos que registra la sonda, le da valor a la medicion del punto.
 fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
     let mut measure = 0.0;
 
@@ -68,6 +69,7 @@ fn calculate_measure(points: Vec<(usize, usize)>, matrix: &DepthMatrix) -> f64 {
     measure
 }
 
+///Dados el punto actual, el anterior y el siguiente, determina la direccion actual en el punto y en base a eso reune todas las mediciones de la zona perpendicular, para Multihaz
 fn get_points_perpendicular_to_this(
     prev_point: Option<&(usize, usize)>,
     current_point: &(usize, usize),
@@ -126,6 +128,7 @@ fn get_points_perpendicular_to_this(
     [left_vector, center_vector, right_vector]
 }
 
+///Reune los puntos que pertenecen a la recta formada entre dos puntos.
 pub fn get_points_on_line(
     starting_point: (usize, usize),
     ending_point: (usize, usize),
@@ -171,6 +174,7 @@ pub fn get_points_on_line(
     points
 }
 
+///Verifica que un punto tomado para medicion sea validp: Valor real, posiucion real.
 fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
     let x = point.0;
     let y = point.1;
@@ -185,12 +189,14 @@ fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
     false
 }
 
+///Calcula el area cubierta para la sonda Monohaz
 fn calculate_covered_radius(current_point: &(usize, usize), angle_deg: f64, matrix: &DepthMatrix) -> f64 {
     let z = matrix.data[current_point.1][current_point.0];
     let a = z * (angle_deg.to_radians()/2.0).tan();
     (a/matrix.size_x).abs()
 }
 
+///Retorna todos los puntos en un area cercanos a un punto especifico.
 pub fn get_points_circular_to_this(
     current_point: &(usize, usize),
     angle: f64,
