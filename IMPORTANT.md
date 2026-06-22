@@ -42,7 +42,7 @@ cargo install trunk
 >
 > Cambiar algo para que lo busque en un root/files/geotiff. __En esa carpeta los va a dejar el server.__
 
-### Como correr
+### Como compilarlo
 
 Para la ejecucion del **client**:
 
@@ -54,11 +54,26 @@ trunk serve
 # En la segunda
 # Con la ruta en /src/client/ui
 npm install
-./node_modules/.bin/tailwindcss -i ./styles.css -o ./tailwind.css
+# ./node_modules/.bin/tailwindcss -i ./styles.css -o ./tailwind.css
+npx tailwindcss -i ./styles.css -o ./tailwind.css --watch      
 ```
 
 Para el **server**:
 
 ```bash
 cargo run -p server
+```
+
+### Ejecutarlo
+
+Simplemente levantando el *Server*.
+
+```bash
+cargo run -p server
+```
+
+Si se necesita gestionar profesores.
+
+```bash
+cargo run -p cli
 ```

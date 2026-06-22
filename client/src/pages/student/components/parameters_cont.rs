@@ -28,7 +28,7 @@ pub fn param_cont(props: &ParamContProps) -> Html {
                 "
             > 
 
-                <div class="shrink-0 sticky top-0 z-10 dark:bg-slate-950/60 backdrop-blur border-b border-white/20 shadow p-2">
+                <div class="shrink-0 sticky top-0 z-1 dark:bg-slate-950/60 backdrop-blur border-b border-white/20 shadow p-2">
                     { props.header.clone() }
                 </div>
 
