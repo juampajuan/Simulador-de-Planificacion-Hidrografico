@@ -1,6 +1,5 @@
 use yew::prelude::*;
 use web_sys::window;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use lucide_yew::Smartphone; 
 use wasm_bindgen::closure::Closure;
@@ -26,11 +25,11 @@ pub fn no_responsive() -> Html {
             let closure = Closure::<dyn FnMut(web_sys::Event)>::wrap(Box::new(move |_event: web_sys::Event| {
                 let window = web_sys::window().unwrap();
 
-                if let Ok(w) = window.inner_width() {
-                    if let Some(w) = w.as_f64() {
+                if let Ok(w) = window.inner_width() 
+                    && let Some(w) = w.as_f64() {
                         width.set(w as i32);
-                    }
                 }
+                
             }));
 
             window

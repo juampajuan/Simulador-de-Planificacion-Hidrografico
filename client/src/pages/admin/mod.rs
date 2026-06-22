@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 use crate::router::Route;
 use crate::components::root::{Root};
-use lucide_yew::{FolderOpen, Settings, Users};
+use lucide_yew::{FolderOpen, Users};
 pub mod sections;
 
 #[derive(Properties, PartialEq)]
@@ -77,16 +77,17 @@ fn sidebar() -> Html {
                     </li>
                 </ul>
             </nav>
-
-            <div class="mt-auto pt-2 border-t border-white/20">
-                <Link<Route>
-                    to={Route::AdminConfig}
-                    classes={nav_class(current == "/admin/settings")}
-                >
-                    <Settings size={18} />
-                    <span>{ "Configuración" }</span>
-                </Link<Route>>
-            </div>
+            /*
+                <div class="mt-auto pt-2 border-t border-white/20">
+                    <Link<Route>
+                        to={Route::AdminConfig}
+                        classes={nav_class(current == "/admin/settings")}
+                    >
+                        <Settings size={18} />
+                        <span>{ "Configuración" }</span>
+                    </Link<Route>>
+                </div>
+            */
         </aside>
     }
 }
