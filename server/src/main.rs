@@ -29,11 +29,14 @@ fn main() {
         }
     };
 
+    // Creamos el directorio donde se van a subir los archivo .tif
     if create_dirs(&settings.upload_path).is_none() {
         eprintln!("Error creando directorios");
         return;
     }
 
+    // Levantamos la DB y aplicamos el schema
+    // Ademas, si corresponde, actualizamos la pass del Admin
     let db = match DBEngine::new(&settings.db_name) {
         Ok(db) => match professor::sync_admin_password(&db, &settings.admin_pass) {
             Ok(()) => db,
@@ -53,6 +56,7 @@ fn main() {
     let file_cache = FileCache::new(settings.cache_amount);
     let cache = Arc::new(Mutex::new(file_cache));
 
+    // Levantamos Listener HTTP
     let server = match create_server(settings.port) {
         Ok(server) => server,
         Err(error) => {
@@ -64,8 +68,12 @@ fn main() {
     println!("Server iniciado en puerto: {}", settings.port);
 
     let mut threads: Vec<JoinHandle<()>> = Vec::new();
+    // Generamos el thread para el CLI
     threads.push(create_cli_thread(settings.port));
 
+    // Escuchamos conexiones nuevas y ante cada una
+        // Clonamos las estrucutas a ompartir
+        // Levamantamos un hilo de ejecucion.
     for request in server.incoming_requests() {
         let settings_clone = Arc::clone(&settings);
         let cache_clone = Arc::clone(&cache);
@@ -73,6 +81,7 @@ fn main() {
         threads.push(create_request_thread(request, cache_clone, settings_clone, db_clone));
     }
 
+    // Esperamos a que hagan JOIN todos los hilos en ejecuion.
     for thread in threads {
         if let Err(err) = thread.join() {
             eprintln!("\x1b[31mError:\x1b[0m {:?}", err);
