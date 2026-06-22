@@ -8,8 +8,10 @@ pub enum ConfigValue {
     Float(f64),
 }
 
-// get_usize / get_int / get_string / get_float: leen una clave del config y validan su tipo.
-// Devuelven Err con un mensaje claro si la clave falta o no es del tipo esperado.
+// Struct de todas las configuraciones que se deben cargar del "config.toml"
+// Esta como una structura fija para
+    // Evitar hacer matchs en cada uso, por si no existen
+    // Evitar levantar el servidor, si faltan valores necesarios.
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
     pub port: i32,
@@ -66,6 +68,8 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
     }
 }
 
+// get_usize / get_int / get_string / get_float: leen una clave del config y validan su tipo.
+// Devuelven Err con un mensaje claro si la clave falta o no es del tipo esperado.
 fn get_usize(
     config: &HashMap<String, ConfigValue>,
     key: &str,

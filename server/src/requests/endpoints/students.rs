@@ -11,7 +11,8 @@ use std::sync::{Arc, Mutex};
 use serde_json;
 
 
-///Endpoint para la creacion de un nuevo alumno en el sistema. Revisa permisos de quien forma la request y los que se usaran para el alumno.
+/// Endpoint para la creacion de un nuevo alumno, por parte de un docente.
+/// Autentica al profesor y comprueba datos y ejecuta el metodo para agregar la entrada a al DB.
 pub fn create_new_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let professor_id = match check_profesor_auth(request, &db) {
@@ -44,7 +45,7 @@ pub fn create_new_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Ha
 
 }
 
-///Retorna un todos los alumnos registrados en la base de datos, para un profesor especifico. Revisa los permisos de dicho profesor.
+/// Obtiene todos los alumnos, presentes en la DB, para el profesor autenticado.
 pub fn get_all_students(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let professor_id = match check_profesor_auth(request, &db) {
@@ -65,7 +66,9 @@ pub fn get_all_students(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     string_response(response, 200)
 }
 
-///Elimina un alumno especifico de la base de datos utilizando su id y el de su profesor.
+/// Borra a un alumno dado, presente en la DB, para el profesor autenticado.
+/// Para eliminarlo, ademas, provee su id como profesor, para evitar que por algun error en el front
+/// Un profesor autenticado, pueda borrar alumnos que no le pertenecen.
 pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let Some(id_str) = request.url().rsplit('/').next() else {
@@ -89,7 +92,8 @@ pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     }
 }
 
-///Actualiza los datos de un alumno.
+/// Actualiza los datos de un alumno.
+/// Comprueba que el profesor este autenticado.
 pub fn update_an_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
     
     let id_str = match request.url().rsplit('/').next() {

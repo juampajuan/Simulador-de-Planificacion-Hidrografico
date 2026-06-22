@@ -1,8 +1,9 @@
 use std::path::Path;
 use std::fs;
 use rand::Rng;
-//Utilidades generales transversales: creación de carpetas, validación de contraseñas,
-//generación de códigos de alumno y lectura de cookies.
+
+// Utilidades generales transversales: creación de carpetas, validación de contraseñas,
+// generación de códigos de alumno y lectura de cookies.
 
 /// Crea las carpetas `geotiffs/` y `simulations/` dentro de `path` (incluyendo los padres).
 /// Devuelve `None` si alguna creación falla.
@@ -35,7 +36,7 @@ pub fn generate_code() -> String {
         .collect()
 }
 
-/// Busca una cookie por nombre en el header `Cookie` de la request.
+/// Extrae la cookie del header de la request, con el nombre introducido en la firma.
 /// Devuelve su valor si existe, o `None` si no está la cookie o el header.
 pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
     let cookie_header = request

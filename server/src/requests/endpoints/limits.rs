@@ -3,10 +3,10 @@ use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::structs::settings::Settings;
 use std::sync::{Arc};
 
-///Retorna los limites configurados para cada proyecto. Estos cubren desde limites en frecuencias hasta el azimut del alumno. 
+/// Retorna los limites configurados para cada proyecto. 
+/// Estos cubren desde limites en frecuencias hasta el azimut del alumno. 
 pub fn get_limits(settings: Arc<Settings>) -> HandlerResult {
     
-
     let response = match serde_json::to_string(&*settings) {
         Ok(json) => json,
         Err(_) => return server_error("Error serializing limits data".to_string()),

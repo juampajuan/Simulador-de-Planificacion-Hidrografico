@@ -107,6 +107,8 @@ pub fn delete_all_tokens(
     Ok(())
 }
 
+/// Borra 1 otken en particular.
+/// Lo usa el logout para cerrar su sesion.
 pub fn delete_token(
     db: &DBEngine,
     token: &str,

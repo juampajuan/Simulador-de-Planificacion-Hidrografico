@@ -21,7 +21,10 @@ fn content_type(path: &str) -> &'static str {
     }
 }
 
-///Dada una url, retorna el archivo relacionado a esta.
+/// Dada una url retorna el archivo relacionado a esta.
+/// Este metodo es usado para server la pagina web propiamente dicha.
+/// Cuando en `handle_request` el match no accedo a algun endpoint, la request llega a este metodo
+/// Que intentara buscar un archivo dentro del path donde se aloja el front, del archivo buscado.
 pub fn get_page_file(request: &Request) -> HandlerResult {
 
     let url = request.url();

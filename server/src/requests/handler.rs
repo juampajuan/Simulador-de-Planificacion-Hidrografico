@@ -9,8 +9,8 @@ use crate::structs::settings::Settings;
 
 const API_V1: &str = "/api/v1";
 
-//Router principal del servidor. Toma cada request entrante, la dirige al endpoint
-//correspondiente según método HTTP y ruta, y se encarga de enviar la respuesta al cliente.
+// Router principal del servidor. Toma cada request entrante, la dirige al endpoint
+// correspondiente según método HTTP y ruta, y se encarga de enviar la respuesta al cliente.
 
 
 /// Punto de entrada de cada request. Las rutas bajo `/api/v1` se rutean por (método, path)
@@ -95,7 +95,8 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
     response_sender(request, result)
 }
 
-/// Envia la respuesta al cliente y la loguea por consola.
+/// Recibe la respuesta generada por los metodos dentro del `handle_request` y la envia.
+/// Ademas, instancia un `RequestLog` y lo retorna para ser impreso por la terminal.
 fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
     let method = request.method().to_string();
     let path = request.url().to_string();

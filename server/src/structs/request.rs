@@ -1,13 +1,15 @@
 use tiny_http::ResponseBox;
 use crate::db::queries::student::Student;
 use crate::db::queries::proyects::AdminProjectView;
+use common::{StudentMeasuringParameters, PathParameters};
  
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
 const RED: &str = "\x1b[31m";
 const RESET: &str = "\x1b[0m";
  
-/// Lo genera cada endpoints, para luego loggear en consola o si se decide en un archivo.
+/// Lo genera cada endpoints, para luego loggear en consola.
+/// Sirve para obtener informacion en tiempo real de que esta haciendo el servidor.
 pub struct RequestLog {
     pub method: String,
     pub path: String,
@@ -45,8 +47,6 @@ impl RequestLog {
 /// Lo que devuelve cada endpoint: la respuesta a enviar, el código de estado HTTP
 /// y un mensaje de error opcional para el logging.
 pub type HandlerResult = (ResponseBox, u16, Option<String>);
-
-use common::{StudentMeasuringParameters, PathParameters};
 
 /// Body que manda el alumno al pedir una simulación: los parámetros de ecosonda
 /// (opcionales, según el endpoint) y los parámetros del recorrido.

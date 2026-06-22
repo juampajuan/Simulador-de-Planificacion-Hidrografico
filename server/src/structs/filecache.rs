@@ -20,18 +20,20 @@ pub struct CacheItem {
     pub last_path: Option<PathData>, 
 }
 
-/// Cache en memoria de geotiffs ya procesados. Guarda hasta `limit` entradas junto a su
+/// Cache en memoria de geotiffs ya procesados, junto a su ultimo path. Guarda hasta `limit` entradas junto a su
 /// timestamp de último uso, y desaloja la más antigua (LRU) cuando se llena.
 pub struct FileCache {
     items: Vec<(CacheItem, u64)>,
     pub limit: usize,
 }
 
+// Metodo que implementa para interactuar
 impl FileCache {
     pub fn new(limit: usize) -> Self {
         Self { items: Vec::new(), limit }
     }
 
+    // Obtiene el tiempo actual, para guardar o actualizar
     fn get_now(&self) -> u64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -42,6 +44,8 @@ impl FileCache {
             })
     }
 
+    // Almacena en la lista de la misma, la matrix procesada
+    // Si se excede de tamaño, remueve el elemento que lleva mas tiempo sin ser accedido.
     pub fn update_map(&mut self, cache_key: String, geotiff_path: String, matrix: DepthMatrix) {
         let now = self.get_now();
 
@@ -65,6 +69,8 @@ impl FileCache {
         }
     }
 
+    // Busca una DepthMatrix (geotiff procesado)
+    // Ademas actualiza su timestamp de "ultimo acceso", para que no sea reemplazado.
     pub fn get_map(&mut self, cache_key: &str, geotiff_path: &str) -> Option<&DepthMatrix> {
         let now = self.get_now();
         if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) 
@@ -76,6 +82,7 @@ impl FileCache {
         None
     }
 
+    // Almacena el path para el proyecto que corresponda.
     pub fn update_path(&mut self, cache_key: String, coordinates: Vec<(usize, usize)>, params: PathParameters) {
         let now = self.get_now();
 
@@ -85,6 +92,7 @@ impl FileCache {
         }
     }
 
+    // Obtiene el path si existe.
     pub fn get_path_if_valid(&mut self, cache_key: &str, current_params: &PathParameters) -> Option<Vec<(usize, usize)>> {
         let now = self.get_now();
         if let Some(pos) = self.items.iter().position(|(it, _)| it.id == cache_key) {
@@ -99,6 +107,7 @@ impl FileCache {
         None
     }
 
+    // Remueve la entrada mas vieja.
     fn remove_oldest(&mut self) {
         if let Some((index, _)) = self.items.iter().enumerate()
             .min_by_key(|(_, (_, fecha))| *fecha) {
