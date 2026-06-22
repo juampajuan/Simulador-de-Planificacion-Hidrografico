@@ -3,6 +3,8 @@ use crate::requests;
 use super::print;
 use std::env;
 
+/// Realiza el manejo logico del menu
+// Toma un input y ejecuta el metodo que corresponde.
 pub fn menu(host:&str, client: &Client) {
 
     let input = match print::input("> ") {
@@ -48,6 +50,7 @@ pub fn menu(host:&str, client: &Client) {
     
 }
 
+/// Recibe y procesa los argumentos que recibe al ejecutarlo standalone 
 pub fn get_args() -> Option<(String, String)> {
     let mut args = env::args().skip(1);
 
@@ -56,6 +59,8 @@ pub fn get_args() -> Option<(String, String)> {
     Some((format_host(&host), password))
 }
 
+/// Agrega formato a la url introducida como args
+// Sin el http. El crate no la puede usar.
 fn format_host(url: &str) -> String {
     if url.starts_with("http://") || url.starts_with("https://") {
         url.to_string()

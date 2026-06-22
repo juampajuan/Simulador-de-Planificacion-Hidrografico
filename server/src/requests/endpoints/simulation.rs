@@ -15,7 +15,8 @@ use simulations::structs::depth_matrix::DepthMatrix;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::io::Cursor;
 
-///Endpoint para la creacion del recorrido. Utiliza contenidos de la cache y la db, si los hay.
+/// Endpoint para la creacion del recorrido. 
+/// Utiliza contenidos de la cache y la db, si los hay.
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
@@ -40,7 +41,9 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
     (response.boxed(), 200, None)
 }
 
-///Endpoint para la simulacion/interpolacion. Revisa y compara  la cantidad de intentos realizados. Utiliza recursos de la db y cache si los hay, sino debera tambien crear el path.
+/// Endpoint para la simulacion/interpolacion. 
+/// Utiliza recursos de la db y cache si los hay, sino debera tambien crear el path.
+/// Revisa y compara la cantidad de intentos realizados. 
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
@@ -112,7 +115,8 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     string_response(json_payload, 200)
 }
 
-///genera la imagen de cubrimiento del recorrido con los parametros actuales. Sirve para ver de manera preliminar que areas cubre el recorrido. 
+/// Genera la imagen de cubrimiento del recorrido con los parametros actuales. 
+/// Sirve para ver de manera preliminar que areas cubre el recorrido. 
 pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
@@ -146,7 +150,8 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
 }
  
 
-///Toma los permisos y comprueba la existencia de alumno y proyecto en db. Extrae y prepara los datos esenciales de la request.
+/// Toma los permisos y comprueba la existencia de alumno y proyecto en db. 
+/// Extrae y prepara los datos esenciales de la request.
 fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> Result<RequestContext, HandlerResult> {
     let student_id = match check_student_auth(request, db) {
         Ok(Some(id)) => id,
@@ -191,7 +196,9 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
     })
 }
 
-// Reutilizan, o crean y guardan. Intenta poner lock en cache para la matriz/geotiff.
+/// Genera la matrix a partir del archivo
+/// Primero intenta obtenerla desde la cache, si no la encuentra, ejecuta el metodo para crearla.
+/// Una vez creada, si no existia, la agrega al cache, para futuros usos.
 fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, cache_key: &str, file_path: &str) -> Result<DepthMatrix, String> {
     let mut lock = match cache.lock() {
         Ok(l) => l,
@@ -218,7 +225,9 @@ fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, cache_key: &str, fil
     Ok(m)
 }
 
-///Intenta poner un lock en la cache para el recorrido.
+/// Genera el recorrido a partir de una matrix profesada
+/// Primero intenta obtenerlo desde la cache, si no lo encuentra, ejecuta el metodo para crearlo.
+/// Una vez creado, lo agrega al cache, para futuros usos.
 fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: &str, matrix: &DepthMatrix, path_params: &PathParameters) -> Result<Vec<(usize, usize)>, String> {
     let mut lock = match cache.lock() {
         Ok(l) => l,

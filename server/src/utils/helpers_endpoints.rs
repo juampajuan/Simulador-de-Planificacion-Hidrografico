@@ -21,8 +21,8 @@ pub fn check_profesor_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine
     }
 }
 
-/// Igual que `check_profesor_auth` pero para alumnos: devuelve el id solo si el token
-/// pertenece a un alumno.
+/// Igual que `check_profesor_auth` pero para alumnos.
+/// Devuelve el id SOLO si el token pertenece a un alumno.
 pub fn check_student_auth(request: &tiny_http::Request, db: &Arc<Mutex<DBEngine>>) -> Result<Option<i64>,String> {
 
     let Some(token) = get_cookie(request, "auth_token") else {

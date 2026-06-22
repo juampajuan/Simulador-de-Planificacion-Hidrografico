@@ -34,8 +34,8 @@ fn file_parser(file: File) -> Result<HashMap<String, ConfigValue>, String> {
 }
 
 /// Parsea una línea de config con formato `clave = valor`. Ignora líneas vacías y comentarios
-/// (`#`), recorta comentarios al final de línea, e infiere el tipo del valor: string si va
-/// entre comillas, si no entero, y si no float. Devuelve Err si la línea no tiene formato válido.
+/// (`#`), recorta comentarios al final de línea, e infiere el tipo del valor: string, int o float.
+/// Devuelve Err si la línea no tiene formato válido.
 fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<(), String> {
 
     let line = line.trim();

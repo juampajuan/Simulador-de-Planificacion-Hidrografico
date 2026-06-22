@@ -14,7 +14,7 @@ pub struct ProtectedProps {
     pub required_role: Role,
 }
 
-// Revisa que la url que se solicita perteneza al dominio del rol.
+/// Revisa que la url que se solicita perteneza al dominio del rol.
 // Si el required_role para visitar la pagina children no coincide con el rol actual, se devuelve a su pagina correspondiente
 // Si el required role coincide con el rol actual, todo sigue normal.
 #[function_component(ProtectedRoute)]

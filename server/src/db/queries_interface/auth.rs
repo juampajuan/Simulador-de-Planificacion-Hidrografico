@@ -2,9 +2,6 @@ use crate::db::queries::auth;
 use crate::db::engine::DBEngine;
 use std::sync::{Arc, Mutex};
 
-//Capa intermedia de autenticación: toma el lock del Mutex de la DB y delega
-//en las queries crudas de `queries::auth`. Si el lock está envenenado, devuelve error.
-
 /// Toma el lock de la DB y crea un token de sesión para el dueño dado.
 pub fn create_token_locked(
     db: &Arc<Mutex<DBEngine>>,

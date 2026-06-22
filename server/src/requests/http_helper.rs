@@ -4,6 +4,7 @@ use std::io::{Cursor};
 use image::{ImageFormat, RgbaImage};
 
 /// Lee el cuerpo de la petición y lo parsea a la estructura correspondiente de forma segura.
+/// Como esta implementado como Generic, acepta cualquier estructura que necesitemos.
 pub fn parse_json_body<T: DeserializeOwned>(request: &mut Request) -> Result<T, String> {
     let mut content = String::new();
     

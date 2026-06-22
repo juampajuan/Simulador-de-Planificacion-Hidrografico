@@ -19,6 +19,8 @@ use std::{
 }; 
 use multipart::server::Multipart;
 
+/// Metodo auxiliar para procesar el body multipart.
+/// Se usa para la request de `crear_project`
 pub fn get_boundary(request: &Request) -> Result<String, &str> {
 
     let content_type = match request
@@ -46,7 +48,10 @@ pub fn get_boundary(request: &Request) -> Result<String, &str> {
     Ok(boundary)
 }
 
-///Crea un nuevo archivo en la db
+/// Genera un nuevo proyecto.
+/// Primero comprueba que el profesor este autenticado
+/// Luego recibe el archivo .tif y lo almacena en la carpeta
+/// Y por ultimo genera la entrada, con la informacion extra en la DB.
 pub fn create(
     request: &mut Request,
     db: Arc<Mutex<DBEngine>>,
@@ -73,9 +78,7 @@ pub fn create(
     let mut filename_saved = None::<String>;
     let mut invalid_extension = false;
     let mut write_error = None::<String>;
-
-    // TODO: Re hacer el codigo mas feo que hice en mi vida
-    // Transformarlo en un metodo, no iterativo, solo hay 2 entries que leer. 
+ 
     if let Err(_e) = multipart.foreach_entry(|mut field| {
 
         match field.headers.name.as_ref() {
@@ -182,7 +185,8 @@ pub fn create(
     
 }
 
-///Retorna todos los proyectos almacenados en la db
+/// Retorna todos los proyectos almacenados en la db
+/// Para el profesor autenticado.
 pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
   
     let professor_id = match check_profesor_auth(request, &db) {
@@ -203,7 +207,9 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
     string_response(response, 200)
 }
 
-///Retorna el proyecto de un alumno especifico usando su id.
+/// Retorna el proyecto de un alumno especifico.
+/// Esto lo hace en base a la cookie que recibe en la request.
+/// Con la cookie obtiene el id del mismo y con eso el proyecto
 pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let student_id = match check_student_auth(request, &db) {
@@ -258,7 +264,8 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
     string_response(response, 200)
 }
 
-///Elimina un proyecto de la base de datos
+/// Elimina un proyecto de la base de datos
+/// Comprobando primero que el profesor este autenticado.
 pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let professor_id = match check_profesor_auth(request, &db) {
@@ -302,7 +309,8 @@ pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings:
 
 }
 
-///Actualiza la informacion de un proyecto en la db
+/// Actualiza la informacion de un proyecto en la db
+/// Comprobando primero que el profesor este autenticado.
 pub fn update_a_project(
     request: &mut Request,
     db: Arc<Mutex<DBEngine>>
