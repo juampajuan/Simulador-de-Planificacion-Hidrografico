@@ -5,6 +5,8 @@ const CYAN: &str = "\x1b[36m";
 const MAGENTA: &str = "\x1b[35m";
 const RESET: &str = "\x1b[0m";
 
+// Imprime el banner
+// SOLO mostrado si se ejecuta standalone
 pub fn print_banner() {
     let space = 32 as char;
 
@@ -19,6 +21,7 @@ pub fn print_banner() {
     println!("Bienvenido al CLI del simulador. Este permite añadir docentes y restaurar contraseñas.");
 }
 
+// Mensaje para comando desconocido
 pub fn unknown_command() {
     println!(
         "{BLUE}Comando desconocido.{RESET} Escriba \
@@ -28,6 +31,7 @@ pub fn unknown_command() {
     );
 }
 
+// Imprime una guia/ayuda memoria de los metodos disponibles.
 pub fn print_help() {
     let commands = vec![
         (
@@ -53,6 +57,7 @@ pub fn print_help() {
     }
 }
 
+// Metodo generico, para imprimir cada comando
 fn print_command(description: &str, command: &str, params: &str) {
     println!(
         "{BLUE}{}{RESET}\n\
@@ -63,6 +68,7 @@ fn print_command(description: &str, command: &str, params: &str) {
     );
 }
 
+// Toma el input del usuario y lo procesa.
 pub fn input(prompt: &str) -> io::Result<String> {
     print!("{}", prompt);
     io::stdout().flush()?;

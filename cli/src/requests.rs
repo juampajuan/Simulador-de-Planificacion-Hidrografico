@@ -7,6 +7,8 @@ struct UserRequest {
     pass: String,
 }
 
+// Genera la estructura de cliente HTTP, habilitando las cookies
+// Para poder hacer las requets autenticado.
 pub fn generate_client() -> Result<Client, reqwest::Error> {
     let client = Client::builder()
     .cookie_store(true)
@@ -15,6 +17,7 @@ pub fn generate_client() -> Result<Client, reqwest::Error> {
     Ok(client)
 }
 
+// Ejecuta la request de login, para autenticar el CLI
 pub fn login(host: &str, pass: &str, client: &Client) -> Result<(String, u16), Box<dyn std::error::Error>> {
 
     println!("\n\x1b[36mIniciando sesion como admin...\x1b[0m");
@@ -34,6 +37,7 @@ pub fn login(host: &str, pass: &str, client: &Client) -> Result<(String, u16), B
     Ok((text, code))
 }
 
+// Realiza la request para crear un nuevo usuario de Docente
 pub fn create_user(
     client: &Client,
     host: &str,
@@ -55,6 +59,7 @@ pub fn create_user(
     Ok(text)
 }
 
+// Realiza la request para cambiar la pass del Docente
 pub fn change_pass(
     client: &Client,
     host: &str,
@@ -76,6 +81,7 @@ pub fn change_pass(
     Ok(text)
 }
 
+// Realiza la request para cerrar todas las sesiones
 pub fn close_all(
     client: &Client,
     host: &str,
