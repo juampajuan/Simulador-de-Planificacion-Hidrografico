@@ -5,7 +5,7 @@ pub fn admin_config() -> Html {
      
     html! {
         <div class="text-white">
-           {"Configutracion"}
+           {"Configuración"}
         </div>
     }
 }
