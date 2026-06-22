@@ -30,7 +30,7 @@ Se debe tener instalada la libreria `gdal`.
 sudo apt install libgdal-dev gdal-bin
 ```
 
-### Ejecucion
+### Ejecución
 
 Como el server se encarga de servir a la web, con levantarlo es suficiente para tener todo el proyecto funcionando.
 
@@ -84,7 +84,7 @@ npx tailwindcss -i ./styles.css -o ./tailwind.css --watch
 
 <br/>
 
-Para el servidor, se utiliza el mismo comando que para su comun ejecucion.
+Para el servidor, se utiliza el mismo comando que para su comun ejecución.
 
 ```bash
 cargo run -p server
