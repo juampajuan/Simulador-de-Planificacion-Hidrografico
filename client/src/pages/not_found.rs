@@ -1,6 +1,7 @@
 use yew::prelude::*; 
 use lucide_yew::Compass;
  
+/// Página 404 que se muestra ante una ruta inexistente.
 #[function_component(NotFound)]
 pub fn not_found() -> Html {
 

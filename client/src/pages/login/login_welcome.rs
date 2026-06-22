@@ -1,5 +1,7 @@
 use yew::prelude::*;
 
+/// Panel de bienvenida del login: el título grande "Bienvenido al Simulador de
+/// Planificación Hidrográfico" que se muestra al costado de los formularios.
 #[function_component(LoginWelcome)]
 pub fn login_welcome() -> Html {
     html! {

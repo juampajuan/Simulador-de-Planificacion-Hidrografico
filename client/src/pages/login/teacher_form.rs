@@ -3,6 +3,8 @@ use lucide_yew::University;
 use web_sys::HtmlInputElement;
 use crate::components::subtitle::Subtitle;
 
+/// Props del formulario de docente: estado de carga, los estados compartidos de usuario
+/// y contraseña, y las clases CSS de los inputs.
 #[derive(Properties, PartialEq)]
 pub struct TeacherFormProps {
     pub loading: bool,
@@ -11,6 +13,7 @@ pub struct TeacherFormProps {
     pub input_cls: &'static str,
 }
 
+/// Formulario de acceso del docente: campos de usuario y contraseña.
 #[function_component(TeacherForm)]
 pub fn teacher_form(props: &TeacherFormProps) -> Html {
     let on_user_input = {

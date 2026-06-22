@@ -9,6 +9,7 @@ pub struct EchosounderProps {
     pub echo_state: UseStateHandle<EchoState>
 }
 
+/// Parámetros de la ecosonda: modo, frecuencia, profundidad, pulso, potencia y ganancia.
 #[function_component(EchosounderParams)]
 pub fn echosounder_params(props: &EchosounderProps) -> Html {
     let state = props.echo_state.clone();

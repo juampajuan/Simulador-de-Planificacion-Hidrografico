@@ -3,6 +3,7 @@ use web_sys::{window, HtmlElement};
 use wasm_bindgen::JsCast;
 use lucide_yew::{Sun, Moon};
 
+/// Botón que alterna el modo claro/oscuro
 #[function_component(DarkModeButton)]
 pub fn dark_mode_button() -> Html {
     let dark_mode = use_state(|| true);

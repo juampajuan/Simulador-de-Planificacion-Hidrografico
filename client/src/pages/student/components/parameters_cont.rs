@@ -9,6 +9,7 @@ pub struct ParamContProps {
     pub children: Children,
 }
 
+/// Contenedor del panel de parámetros
 #[function_component(ParamCont)]
 pub fn param_cont(props: &ParamContProps) -> Html {
     html! {

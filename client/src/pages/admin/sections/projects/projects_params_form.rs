@@ -8,6 +8,7 @@ pub struct ProjectParamsFormProps {
     pub form_state: UseStateHandle<ProjectFormFields>,
 }
 
+/// Form reutilizable con los parámetros del proyecto (intentos, clima, fondo, presupuesto, profundidades).
 #[function_component(ProjectParamsForm)]
 pub fn project_params_form(props: &ProjectParamsFormProps) -> Html {
     let state = props.form_state.clone();
