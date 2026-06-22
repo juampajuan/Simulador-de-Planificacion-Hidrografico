@@ -15,7 +15,7 @@ use crate::pages::{
 };
 use crate::protected_route::{ProtectedRoute, Role}; 
 
-// las urls
+/// Enum con todas las rutas, que ofrece el front.
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
     #[at("/")]
@@ -38,6 +38,7 @@ pub enum Route {
     NotFound,
 }
 
+/// Funcion que enruta a las distintas paginas de la web.
 fn switch(route: Route) -> Html {
     match route {
         Route::Student => html! {
@@ -80,6 +81,8 @@ fn switch(route: Route) -> Html {
     }
 }
 
+/// Genera los elementos HTML para enrutar
+// Es quien permite la navegacion.
 #[function_component(AppRouter)]
 pub fn app_router() -> Html {
     html! {
