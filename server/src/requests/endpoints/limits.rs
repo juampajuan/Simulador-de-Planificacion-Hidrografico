@@ -3,11 +3,9 @@ use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::structs::settings::Settings;
 use std::sync::{Arc};
 
-
+///Retorna los limites configurados para cada proyecto. Estos cubren desde limites en frecuencias hasta el azimut del alumno. 
 pub fn get_limits(settings: Arc<Settings>) -> HandlerResult {
     
-    // Juampa: Solucionado, agregue #[serde(skip)] en el struct de settings, por lo que skipea
-    // el parametro admin pass al armar el JSON
 
     let response = match serde_json::to_string(&*settings) {
         Ok(json) => json,

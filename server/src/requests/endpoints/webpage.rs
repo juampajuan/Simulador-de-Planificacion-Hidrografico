@@ -4,6 +4,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use super::generic::{not_found, server_error};
 
+///Selecciona el tipo de contenido/archivo basandose en el path.
 fn content_type(path: &str) -> &'static str {
     if path.ends_with(".html") {
         "text/html"
@@ -19,7 +20,8 @@ fn content_type(path: &str) -> &'static str {
         "application/octet-stream"
     }
 }
- 
+
+///Dada una url, retorna el archivo relacionado a esta.
 pub fn get_page_file(request: &Request) -> HandlerResult {
 
     let url = request.url();

@@ -2,6 +2,10 @@ use kiddo::{NearestNeighbour, SquaredEuclidean};
 use crate::processing::interpolation::interpolation_method::old_interpolations::old_helpers::build_kdtree;
 use crate::{structs::depth_matrix::DepthMatrix};
 
+// ------------------------------------------------------------
+//  Implementacion Vieja de Kriging, no se usa
+// ------------------------------------------------------------
+
 fn gaussian_elimination(mat_a: &[Vec<f64>], vec_b: &[f64]) -> Option<Vec<f64>> {
     let n = vec_b.len();
 

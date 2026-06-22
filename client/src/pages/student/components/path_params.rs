@@ -15,6 +15,7 @@ pub struct PathProps {
     pub limits: UseStateHandle<ConfigLimits>,
 }
 
+// Muestra parámetros para path: separacion, azimut y gnss. Bo
 #[function_component(PathParams)]
 pub fn path_params(props: &PathProps) -> Html {
     let input_cls =

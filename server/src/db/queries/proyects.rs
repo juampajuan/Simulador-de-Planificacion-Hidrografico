@@ -22,6 +22,8 @@ pub struct AdminProjectView {
     pub metadata: ProjectMetadata,
 }
 
+/// Inserta un proyecto nuevo con su archivo geotiff, su dueño (professor_id) y toda la metadata.
+/// Devuelve el id generado por la base.
 pub fn create_project(
     db: &DBEngine,
     filename: &str,
@@ -68,6 +70,7 @@ pub fn create_project(
     }
 }
 
+/// Trae todos los proyectos que pertenecen a un profesor, armando un `AdminProjectView` por cada fila.
 pub fn get_all_by_professor_id(
     db: &DBEngine,
     professor_id: i64,
@@ -107,7 +110,8 @@ pub fn get_all_by_professor_id(
     Ok(projects)
 }
 
-
+/// Busca un proyecto puntual por su id.
+/// Devuelve `Some(AdminProjectView)` si existe o `None` si no.
 pub fn get_project_by_id(
     db: &DBEngine,
     id: i64,
@@ -144,6 +148,8 @@ pub fn get_project_by_id(
     }
 }
 
+/// Devuelve el id del proyecto asignado a un alumno (consultando la tabla students).
+/// `None` si el alumno no existe o no tiene proyecto asignado.
 pub fn get_project_id_by_student(
     db: &DBEngine,
     student_id: i64,
@@ -166,6 +172,8 @@ pub fn get_project_id_by_student(
     }
 }
 
+/// Borra un proyecto validando que pertenezca al profesor que lo pide.
+/// Devuelve `true` si borró alguna fila (existía y era suyo) o `false` si no.
 pub fn delete_project_by_id(
     db: &DBEngine,
     project_id: i64,
@@ -188,6 +196,8 @@ pub fn delete_project_by_id(
     Ok(db.connection.change_count() > 0)
 }
 
+/// Actualiza la metadata de un proyecto, validando que sea del profesor que lo pide.
+/// Devuelve `true` si modificó alguna fila o `false` si no existía o no era suyo.
 pub fn update_project(
     db: &DBEngine,
     id: i64,

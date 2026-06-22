@@ -8,6 +8,10 @@ use crate::structs::interpolation_type::InterpolationMethod;
 use crate::structs::measurement_type::MeasurementsTypeWithError;
 
 
+/// Prepara la matriz a interpolar en base a las mediciones tomadas
+/// Genera una matriz llena de 0, almacena en las respectivas celdas las mediciones, 
+/// descarta las mediciones que por aplicacion de errores quedaron en None 
+/// Y la envia a la interpolacion correspondiente
 pub fn interpolate(
     method: InterpolationMethod,
     measuring_points: MeasurementsTypeWithError,

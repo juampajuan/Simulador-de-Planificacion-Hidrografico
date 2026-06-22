@@ -2,12 +2,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub use simulations::structs::depth_matrix::DepthMatrix;
 use common::PathParameters;
 
+/// Recorrido cacheado: las coordenadas calculadas junto con los parámetros con los que
+/// se generaron, para poder reutilizarlo solo si el alumno vuelve a pedir lo mismo.
 #[derive(Clone)]
 pub struct PathData {
     pub coordinates: Vec<(usize, usize)>,
     pub parameters: PathParameters,
 }
 
+/// Una entrada del cache: la matriz de profundidades ya cargada de un geotiff,
+/// identificada por `id`, más el último recorrido calculado (si hay alguno).
 #[derive(Clone)]
 pub struct CacheItem {
     pub id: String,
@@ -16,6 +20,8 @@ pub struct CacheItem {
     pub last_path: Option<PathData>, 
 }
 
+/// Cache en memoria de geotiffs ya procesados. Guarda hasta `limit` entradas junto a su
+/// timestamp de último uso, y desaloja la más antigua (LRU) cuando se llena.
 pub struct FileCache {
     items: Vec<(CacheItem, u64)>,
     pub limit: usize,
@@ -27,7 +33,13 @@ impl FileCache {
     }
 
     fn get_now(&self) -> u64 {
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or_else(|e| {
+                eprintln!("Error al obtener el tiempo del sistema: {}", e);
+                0
+            })
     }
 
     pub fn update_map(&mut self, cache_key: String, geotiff_path: String, matrix: DepthMatrix) {

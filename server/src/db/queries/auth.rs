@@ -5,6 +5,9 @@ pub enum TokenOwner {
     Student(i64),
 }
 
+/// Inserta un nuevo token de sesión en la tabla `auth_tokens`.
+/// Según el `owner`, completa la columna `professor_id` o `student_id` (la otra queda NULL).
+/// La expiración se calcula en la propia base como `now + expires_in_days` días.
 pub fn create_token(
     db: &DBEngine,
     owner: TokenOwner,
@@ -48,6 +51,9 @@ pub fn create_token(
     Ok(())
 }
 
+/// Busca el dueño de un token que todavía esté vigente (no expirado).
+/// Devuelve `Some(TokenOwner)` si encuentra una fila válida con exactamente uno de los
+/// dos ids cargado, o `None` si el token no existe, ya expiró o la fila es inconsistente.
 pub fn get_user_by_token(
     db: &DBEngine,
     token: &str,
@@ -84,6 +90,8 @@ pub fn get_user_by_token(
     }
 }
 
+/// Borra todos los tokens de la tabla, cerrando de golpe todas las sesiones activas
+/// (lo usa el comando `closeall` del CLI).
 pub fn delete_all_tokens(
     db: &DBEngine,
 ) -> Result<(), sqlite::Error> {

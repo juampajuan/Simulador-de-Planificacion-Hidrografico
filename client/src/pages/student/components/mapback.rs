@@ -10,6 +10,7 @@ pub struct MapBackgroundProps {
     pub project_state: UseStateHandle<Option<StudentProjectResponse>>,
 }
 
+// Muestra el mapa real de fondo.
 #[function_component(MapBackground)]
 pub fn map_background(props: &MapBackgroundProps) -> Html {
     let centro = use_state(|| None::<(f64, f64)>);

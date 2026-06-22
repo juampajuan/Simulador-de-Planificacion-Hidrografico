@@ -1,14 +1,11 @@
 use crate::structs::depth_matrix::DepthMatrix;
 
+///Dados una ruta de puntos representados como un vector de tuplas, y una distancia determinada, calcula cuales de los puntos de la ruta seran en los que se toma una medicion.
 pub fn find_measuring_points(
     path: &Vec<(usize, usize)>,
     distance_between_points: f64,
     matrix: &DepthMatrix,
 ) -> Vec<(usize, usize)> {
-    //let distance_between_points_scaled = calculate_effective_measurement_distance(
-    //    &distance_between_points,
-    //    &matrix.size_x,
-    //);
 
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
     let mut current_point = &path[0];
@@ -32,6 +29,7 @@ pub fn find_measuring_points(
     measuring_points
 }
 
+///Da la distancia entre dos puntos
 pub fn calculate_distance_between_points(
     point_a: &(usize, usize),
     point_b: &(usize, usize),
@@ -45,6 +43,7 @@ pub fn calculate_distance_between_points(
     ((a_x - b_x).powi(2) + (a_y - b_y).powi(2)).sqrt()
 }
 
+//No se usa esta funcion.
 #[allow(dead_code)]
 fn calculate_effective_measurement_distance(
     distance_between_points: &f64,

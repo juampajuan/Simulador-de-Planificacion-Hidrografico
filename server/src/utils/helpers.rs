@@ -1,13 +1,19 @@
 use std::path::Path;
 use std::fs;
 use rand::Rng;
+//Utilidades generales transversales: creación de carpetas, validación de contraseñas,
+//generación de códigos de alumno y lectura de cookies.
 
+/// Crea las carpetas `geotiffs/` y `simulations/` dentro de `path` (incluyendo los padres).
+/// Devuelve `None` si alguna creación falla.
 pub fn create_dirs(path: &str) -> Option<()> {
     fs::create_dir_all(Path::new(path).join("geotiffs")).ok()?;
     fs::create_dir_all(Path::new(path).join("simulations")).ok()?;
     Some(())
 }
 
+/// Valida que una contraseña cumpla los requisitos mínimos: al menos una mayúscula,
+/// al menos un número y 8 caracteres o más.
 pub fn check_password(pass: &str) -> bool {
     let has_upper = pass.chars().any(|c| c.is_uppercase());
     let has_number = pass.chars().any(|c| c.is_numeric());
@@ -15,6 +21,8 @@ pub fn check_password(pass: &str) -> bool {
     has_upper && has_number && ok_length
 }
 
+/// Genera un código de acceso aleatorio de 6 caracteres (letras mayúsculas y dígitos),
+/// usado como "login" de los alumnos.
 pub fn generate_code() -> String {
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let mut rng = rand::rng();
@@ -27,6 +35,8 @@ pub fn generate_code() -> String {
         .collect()
 }
 
+/// Busca una cookie por nombre en el header `Cookie` de la request.
+/// Devuelve su valor si existe, o `None` si no está la cookie o el header.
 pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
     let cookie_header = request
         .headers()

@@ -41,6 +41,8 @@ pub fn makepng_with_matrix_and_path(
     img
 }
 
+/// Genera un png del recorrido de la matriz sobre el GeoTIFF
+/// Fondo transparente, recorrido blanco
 pub fn makepng_transparent_with_path(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,

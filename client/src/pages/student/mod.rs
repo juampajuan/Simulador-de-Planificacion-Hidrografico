@@ -21,6 +21,7 @@ enum ActiveTab {
     Entorno,
 }
 
+// Setea imagen, parámetros, y entorno (info proyecto)
 #[function_component(StudentPage)]
 pub fn student_page() -> Html {
     let mensaje = use_state(|| "Seleccione parametros para el recorrido".to_string());

@@ -1,5 +1,11 @@
 use kiddo::KdTree;
 use crate::structs::depth_matrix::DepthMatrix;
+
+
+// ------------------------------------------------------------
+//  Viejos helpers para las interpolaciones viejas, no se usa
+// ------------------------------------------------------------
+
 /// Calcula la mediana del espaciado entre puntos consecutivos del recorrido.
 /// Se usa como referencia para detectar saltos entre pasadas distintas.
 #[allow(dead_code)]
@@ -17,6 +23,7 @@ pub fn median_consecutive_spacing(measuring_points: &[(usize, usize)]) -> f64 {
         })
         .collect();
 
+    //Unwrap no removido porque este codigo no se usa.
     spacings.sort_by(|a, b| a.partial_cmp(b).unwrap());
     spacings[spacings.len() / 2]
 }

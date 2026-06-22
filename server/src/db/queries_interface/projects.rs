@@ -3,7 +3,7 @@ use crate::db::engine::DBEngine;
 use std::sync::{Arc, Mutex};
 use crate::db::queries::proyects::AdminProjectView;
 
-
+/// Toma el lock de la DB y trae un proyecto por su id, si existe.
 pub fn get_project_by_id_locked(
     db: &Arc<Mutex<DBEngine>>,
     id: i64,
@@ -24,6 +24,7 @@ pub fn get_project_by_id_locked(
     )
 }
 
+/// Toma el lock de la DB y trae todos los proyectos de un profesor.
 pub fn get_all_by_professor_id_locked(
     db: &Arc<Mutex<DBEngine>>,
     professor_id: i64,
@@ -44,6 +45,7 @@ pub fn get_all_by_professor_id_locked(
     )
 }
 
+/// Toma el lock de la DB y borra un proyecto (validando que sea del profesor dado).
 pub fn delete_project_by_id_locked(
     db: &Arc<Mutex<DBEngine>>,
     project_id: i64,
@@ -66,6 +68,7 @@ pub fn delete_project_by_id_locked(
     )
 }
 
+/// Toma el lock de la DB y actualiza la metadata de un proyecto (validando dueño).
 pub fn update_project_locked(
     db: &Arc<Mutex<DBEngine>>,
     id: i64,
@@ -90,6 +93,7 @@ pub fn update_project_locked(
     )
 }
 
+/// Toma el lock de la DB y crea un proyecto nuevo, devolviendo su id.
 pub fn create_project_locked(
     db: &Arc<Mutex<DBEngine>>,
     filename: &str,
@@ -114,6 +118,7 @@ pub fn create_project_locked(
     )
 }
 
+/// Toma el lock de la DB y devuelve el id del proyecto asignado a un alumno.
 pub fn get_project_id_by_student_locked(
     db: &Arc<Mutex<DBEngine>>,
     student_id: i64,

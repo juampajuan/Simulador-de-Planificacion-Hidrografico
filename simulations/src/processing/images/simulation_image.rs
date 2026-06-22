@@ -2,6 +2,8 @@ use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
 use super::helpers::{depth_color,depth_range};
 
+/// Genera el png del resultado de la simulacion segun los puntos medidos
+/// Utiliza los colores especificados en helpers.rs para las alturas
 pub fn makepng_with_matrix_and_interpolation(
     matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,

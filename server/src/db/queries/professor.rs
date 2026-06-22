@@ -1,6 +1,8 @@
 use crate::db::engine::DBEngine;
 use crate::db::encrypt::{hash_password, verify_password};
 
+/// Inserta un profesor nuevo con su username y hash de contraseña.
+/// Devuelve el id generado por la base.
 pub fn create_professor(
     db: &DBEngine,
     username: &str,
@@ -26,6 +28,7 @@ pub fn create_professor(
     }
 }
 
+/// Actualiza el hash de contraseña de un profesor identificado por su id.
 pub fn change_password(
     db: &DBEngine,
     professor_id: i64,
@@ -47,6 +50,8 @@ pub fn change_password(
     Ok(())
 }
 
+/// Igual que `change_password` pero ubicando al profesor por su username.
+/// Si no existe ningún profesor con ese nombre, devuelve un error "Professor not found".
 pub fn change_password_by_username(
     db: &DBEngine,
     username: &str,
@@ -61,6 +66,8 @@ pub fn change_password_by_username(
     change_password(db, professor_id, new_password_hash)
 }
 
+/// Busca el id de un profesor a partir de su username.
+/// Devuelve `Some(id)` si lo encuentra o `None` si no existe.
 pub fn get_professor_id_by_username(
     db: &DBEngine,
     username: &str,
@@ -85,6 +92,9 @@ pub fn get_professor_id_by_username(
     }
 }
 
+/// Verifica las credenciales de login de un profesor: busca su hash por username
+/// y lo compara contra la contraseña recibida con bcrypt.
+/// Devuelve `Some(id)` si coinciden, o `None` si el usuario no existe o la contraseña es incorrecta.
 pub fn verify_professor_credentials(
     db: &DBEngine,
     username: &str,
@@ -115,6 +125,9 @@ pub fn verify_professor_credentials(
     }
 }
 
+/// Sincroniza la contraseña del usuario 'admin' con la pasada por configuración.
+/// Si el admin no existe o su hash no coincide con la contraseña dada, la regenera y la guarda.
+/// Permite cambiar la clave de admin desde el config sin tocar la base a mano.
 pub fn sync_admin_password(
     db: &DBEngine,
     admin_password: &str,

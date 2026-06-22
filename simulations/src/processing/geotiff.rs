@@ -87,10 +87,13 @@ pub fn processing_geotiff(path: &str) -> Result<DepthMatrix, gdal::errors::GdalE
     )
 }
 
+/// Calcula con el geotrasform las coordenadas segun el pixel de la matriz
 fn calculate_coordinate(gt : [f64; 6],col: f64, row: f64) -> (f64,f64) {
     (gt[0] + col * gt[1] + row * gt[2] ,  gt[3] + col * gt[4] + row * gt[5])
 }
 
+/// Devuelve las coordenadas del centro y de las esquinas del TIFF
+/// Esto es para el mapa del fondo
 pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
 
     let dataset = Dataset::open(path)?;

@@ -8,6 +8,8 @@ use crate::{processing::{images::{makepng_transparent_with_path, makepng_with_ma
 mod processing;
 
 
+/// Crea la matriz segun el tiff cargado para el alumno
+/// Utiliza el crate processing::Geotiff
 #[allow(clippy::result_unit_err)]
 pub fn create_depth_matrix(file_path :&str) -> Result<DepthMatrix,()>{
 
@@ -24,6 +26,8 @@ pub fn create_depth_matrix(file_path :&str) -> Result<DepthMatrix,()>{
     Ok(matrix) 
 }
 
+/// Crea el recorrido segun los parametros indicados por el alumno
+/// processing::routing
 pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64, gnss_type: GnssType) -> Vec<(usize,usize)> {
 
     println!("Generando recorrido ...");
@@ -43,6 +47,10 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
     generate_route(matrix, path_params.azimut, path_params.separacion, max_offset)
 }
 
+/// Hace toda la logica de simulacion en base al recorrido del barco y los parametros seleccionados
+/// Llama a los distintos crates que aplican errores e interpolan.
+/// Devuelve la matriz interpolada
+/// Utiliza processing::measuring,processing::interpolation
 pub fn run_simulation(
     matrix: &DepthMatrix,
     students_path: &Vec<(usize, usize)>,
@@ -76,6 +84,8 @@ pub fn run_simulation(
     interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix)
 }
 
+/// Devuelve el PNG del recorrido hecho por el barco segun los parametros del alumno
+/// Utiliza processing::images
 pub fn create_path_image(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
@@ -85,6 +95,8 @@ pub fn create_path_image(
     makepng_transparent_with_path(matrix, path)
 }
 
+/// Devuelve el PNG de la matriz interpolada con la escala de colores correspondiente
+/// Utiliza processing::images
 pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>]) -> (RgbaImage, f64, f64) {
     println!("Generando PNG ...");
 
@@ -96,6 +108,8 @@ pub fn create_scale_pure_image() -> RgbaImage {
     create_scale_image()
 }
 
+/// Genera un png que muestra la cobertura segun el tipo de medicion seleccionada por el alumno.
+/// Utiliza processing::measures, processing::images
 pub fn create_path_with_shadows(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
@@ -150,6 +164,8 @@ pub fn create_path_with_shadows(
     make_shaded_png(matrix, &covered_points, path)
 }
 
+/// Obtiene las cordenadas del centro y las esquinas del geotiff y las devuelve
+/// Utiliza processing::Geotiff.
 pub fn get_geotiff_corners(
     file_path: &str,
 ) -> GeotiffCoordinates {

@@ -10,6 +10,8 @@ use crate::utils::helpers_endpoints::check_profesor_auth;
 use std::sync::{Arc, Mutex};
 use serde_json;
 
+
+///Endpoint para la creacion de un nuevo alumno en el sistema. Revisa permisos de quien forma la request y los que se usaran para el alumno.
 pub fn create_new_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let professor_id = match check_profesor_auth(request, &db) {
@@ -42,6 +44,7 @@ pub fn create_new_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Ha
 
 }
 
+///Retorna un todos los alumnos registrados en la base de datos, para un profesor especifico. Revisa los permisos de dicho profesor.
 pub fn get_all_students(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let professor_id = match check_profesor_auth(request, &db) {
@@ -62,6 +65,7 @@ pub fn get_all_students(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     string_response(response, 200)
 }
 
+///Elimina un alumno especifico de la base de datos utilizando su id y el de su profesor.
 pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
     let Some(id_str) = request.url().rsplit('/').next() else {
@@ -85,6 +89,7 @@ pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     }
 }
 
+///Actualiza los datos de un alumno.
 pub fn update_an_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
     
     let id_str = match request.url().rsplit('/').next() {

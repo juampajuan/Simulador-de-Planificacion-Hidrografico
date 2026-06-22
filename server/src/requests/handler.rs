@@ -9,6 +9,14 @@ use crate::structs::settings::Settings;
 
 const API_V1: &str = "/api/v1";
 
+//Router principal del servidor. Toma cada request entrante, la dirige al endpoint
+//correspondiente según método HTTP y ruta, y se encarga de enviar la respuesta al cliente.
+
+
+/// Punto de entrada de cada request. Las rutas bajo `/api/v1` se rutean por (método, path)
+/// al endpoint que corresponda; las requests OPTIONS se responden con 200 (preflight de CORS)
+/// y cualquier ruta desconocida cae en un 404. Las URLs que no son de la API se sirven como
+/// archivos de la página web. Finalmente delega el envío y el logging en `response_sender`.
 pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> RequestLog {
 
     let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
@@ -120,6 +128,7 @@ fn response_sender(request: Request, result: HandlerResult) -> RequestLog {
     }
 }
 
+/// Levanta el servidor HTTP escuchando en `0.0.0.0:<port>` (todas las interfaces).
 pub fn create_server(port: i32) -> Result<Server, Box<dyn std::error::Error + Send + Sync>> {
     let addr = format!("0.0.0.0:{}", port);
     let server = Server::http(addr)?;
