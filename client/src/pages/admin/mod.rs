@@ -10,6 +10,7 @@ pub struct LayoutProps {
     pub children: Children,
 }
 
+/// Layout del panel de admin: sidebar de navegación + el contenido de la sección activa.
 #[function_component(AdminLayout)]
 pub fn admin_layout(props: &LayoutProps) -> Html {
      
@@ -36,6 +37,7 @@ pub fn admin_layout(props: &LayoutProps) -> Html {
 }
 
 
+/// Barra lateral con los links a las secciones (Proyectos, Estudiantes)
 #[function_component(Sidebar)]
 fn sidebar() -> Html {
     let location = use_location().unwrap();

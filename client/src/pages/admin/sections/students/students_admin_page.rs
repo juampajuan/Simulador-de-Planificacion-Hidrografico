@@ -9,6 +9,8 @@ use lucide_yew::{Plus, Users};
 
 use crate::pages::admin::sections::students::students_table::TablaUsuarios;
 
+/// Sección de administración de alumnos/grupos: lista a todos, permite crear uno nuevo
+/// (modal con nombre + proyecto asignado) y borrar con confirmación.
 #[function_component(AdminStudents)]
 pub fn admin_students() -> Html {
     let students_state = use_state(Vec::<Student>::new);

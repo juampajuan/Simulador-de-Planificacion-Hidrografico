@@ -12,6 +12,7 @@ pub struct ProjectRowProps {
     pub projects_state: UseStateHandle<Vec<Project>>, 
 }
 
+/// Fila de un proyecto
 #[function_component(ProjectRow)]
 pub fn project_row(props: &ProjectRowProps) -> Html {
     let is_editing = use_state(|| false);

@@ -13,6 +13,7 @@ pub struct StudentRowProps {
     pub students_state: UseStateHandle<Vec<Student>>,
 }
 
+/// Fila de un alumno en la tabla.
 #[function_component(StudentRow)]
 pub fn student_row(props: &StudentRowProps) -> Html {
     let is_editing = use_state(|| false);

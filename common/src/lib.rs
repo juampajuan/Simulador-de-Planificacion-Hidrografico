@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+// Tipos de datos compartidos entre server, client y simulations.
+// Centraliza acá los parámetros y respuestas que viajan entre procesos para no
+// duplicar las mismas estructuras en cada crate.
+
+
+/// Tipo de corrección GNSS aplicada al posicionamiento del recorrido:
+/// sin corrección, DGPS (submétrica) o por fase (la más precisa).
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum GnssType {
     NoCorrection,
@@ -7,6 +14,8 @@ pub enum GnssType {
     PhaseCorrection
 }
 
+/// Tipo de embarcación. Influye en cuánto se sacude con las olas:
+/// un barco (Ship) se mueve menos que un bote (Boat) o una lancha (Launch)
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Transport {
     Ship,
@@ -14,12 +23,15 @@ pub enum Transport {
     Launch
 }
 
+/// Modo de la ecosonda: monohaz mide un punto por pulso, multihaz mide una franja.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum EcosondaMode {
     Monohaz,       
     Multihaz,       
 }
 
+/// Parámetros del recorrido del barco: separación entre líneas, azimut (orientación)
+/// y tipo de corrección GNSS.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct PathParameters {
     pub separacion: f64,
@@ -27,6 +39,9 @@ pub struct PathParameters {
     pub gnss_type: GnssType,
 }
 
+/// Configuración completa de la ecosonda: modo, apertura, rango de profundidad,
+/// intervalo de pulso, frecuencia, potencia, ganancia, umbral de detección y
+/// velocidad del sonido. Son las perillas que ajusta el alumno antes de medir.
 #[derive(Debug, Serialize, Deserialize, Clone,Copy, PartialEq)]
 pub struct EchosounderParameters {
     pub mode: EcosondaMode,
@@ -42,6 +57,8 @@ pub struct EchosounderParameters {
     pub sound_speed: f64,
 }
 
+/// Configuración de la embarcación: tipo, velocidad y qué instrumentos de corrección
+/// lleva activos (mareógrafo, perfilador de sonido, sensor inercial).
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct TransportParameters {
     pub transport: Transport,
@@ -51,12 +68,17 @@ pub struct TransportParameters {
     pub uses_inertial_sensor: bool,
 }
 
+/// Todo lo que el alumno configura para una medición: los parámetros de ecosonda
+/// y los de la embarcación juntos.
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct StudentMeasuringParameters {
     pub echo_sounder_parameters: EchosounderParameters,
     pub transport_parameters: TransportParameters,
 }
 
+/// Resultado de una simulación listo para mostrar en el front. Las dos imágenes (el mapa
+/// interpolado y la barra de escala) viajan como texto base64 
+/// `min_depth`/`max_depth` se usan para rotular la escala de colores.
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct SimulationBase64Response {
     pub min_depth: f64,

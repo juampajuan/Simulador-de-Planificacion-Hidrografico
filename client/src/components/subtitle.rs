@@ -8,6 +8,7 @@ pub struct SubtitleProps {
     pub icon: Html,
 }
 
+/// Subtítulo de sección, en mayúsculas y color cyan, con ícono opcional.
 #[function_component(Subtitle)]
 pub fn subtitle(props: &SubtitleProps) -> Html {
     html! {

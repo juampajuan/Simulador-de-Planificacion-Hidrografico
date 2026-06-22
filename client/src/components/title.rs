@@ -8,6 +8,7 @@ pub struct TitleProps {
     pub icon: Html,
 }
 
+/// Título reutilizable, con ícono opcional.
 #[function_component(Title)]
 pub fn title(props: &TitleProps) -> Html {
     html! {

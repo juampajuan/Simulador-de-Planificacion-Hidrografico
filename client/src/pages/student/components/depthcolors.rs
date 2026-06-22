@@ -6,6 +6,7 @@ pub struct DepthLegendProps {
     pub end_m: f64,
 }
 
+/// Leyenda de la escala de colores de profundidad (de mínima a máxima).
 #[function_component(DepthLegend)]
 pub fn depth_legend(props: &DepthLegendProps) -> Html {
     html! {

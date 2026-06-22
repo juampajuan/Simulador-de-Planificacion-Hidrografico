@@ -6,6 +6,7 @@ use crate::services::requests::get_all_projects;
 use crate::pages::admin::sections::projects::projects_row::ProjectRow;
 use crate::pages::admin::sections::projects::projects_create::CreateProjectModal;
 
+/// Sección de proyectos: lista los del profesor y permite crear uno nuevo.
 #[function_component(AdminProjects)]
 pub fn admin_projects() -> Html {
     let projects = use_state(Vec::<Project>::new);
@@ -72,6 +73,7 @@ pub struct ProjectsTableProps {
     pub projects_state: UseStateHandle<Vec<Project>>,
 }
 
+/// Tabla de proyectos: una fila (`ProjectRow`) por proyecto.
 #[function_component(ProjectsTable)]
 pub fn projects_table(props: &ProjectsTableProps) -> Html {
     html! {

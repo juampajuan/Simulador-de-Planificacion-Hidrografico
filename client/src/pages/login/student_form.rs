@@ -3,6 +3,8 @@ use lucide_yew::GraduationCap;
 use web_sys::HtmlInputElement;
 use crate::components::subtitle::Subtitle;
 
+/// Props del formulario de alumno: estado de carga, el estado compartido del código de
+/// acceso y las clases CSS de los inputs.
 #[derive(Properties, PartialEq)]
 pub struct StudentFormProps {
     pub loading: bool,
@@ -10,6 +12,7 @@ pub struct StudentFormProps {
     pub input_cls: &'static str,
 }
 
+/// Formulario de acceso del alumno: un único campo con su código de acceso. 
 #[function_component(StudentForm)]
 pub fn student_form(props: &StudentFormProps) -> Html {
     let on_student_input = {

@@ -10,6 +10,7 @@ pub struct FormInputProps {
     #[prop_or_default] pub step: &'static str,
 }
 
+/// Input genérico de texto o número con su label.
 #[function_component(FormInput)]
 pub fn form_input(props: &FormInputProps) -> Html {
     html! {
@@ -35,6 +36,7 @@ pub struct FormSelectProps {
     pub options: Vec<&'static str>,
 }
 
+/// Select genérico con su label y lista de opciones.
 #[function_component(FormSelect)]
 pub fn form_select(props: &FormSelectProps) -> Html {
     html! {

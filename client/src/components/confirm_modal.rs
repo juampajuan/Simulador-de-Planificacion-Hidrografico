@@ -10,6 +10,7 @@ pub struct ConfirmModalProps {
     pub on_cancel: Callback<()>,
 }
 
+/// Modal de confirmación para acciones destructivas (ej: borrar), con botones Cancelar y Borrar.
 #[function_component(ConfirmModal)]
 pub fn confirm_modal(props: &ConfirmModalProps) -> Html {
     if !props.is_open { return html! {}; }

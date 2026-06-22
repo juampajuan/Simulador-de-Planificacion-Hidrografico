@@ -8,6 +8,7 @@ pub struct InfoProps {
     pub project_state: UseStateHandle<Option<AdminProjectView>>,
 }
 
+/// Pestaña "Información": muestra los datos del proyecto asignado al alumno.
 #[function_component(InfoParams)]
 pub fn info_params(props: &InfoProps) -> Html {
     let input_cls = "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full";

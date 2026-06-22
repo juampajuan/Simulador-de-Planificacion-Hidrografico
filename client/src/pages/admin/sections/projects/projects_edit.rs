@@ -12,6 +12,7 @@ pub struct ProjectEditProps {
     pub on_save: Callback<Project>,
 }
 
+/// Formulario de edición de los parámetros de un proyecto existente.
 #[function_component(ProjectEdit)]
 pub fn project_edit(props: &ProjectEditProps) -> Html {
     let form_state = use_state(|| ProjectFormFields::from_project(&props.project_state));
