@@ -33,7 +33,7 @@ pub fn get_all_students(
     ui_loading: UseStateHandle<bool>,
 ) {
     send_native_request(
-        "http://localhost:3000/api/v1/students",
+        "/api/v1/students",
         "GET",
         None,
         Some(ui_mensaje.clone()),
@@ -59,7 +59,7 @@ pub fn create_student(
 ) {
     let payload = serde_json::to_string(&NewStudent { name, project_id }).unwrap_or_default();
     send_native_request(
-        "http://localhost:3000/api/v1/students",
+        "/api/v1/students",
         "POST",
         Some(&payload),
         Some(ui_mensaje.clone()),
@@ -80,7 +80,7 @@ pub fn update_student(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    let url = format!("http://localhost:3000/api/v1/students/{}", student_id);
+    let url = format!("/api/v1/students/{}", student_id);
     let body = serde_json::json!({ "name": updated_name, "project_id": updated_project_id }).to_string();
 
     send_native_request(
@@ -103,7 +103,7 @@ pub fn delete_student(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    let url = format!("http://localhost:3000/api/v1/students/{}", student_id);
+    let url = format!("/api/v1/students/{}", student_id);
     send_native_request(
         &url,
         "DELETE",
@@ -124,7 +124,7 @@ pub fn get_all_projects(
     ui_loading: UseStateHandle<bool>,
 ) {
     send_native_request(
-        "http://localhost:3000/api/v1/projects",
+        "/api/v1/projects",
         "GET",
         None,
         Some(ui_mensaje.clone()),
@@ -176,7 +176,7 @@ pub fn create_project(
     let msg = ui_mensaje.clone();
     let load = ui_loading.clone();
     send_native_formdata_request(
-        "http://localhost:3000/api/v1/projects",
+        "/api/v1/projects",
         form_data,
         ui_mensaje,
         ui_loading,
@@ -193,7 +193,7 @@ pub fn update_project(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    let url = format!("http://localhost:3000/api/v1/projects/{}", project_id);
+    let url = format!("/api/v1/projects/{}", project_id);
     let body = serde_json::to_string(&updated_project).unwrap_or_default();
 
     send_native_request(
@@ -220,7 +220,7 @@ pub fn delete_project(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>,
 ) {
-    let url = format!("http://localhost:3000/api/v1/projects/{}", project_id);
+    let url = format!("/api/v1/projects/{}", project_id);
     send_native_request(
         &url,
         "DELETE",
@@ -243,7 +243,7 @@ pub fn get_system_limits(
     ui_loading: UseStateHandle<bool>,
 ) {
     send_native_request(
-        "http://localhost:3000/api/v1/limits",
+        "/api/v1/limits",
         "GET",
         None,
         Some(ui_mensaje.clone()),
@@ -264,7 +264,7 @@ pub fn get_student_project(
     ui_loading: UseStateHandle<bool>,
 ) {
     send_native_request(
-        "http://localhost:3000/api/v1/student_project",
+        "/api/v1/student_project",
         "GET",
         None,
         Some(ui_mensaje.clone()),
@@ -294,7 +294,7 @@ pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits:
     ui.mensaje.set("Generando recorrido...".to_string());
     let request_body = serde_json::to_string(&CreatePathRequest { path_parameters: params }).unwrap_or_default();
 
-    send_native_blob_request("http://localhost:3000/api/v1/create_path", &request_body, ui.image_url, ui.mensaje, ui.loading);
+    send_native_blob_request("/api/v1/create_path", &request_body, ui.image_url, ui.mensaje, ui.loading);
 }
 
 pub fn run_simulation(
@@ -336,7 +336,7 @@ pub fn run_simulation(
     let attempts_handle_success = attempts_handle.clone(); 
 
     send_native_request(
-        "http://localhost:3000/api/v1/run_simulation",
+        "/api/v1/run_simulation",
         "POST",
         Some(&request_body),
         Some(ui.mensaje.clone()),
@@ -399,7 +399,7 @@ pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: Simulati
     match serde_json::to_string(&simulation_params) {
         Ok(body_json) => {
             send_native_blob_request(
-                "http://localhost:3000/api/v1/coverage_image", 
+                "/api/v1/coverage_image", 
                 &body_json, 
                 ui.image_url, 
                 ui.mensaje, 
@@ -432,7 +432,7 @@ pub fn trigger_login(
     let msg_err = ui_mensaje.clone();
     let redirection_clone = redirection.clone();
     send_native_request(
-        "http://localhost:3000/api/v1/auth/login",
+        "/api/v1/auth/login",
         "POST",
         Some(&credentials.to_string()),
         Some(ui_mensaje.clone()),
@@ -466,7 +466,7 @@ pub fn trigger_login(
 
 pub fn trigger_logout() {
     send_native_request(
-        "http://localhost:3000/api/v1/auth/close_session",
+        "/api/v1/auth/close_session",
         "POST",
         None,
         None,
