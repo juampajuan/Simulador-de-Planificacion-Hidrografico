@@ -10,6 +10,7 @@ pub struct ModalProps {
     pub max_width_class: Option<String>, 
 }
 
+/// Modal genérico reutilizable: título, botón de cerrar y contenido variable (children).
 #[function_component(Modal)]
 pub fn modal(props: &ModalProps) -> Html {
     let on_close = props.on_close.clone();

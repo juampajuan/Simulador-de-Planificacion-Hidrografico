@@ -3,6 +3,9 @@ use web_sys::window;
 use wasm_bindgen::JsCast;
 use lucide_yew::Smartphone; 
 use wasm_bindgen::closure::Closure;
+
+/// Aviso a pantalla completa que aparece si la ventana es muy angosta (< 768px),
+/// pidiendo usar una pantalla más grande. Se actualiza al redimensionar.
 #[function_component(NoResponsive)]
 pub fn no_responsive() -> Html {
     let max_width = 768;

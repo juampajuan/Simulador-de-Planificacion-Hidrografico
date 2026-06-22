@@ -12,6 +12,7 @@ pub struct CreateProjectModalProps {
     pub projects_state: UseStateHandle<Vec<Project>>,
 }
 
+/// Modal de alta de proyecto: nombre, descripción, GeoTIFF y parámetros iniciales.
 #[function_component(CreateProjectModal)]
 pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
     let name_input = use_state(String::new);

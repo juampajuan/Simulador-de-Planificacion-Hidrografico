@@ -7,6 +7,7 @@ pub struct IMGviewerProps {
     pub project_state: UseStateHandle<Option<StudentProjectResponse>>,
 }
 
+/// Visor del resultado: muestra la imagen de la simulación (con su escala) o el recorrido.
 #[function_component(IMGviewer)]
 pub fn imgviewer(props: &IMGviewerProps) -> Html {
     let mensaje = &*props.ui_state.mensaje;

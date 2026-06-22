@@ -143,6 +143,7 @@ fn lat_to_y(lat: f64) -> f64 {
         .ln()
 }
 
+/// Calcula el nivel de zoom del mapa según el tamaño real de la zona.
 pub fn calculate_zoom(
     corners: &GeoCorners,
     width_px: f64,

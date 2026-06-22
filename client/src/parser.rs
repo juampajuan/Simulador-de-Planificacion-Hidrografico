@@ -2,6 +2,7 @@ use common::{EchosounderParameters, PathParameters, GnssType, TransportParameter
 use crate::structs::state::{PathState, EchoState};
 use crate::structs::limits::ConfigLimits;
 
+/// Parsea y valida los parámetros del recorrido (separación, azimut, corrección GNSS).
 pub fn parse_path_parameters(state: &PathState, limits: &ConfigLimits) -> Result<PathParameters, String> {
     let separacion = state.separacion.parse::<f64>()
         .map_err(|_| "Error: La separación debe ser un número válido".to_string())?;
@@ -24,6 +25,8 @@ pub fn parse_path_parameters(state: &PathState, limits: &ConfigLimits) -> Result
     Ok(PathParameters { separacion, azimut, gnss_type })
 }
 
+/// Parsea y valida los parámetros de la ecosonda (profundidades, pulso, potencia,
+/// ganancia, umbral, velocidad del sonido), chequeando que estén dentro de los límites.
 pub fn parse_echosounder_parameters(state: &EchoState, limits: &ConfigLimits) -> Result<EchosounderParameters, String> {
     let max_limit = state.max_limit.parse::<f64>()
         .map_err(|_| "Error: Límite máximo inválido".to_string())?;
@@ -79,6 +82,7 @@ pub fn parse_echosounder_parameters(state: &EchoState, limits: &ConfigLimits) ->
     })
 }
 
+/// Parsea y valida los parámetros de la embarcación (velocidad y sensores activos).
 pub fn parse_transport_parameters(state: &EchoState, limits: &ConfigLimits) -> Result<TransportParameters, String> {
     let speed = state.speed.parse::<f64>()
         .map_err(|_| "Error: La velocidad de la embarcación debe ser un número válido".to_string())?;

@@ -12,6 +12,8 @@ use login_welcome::LoginWelcome;
 use student_form::StudentForm;
 use teacher_form::TeacherForm;
 
+/// En qué modo está el formulario según lo que el usuario empezó a tipear:
+/// ninguno (muestra ambos lados), alumno o docente.
 #[derive(Clone, PartialEq)]
 enum LoginMode {
     None,
@@ -19,6 +21,9 @@ enum LoginMode {
     Teacher,
 }
 
+/// Pantalla de login. Muestra los formularios de alumno y docente lado a lado y, en cuanto
+/// el usuario empieza a escribir en uno, colapsa el otro con una animación. Maneja el estado
+/// de los campos, el mensaje de feedback (éxito en cyan, error en rojo) y dispara el login.
 #[function_component(LoginPage)]
 pub fn login_page() -> Html {
     let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white w-full disabled:dark:text-white/50 disabled:dark:bg-zinc-600";
@@ -44,6 +49,7 @@ pub fn login_page() -> Html {
         });
     }
 
+    // Decide qué formulario mostrar según cuál campo tiene contenido.
     let mode = if !student_code.is_empty() {
         LoginMode::Student
     } else if !teacher_user.is_empty() || !teacher_password.is_empty() {
@@ -63,6 +69,7 @@ pub fn login_page() -> Html {
         _ => "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-100 scale-100 max-w-md flex-1",
     };
 
+    // Al enviar el form, dispara el login con los datos del modo correspondiente.
     let on_submit = {
         let student_code = student_code.clone();
         let teacher_user = teacher_user.clone();
@@ -82,6 +89,7 @@ pub fn login_page() -> Html {
         })
     };
 
+    // Color del cartel de feedback: cyan si el mensaje es de éxito/progreso, rojo si es error.
     let alert_cls = if !(*login_mensaje).is_empty() {
         let msg = (*login_mensaje).to_lowercase();
         if msg.contains("exitoso") || msg.contains("autenticando") || msg.contains("redirigiendo") {
@@ -169,6 +177,8 @@ pub fn login_page() -> Html {
     }
 }
 
+/// Rota el índice (0, 1, 2) de la imagen de fondo del login y lo persiste en localStorage,
+/// para mostrar una imagen distinta en cada carga de la página.
 fn next_counter() -> u8 {
     let storage = window().unwrap().local_storage().unwrap().unwrap();
     let current = storage.get_item("page_counter").unwrap().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);

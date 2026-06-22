@@ -58,6 +58,7 @@ pub fn root(props: &RootProps) -> Html {
     }
 }
 
+/// Muestra el nombre del usuario logueado y un botón de logout. Se oculta en login o sin sesión.
 #[function_component(UserButton)]
 pub fn user_button() -> Html {
     let location = use_location();

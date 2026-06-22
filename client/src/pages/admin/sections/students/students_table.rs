@@ -11,6 +11,7 @@ pub struct TablaUsuariosProps {
     pub students_state: UseStateHandle<Vec<Student>>,
 }
 
+/// Tabla de alumnos/grupos: arma el encabezado y renderiza una fila (`StudentRow`) por alumno.
 #[function_component(TablaUsuarios)]
 pub fn tabla_usuarios(props: &TablaUsuariosProps) -> Html {
     html! {
