@@ -18,7 +18,6 @@ use crate::utils::helpers::create_dirs;
 /// Punto de entrada del servidor. Carga la configuración, prepara los recursos compartidos
 /// (base de datos y cache detrás de `Arc<Mutex>`), levanta el servidor HTTP y atiende cada
 /// request entrante en su propio hilo, además de un hilo para el CLI.
-
 fn main() {
 
     // Intentamos cargar la config y transformamos en un recurso compartido.
