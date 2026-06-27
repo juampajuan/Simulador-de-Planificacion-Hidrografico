@@ -12,6 +12,7 @@ use structs::filecache::{FileCache};
 mod db;
 use db::engine::DBEngine;
 use db::queries::professor;
+mod logging;
 
 use crate::utils::helpers::create_dirs;
 
