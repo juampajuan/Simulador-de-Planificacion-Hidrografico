@@ -121,9 +121,16 @@ pub fn admin_students() -> Html {
         let proyectos_dropdown = (*projects_state).clone();
 
         html! {
-            <Modal title="Agregar Nuevo Alumno o Grupo" on_close={Callback::from(move |_| on_close.emit(()))}>
+            <Modal title="Agrega el nuevo alumno o grupo" subtitle="" on_close={Callback::from(move |_| on_close.emit(()))}>
                 <form onsubmit={on_submit_add}>
                     <div class="space-y-4">
+
+                        if !form_error.is_empty() {
+                            <div class="p-2 bg-red-500/15 border border-red-500/20 rounded-lg text-red-400 text-xs font-semibold flex items-center gap-1.5">
+                                <span>{ &*form_error }</span>
+                            </div>
+                        }
+
                         <div>
                             <label class="block text-xs font-semibold text-white/70 mb-1">{"Nombre del Alumno / Grupo"}</label>
                             <input 
@@ -134,7 +141,7 @@ pub fn admin_students() -> Html {
                                     let input: web_sys::HtmlInputElement = e.target_unchecked_into();
                                     input_name_setter.set(input.value());
                                 })}
-                                placeholder="Ej: Grupo 4" 
+                                placeholder="Grupo 4" 
                                 class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white"
                             />
                         </div>
@@ -167,14 +174,8 @@ pub fn admin_students() -> Html {
                         </div>
                     </div>
 
-                    if !form_error.is_empty() {
-                        <div class="mt-4 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-semibold flex items-center gap-1.5">
-                            <span>{ &*form_error }</span>
-                        </div>
-                    }
-
                     <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" onclick={move |_| on_close_add_modal.emit(())} class="px-4 py-2 text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors">
+                        <button type="button" onclick={move |_| on_close_add_modal.emit(())} class="px-4 py-2 text-sm font-medium border border-white/10 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors">
                             {"Cancelar"}
                         </button>
                         <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-200 text-black/90 hover:bg-cyan-300 cursor-pointer transition-colors">
@@ -198,10 +199,12 @@ pub fn admin_students() -> Html {
                         <p class="text-cyan-300 text-xs font-mono">{ &*ui_mensaje }</p>
                     }
                 </div>
-                <button onclick={on_open_add_modal} class="flex items-center px-4 py-2 gap-2 bg-cyan-200 text-black/90 rounded-full cursor-pointer hover:bg-cyan-300 transition-colors">
-                    <Plus size={18}/>
-                    <p class="text-sm font-semibold pt-0.5">{"Agregar"}</p>
-                </button>
+                <div>
+                    <button onclick={on_open_add_modal} class="flex items-center px-3 py-3 gap-2 bg-cyan-200 text-black/90 rounded-full cursor-pointer hover:bg-cyan-300 transition-colors">
+                        <Plus size={18}/>
+                        <p class="text-xs font-semibold pt-0.5">{"Agregar"}</p>
+                    </button>
+                </div>
             </div>
     
             <div class="h-full overflow-y-auto pb-16 mt-2">

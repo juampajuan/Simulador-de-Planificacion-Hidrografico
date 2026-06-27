@@ -97,38 +97,45 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
         })
     };
 
-    let file_name_preview = selected_file.as_ref().map(|f| f.name()).unwrap_or_default();
+    // let file_name_preview = selected_file.as_ref().map(|f| f.name()).unwrap_or_default();
     let is_open_close = props.is_open.clone();
     let is_open_cancel = props.is_open.clone();
 
     html! {
         <Modal 
             title="Crear Nuevo Proyecto" 
+            subtitle="Ingresá los detalles e inicializá el archivo geográfico del entorno."
             on_close={Callback::from(move |_| is_open_close.set(false))}
             max_width_class={Some("max-w-2xl".to_string())}
         >
-            <p class="text-xs text-white/60 -mt-3 mb-4">{"Ingresá los detalles e inicializá el archivo geográfico del entorno."}</p>
 
             <form onsubmit={on_submit} class="space-y-4">
+
+                if !error_msg.is_empty() { 
+                    <div class="p-2 bg-red-500/15 border border-red-500/20 rounded-lg text-red-400 text-xs font-semibold flex items-center gap-1.5">
+                        <span>{ &*error_msg }</span>
+                    </div>
+                }
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput label="Nombre del Proyecto" value={(*name_input).clone()}
                         oninput={Callback::from(move |e: InputEvent| name_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))} />
                     
                     <div class="flex flex-col space-y-1">
-                        <label class="text-xs font-semibold text-white/80">{"Seleccionar Archivo GeoTIFF"}</label>
+                        <label class="text-xs font-semibold text-white/80">{"Archivo GeoTIFF"}</label>
                         <input type="file" accept=".tif,.tiff" class="bg-slate-950 text-sm p-2 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-200 file:text-black file:cursor-pointer" 
                             onchange={Callback::from(move |e: Event| {
                                 if let Some(files) = e.target_unchecked_into::<web_sys::HtmlInputElement>().files() 
                                     && let Some(f) = files.get(0) { selected_file.set(Some(f)); }
                             })} />
-                        if !file_name_preview.is_empty() { 
-                            <p class="text-[10px] text-cyan-300 truncate mt-0.5">{"Seleccionado: "}{file_name_preview}</p> 
-                        }
+                        // if !file_name_preview.is_empty() { 
+                        //     <p class="text-[10px] text-cyan-300 truncate mt-0.5">{"Seleccionado: "}{file_name_preview}</p> 
+                        // }
                     </div>
                 </div>
 
                 <div class="flex flex-col space-y-1">
-                    <label class="text-xs font-semibold text-white/80">{"Descripción"}</label>
+                    <label class="text-xs font-semibold text-white/80">{"Descripción (Opcional)"}</label>
                     <textarea value={(*description_input).clone()} rows="2" class="bg-slate-950 text-sm p-2.5 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none resize-none"
                         oninput={Callback::from(move |e: InputEvent| description_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))} />
                 </div>
@@ -138,15 +145,9 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
 
                 <ProjectParamsForm form_state={form_fields_state} />
 
-                if !error_msg.is_empty() { 
-                    <div class="mt-4 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-semibold flex items-center gap-1.5">
-                        <span>{ &*error_msg }</span>
-                    </div>
-                }
-
-                <div class="flex justify-end gap-3 pt-4 border-t border-white/5">
-                    <button type="button" onclick={move |_| is_open_cancel.set(false)} class="px-4 py-2 text-sm font-medium bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">{"Cancelar"}</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-semibold bg-cyan-200 text-black/90 rounded-xl hover:bg-cyan-300 transition-colors cursor-pointer">{"Crear Proyecto"}</button>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick={move |_| is_open_cancel.set(false)} class="px-4 py-2 text-sm font-medium bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">{"Cancelar"}</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold bg-cyan-200 text-black/90 rounded-lg hover:bg-cyan-300 transition-colors cursor-pointer">{"Crear Proyecto"}</button>
                 </div>
             </form>
         </Modal>

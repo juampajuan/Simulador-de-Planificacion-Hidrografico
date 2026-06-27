@@ -46,7 +46,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                                     class="h-full object-contain rounded-lg"
                                 />
 
-                                <div class="absolute right-0 h-full top-1/2 -translate-y-1/2 flex flex-col items-center z-50">
+                                <div class="absolute right-0 h-full top-1/2 -translate-y-1/2 flex flex-col items-center z-10">
                                     <DepthLegend
                                         start_m={min_depth}
                                         end_m={max_depth}

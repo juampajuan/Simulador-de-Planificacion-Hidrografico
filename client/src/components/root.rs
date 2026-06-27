@@ -4,7 +4,7 @@ use crate::services::requests::trigger_logout;
 
 use super::title::Title;
 use super::darkmode_btn::DarkModeButton;
-use lucide_yew::{LogOut, Waves};
+use lucide_yew::{LogOut};
 use yew_router::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -39,7 +39,7 @@ pub fn root(props: &RootProps) -> Html {
                     <div>
                         <Title text={&props.title} 
                             icon={html! {
-                                <Waves size={24} />
+                                <img width="36px" src="/static/icon.png"/>
                             }}
                         />
                     </div>
@@ -79,7 +79,7 @@ pub fn user_button() -> Html {
                 <p class="text-sm">{token}</p>
                 <button 
                     onclick={on_logout_click}
-                    class="hover:text-white rounded-full p-2 hover:bg-red-400 cursor-pointer transition-colors"
+                    class="hover:text-white rounded-full p-2 hover:bg-red-700 cursor-pointer transition-colors"
                 >
                     <LogOut size={18}/>
                 </button>
