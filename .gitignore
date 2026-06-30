@@ -30,3 +30,6 @@ mapa_reconstruido.txt
 *sqlite
 
 uploads/
+
+*.log
+*.txt
