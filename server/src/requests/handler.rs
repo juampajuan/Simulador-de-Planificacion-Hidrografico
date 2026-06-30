@@ -1,5 +1,7 @@
 use tiny_http::{Server, Request, Method};
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
+use crate::logging::structs::ThreadMessage;
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
 use crate::requests::endpoints::{auth, generic, limits, projects, simulation, students, webpage};
@@ -17,7 +19,10 @@ const API_V1: &str = "/api/v1";
 /// al endpoint que corresponda; las requests OPTIONS se responden con 200 (preflight de CORS)
 /// y cualquier ruta desconocida cae en un 404. Las URLs que no son de la API se sirven como
 /// archivos de la página web. Finalmente delega el envío y el logging en `response_sender`.
-pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> RequestLog {
+pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> RequestLog {
+
+    // TODO: Pasar el tx, ese a donde corresponda para enviar al logger
+    // Y usar el metodo send_message_to_logger
 
     let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
 

@@ -18,7 +18,7 @@ impl LogType {
         }
     }
 
-    pub fn toString(&self) -> &str {
+    pub fn to_string(&self) -> &str {
         match self {
             LogType::Debug => "DEBUG",
             LogType::Info  => "INFO",

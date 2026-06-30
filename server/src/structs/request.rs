@@ -1,5 +1,9 @@
+use std::sync::mpsc::Sender;
+
 use tiny_http::ResponseBox;
-use crate::db::queries::student::Student;
+use crate::logging::logger::send_message_to_logger;
+use crate::logging::structs::LogType;
+use crate::{db::queries::student::Student, logging::structs::ThreadMessage};
 use crate::db::queries::proyects::AdminProjectView;
 use common::{StudentMeasuringParameters, PathParameters};
  
@@ -41,6 +45,30 @@ impl RequestLog {
             error_str,
             RESET
         );
+    }
+
+    pub fn send_to_logger(&self, tx: Sender<ThreadMessage>) {
+        let log_type = match self.status_code {
+            200..=299 => LogType::Info,
+            300..=499 => LogType::Warn,
+            500..=599 => LogType::Error,
+            _ => LogType::Info,
+        };
+ 
+        let error_str = match &self.error {
+            Some(err) => format!(" - {}", err),
+            None => String::new(),
+        };
+ 
+        let msg = format!(
+            "{} {} -> {}{}",
+            self.method,
+            self.path,
+            self.status_code,
+            error_str,
+        );
+
+        send_message_to_logger(tx, msg, log_type);
     }
 }
 
