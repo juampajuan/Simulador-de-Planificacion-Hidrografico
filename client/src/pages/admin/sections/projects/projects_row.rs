@@ -141,7 +141,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
             <ConfirmModal 
                 is_open={*is_delete_modal_open}
                 title="¿Estás completamente seguro?"
-                message={format!("Esta acción eliminará permanentemente el proyecto '{}' junto a todas sus asignaciones.", props.project.name)}
+                message={format!("Esta acción eliminará permanentemente el proyecto '{}' \n junto a todas sus asignaciones.", props.project.name)}
                 on_confirm={on_confirm_delete}
                 on_cancel={on_cancel_delete}
             />

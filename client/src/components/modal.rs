@@ -45,7 +45,7 @@ pub fn modal(props: &ModalProps) -> Html {
 
                 </div>
 
-                <div class="pb-5">
+                <div class="mb-5">
                     <p class="text-xs text-white/70">{&props.subtitle}</p>
                 </div>
 
