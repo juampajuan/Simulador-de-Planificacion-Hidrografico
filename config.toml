@@ -32,3 +32,12 @@ ECHO_UMBRAL_MAX = 90.0
 SOUND_SPEED_MIN = 1450.0
 SOUND_SPEED_MAX = 1500.0
     # Se debe reiniciar el servidor, para que se apliquen.
+
+# Nombre en donde se almacenaran los LOGS.
+LOG_FILE_NAME = "logs.txt"
+# Criterio para determinar que se deben loggear en el archivo
+LOGGING_TYPE = 2
+    # Debug = 0,
+    # Info  = 1,
+    # Warn  = 2,
+    # Error = 3,

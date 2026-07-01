@@ -40,22 +40,24 @@ pub fn admin_projects() -> Html {
                     }}
                 />
                 <p class="text-white/70 text-xs">{"Aca podes administrar los proyectos que luego se podran asignar a los alumnos o grupos."}</p> 
-                if *ui_loading {
-                    <p class="text-cyan-300 text-xs animate-pulse">{"Cargando proyectos..."}</p>
-                } else if !ui_mensaje.is_empty() {
-                    <p class="text-red-400 text-xs">{ &*ui_mensaje }</p>
-                }
             </div>
-            <button 
-                onclick={on_click_add}
-                class="flex items-center px-4 py-2 gap-2 bg-cyan-200 text-black/90 rounded-full hover:bg-cyan-300 transition-colors cursor-pointer"
-            >
-                <Plus size={18}/>
-                <p class="text-sm font-semibold pt-0.5">{"Agregar"}</p>
-            </button>
+            <div>
+                <button 
+                    onclick={on_click_add}
+                    class="flex items-center px-3 py-3 gap-2 bg-cyan-200 text-black/90 rounded-full hover:bg-cyan-300 transition-colors cursor-pointer"
+                >
+                    <Plus size={18}/>
+                    <p class="text-xs font-semibold pt-0.5">{"Agregar"}</p>
+                </button>
+            </div>
         </div>
  
         <div class="h-full overflow-y-auto pb-16 mt-4">
+            if *ui_loading {
+                <p class="text-cyan-300 text-xs animate-pulse">{"Cargando proyectos..."}</p>
+            } else if !ui_mensaje.is_empty() {
+                <p class="text-red-400 text-xs">{ &*ui_mensaje }</p>
+            }
             <ProjectsTable projects_state={projects.clone()}/>
         </div>
 

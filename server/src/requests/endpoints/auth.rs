@@ -240,7 +240,7 @@ fn create_auth_cookie(
 ) -> Result<Header, ()> {
 
     let cookie = format!(
-        "auth_token={}; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax; Domain=localhost",
+        "auth_token={}; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax",
         token
     );
 

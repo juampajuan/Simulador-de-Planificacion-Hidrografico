@@ -1,19 +1,18 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread::JoinHandle;
 
 mod utils;
-use utils::config_loader::{load_settings};
+use utils::{config_loader::load_settings, helpers::create_dirs};
 mod requests;
 use requests::handler::{create_server};
 mod threads;
-use threads::creators::{create_request_thread, create_cli_thread};
+use threads::creators::{create_request_thread, create_cli_thread, create_logger_thread};
 mod structs;
 use structs::filecache::{FileCache};
 mod db;
-use db::engine::DBEngine;
-use db::queries::professor;
-
-use crate::utils::helpers::create_dirs;
+use db::{engine::DBEngine, queries::professor};
+mod logging;
+use crate::logging::structs::ThreadMessage;
 
 /// Punto de entrada del servidor. Carga la configuración, prepara los recursos compartidos
 /// (base de datos y cache detrás de `Arc<Mutex>`), levanta el servidor HTTP y atiende cada
@@ -34,6 +33,12 @@ fn main() {
         eprintln!("Error creando directorios");
         return;
     }
+
+    let mut threads: Vec<JoinHandle<()>> = Vec::new();
+
+    // Genero el thread que se encarga de loggear.
+    let (tx, rx) = mpsc::channel::<ThreadMessage>();
+    threads.push(create_logger_thread(rx,  Arc::clone(&settings)));
 
     // Levantamos la DB y aplicamos el schema
     // Ademas, si corresponde, actualizamos la pass del Admin
@@ -67,7 +72,6 @@ fn main() {
 
     println!("Server iniciado en puerto: {}", settings.port);
 
-    let mut threads: Vec<JoinHandle<()>> = Vec::new();
     // Generamos el thread para el CLI
     threads.push(create_cli_thread(settings.port));
 
@@ -78,7 +82,8 @@ fn main() {
         let settings_clone = Arc::clone(&settings);
         let cache_clone = Arc::clone(&cache);
         let db_clone = Arc::clone(&db_mutex);
-        threads.push(create_request_thread(request, cache_clone, settings_clone, db_clone));
+        let tx_clone = tx.clone();
+        threads.push(create_request_thread(request, cache_clone, settings_clone, db_clone, tx_clone));
     }
 
     // Esperamos a que hagan JOIN todos los hilos en ejecuion.

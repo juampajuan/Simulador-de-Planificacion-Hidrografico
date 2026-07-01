@@ -18,6 +18,8 @@ pub struct Settings {
     pub cache_amount: usize,
     pub db_name: String,
     pub upload_path: String,
+    pub log_file_name: String,
+    pub logging_type: i32,
     #[serde(skip)]  
     pub admin_pass: String,
     pub maptiler_api_key: String,
@@ -63,6 +65,8 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             echo_umbral_max: get_float(&config, "ECHO_UMBRAL_MAX")?,
             sound_speed_min: get_float(&config, "SOUND_SPEED_MIN")?,
             sound_speed_max: get_float(&config, "SOUND_SPEED_MAX")?,
+            log_file_name: get_string(&config, "LOG_FILE_NAME")?,
+            logging_type: get_int(&config, "LOGGING_TYPE")?,
             upload_path: get_string(&config, "FILE_UPLOAD_PATH").unwrap_or("./uploads".to_string()),
         })
     }
