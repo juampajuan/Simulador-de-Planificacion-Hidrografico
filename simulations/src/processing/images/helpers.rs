@@ -1,6 +1,8 @@
-use image::Rgb;
+use image::{Rgb,Rgba};
 
 use crate::structs::depth_matrix::DepthMatrix;
+
+pub const ZONE_FILL_COLOR: Rgba<u8> = Rgba([71, 85, 105, 45]);
 
 // Esta escala esta basada en la imagen de demostración que mandó Fernando.
 // t=0.0 → rojo        (menos profundo)
@@ -61,5 +63,19 @@ pub fn is_valid(val: f64, matrix: &DepthMatrix) -> bool {
     match matrix.no_data {
         Some(nd) => val != nd,
         None => val.is_finite(),
+    }
+}
+
+pub fn fill_zone_translucent(
+    img: &mut image::RgbaImage,
+    matrix: &DepthMatrix,
+    color: Rgba<u8>,
+) {
+    for (y, row) in matrix.data.iter().enumerate() {
+        for (x, &val) in row.iter().enumerate() {
+            if is_valid(val, matrix) {
+                img.put_pixel(x as u32, y as u32, color);
+            }
+        }
     }
 }
