@@ -24,13 +24,13 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
     };
 
     // reutilizamos la depthmatrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.cache_key, &ctx.file_path) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
-    let path = match lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -64,13 +64,13 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     };
 
     // reutilizamos la depth matrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.cache_key, &ctx.file_path) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
-    let path = match lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -128,12 +128,12 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
         None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
     };
  
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.cache_key, &ctx.file_path) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
  
-    let path = match lock_get_or_create_path(&cache, &ctx.cache_key, &matrix, &ctx.data.path_parameters) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -184,10 +184,8 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
         Err(err) => return Err(generic::server_error(format!("Bad Request: {}", err))),
     };
 
-    let cache_key = format!("{}-{}", student_id, project_id);
 
-    Ok(RequestContext { 
-        cache_key, 
+    Ok(RequestContext {
         file_path, 
         data, 
         student_id, 
@@ -199,13 +197,14 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
 /// Genera la matrix a partir del archivo
 /// Primero intenta obtenerla desde la cache, si no la encuentra, ejecuta el metodo para crearla.
 /// Una vez creada, si no existia, la agrega al cache, para futuros usos.
-fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, cache_key: &str, file_path: &str) -> Result<DepthMatrix, String> {
+fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str) -> Result<DepthMatrix, String> {
     let mut lock = match cache.lock() {
         Ok(l) => l,
         Err(_) => return Err("Error interno: no se pudo acceder al cache (500)".to_string()),
     };
 
-    if let Some(m) = lock.get_map(cache_key, file_path) {
+    // La nueva estructura busca mapas globalmente usando el file_path
+    if let Some(m) = lock.get_map(file_path) {
         println!("Re-utilizando depth matrix del cache...");
         return Ok(m.clone());
     }
@@ -221,14 +220,19 @@ fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, cache_key: &str, fil
         Err(_) => return Err("Error interno: no se pudo acceder al cache (500)".to_string()),
     };
 
-    relock.update_map(cache_key.to_string(), file_path.to_string(), m.clone());
+    // Verificación de doble check ante concurrencia
+    if let Some(existing_map) = relock.get_map(file_path) {
+        return Ok(existing_map.clone());
+    }
+
+    relock.update_map(file_path.to_string(), m.clone());
     Ok(m)
 }
 
 /// Genera el recorrido a partir de una matrix profesada
 /// Primero intenta obtenerlo desde la cache, si no lo encuentra, ejecuta el metodo para crearlo.
 /// Una vez creado, lo agrega al cache, para futuros usos.
-fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: &str, matrix: &DepthMatrix, path_params: &PathParameters) -> Result<Vec<(usize, usize)>, String> {
+fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: i64, matrix: &DepthMatrix, path_params: &PathParameters) -> Result<Vec<(usize, usize)>, String> {
     let mut lock = match cache.lock() {
         Ok(l) => l,
         Err(_) => return Err("Error interno: no se pudo acceder al cache".to_string()),
@@ -252,7 +256,7 @@ fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: &str, matri
             Ok(l) => l,
             Err(_) => return Err("Error interno: no se pudo acceder al cache (mutex corrupto)".to_string()),
         };
-        lock.update_path(cache_key.to_string(), p.clone(), path_params.clone());
+        lock.update_path(cache_key, p.clone(), path_params.clone());
         Ok(p)
     }
 }
