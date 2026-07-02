@@ -142,7 +142,7 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
  
-    let image = simulations::create_path_with_shadows(&matrix, &path, echo_parameters);
+    let image = simulations::create_path_with_coverage(&matrix, &path, echo_parameters);
     let response = create_png_response(image);
  
     println!("Imagen de cobertura generada.");

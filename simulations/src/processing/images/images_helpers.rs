@@ -1,8 +1,11 @@
+/*Archivo para funciones que se comparten unicamente en el modulo de images */
 use image::{Rgb,Rgba};
 
 use crate::structs::depth_matrix::DepthMatrix;
+use crate::processing::processing_helpers::is_valid;
 
 pub const ZONE_FILL_COLOR: Rgba<u8> = Rgba([71, 85, 105, 45]);
+pub const COVERAGE_OVERLAY_COLOR: Rgba<u8> = Rgba([14, 116, 144, 180]);
 
 // Esta escala esta basada en la imagen de demostración que mandó Fernando.
 // t=0.0 → rojo        (menos profundo)
@@ -59,13 +62,6 @@ pub fn depth_range(matrix: &DepthMatrix) -> (f64, f64) {
     (min, max)
 }
 
-pub fn is_valid(val: f64, matrix: &DepthMatrix) -> bool {
-    match matrix.no_data {
-        Some(nd) => val != nd,
-        None => val.is_finite(),
-    }
-}
-
 pub fn fill_zone_translucent(
     img: &mut image::RgbaImage,
     matrix: &DepthMatrix,
@@ -76,6 +72,19 @@ pub fn fill_zone_translucent(
             if is_valid(val, matrix) {
                 img.put_pixel(x as u32, y as u32, color);
             }
+        }
+    }
+}
+
+pub fn draw_covered_points(
+    img: &mut image::RgbaImage,
+    covered_points: &[((usize, usize), f64)],
+    color: Rgba<u8>,
+) {
+    let (width, height) = img.dimensions();
+    for &((x, y), _) in covered_points {
+        if (x as u32) < width && (y as u32) < height {
+            img.put_pixel(x as u32, y as u32, color);
         }
     }
 }

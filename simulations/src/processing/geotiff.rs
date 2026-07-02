@@ -1,6 +1,7 @@
 use gdal::{Dataset, raster::Buffer, spatial_ref::{AxisMappingStrategy, CoordTransform, SpatialRef}};
 
 use crate::structs::depth_matrix::DepthMatrix;
+use crate::processing::processing_helpers::is_valid;
 
 type LoadGeotiffResult = Result<(Buffer<f64>, usize, usize, Option<f64>, f64, f64, [f64; 6], String), gdal::errors::GdalError>;
 pub type GeotiffCoordinates = Result<((f64, f64), (f64, f64), (f64, f64), (f64, f64), (f64, f64)), gdal::errors::GdalError>;
@@ -148,13 +149,6 @@ pub fn get_matrix_avg_depth(matrix: &DepthMatrix) -> Option<f64> {
         None
     } else {
         Some(sum / count as f64)
-    }
-}
-
-fn is_valid(val: f64, matrix: &DepthMatrix) -> bool {
-    match matrix.no_data {
-        Some(nd) => val != nd,
-        None => val.is_finite(),
     }
 }
 

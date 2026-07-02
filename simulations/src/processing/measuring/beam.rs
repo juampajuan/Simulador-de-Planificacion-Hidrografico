@@ -174,7 +174,7 @@ pub fn get_points_on_line(
     points
 }
 
-///Verifica que un punto tomado para medicion sea validp: Valor real, posiucion real.
+///Verifica que un punto tomado para medicion sea valido: Valor real, posicion real.
 fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
     let x = point.0;
     let y = point.1;

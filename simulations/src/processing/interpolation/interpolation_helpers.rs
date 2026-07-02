@@ -1,3 +1,5 @@
+/*Archivo para funciones que se comparten unicamente en el modulo de interpolacion */
+
 use crate::structs::depth_matrix::DepthMatrix;
 /// Crea una nueva matriz con 0 en las celdas y le inserta las profundidades medidas
 /// No agrega aquellos puntos que quedaron en None

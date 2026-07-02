@@ -1,6 +1,7 @@
 use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
-use super::helpers::{depth_color, depth_range, is_valid, fill_zone_translucent, ZONE_FILL_COLOR};
+use crate::processing::processing_helpers::is_valid;
+use super::images_helpers::{depth_color, depth_range, fill_zone_translucent, draw_covered_points, ZONE_FILL_COLOR, COVERAGE_OVERLAY_COLOR};
 
 #[allow(dead_code)]
 pub fn makepng_with_matrix_and_path(
@@ -80,16 +81,12 @@ pub fn make_shaded_png(
 ) -> RgbaImage {
     
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
-
+ 
     fill_zone_translucent(&mut img, matrix, ZONE_FILL_COLOR);
-
+ 
     // Puntos cubiertos en azul oscuro
-    for &((x, y), _) in covered_points {
-        if y < matrix.height && x < matrix.width {
-            img.put_pixel(x as u32, y as u32, Rgba([14, 116, 144, 180]));
-        }
-    }
-
+    draw_covered_points(&mut img, covered_points, COVERAGE_OVERLAY_COLOR);
+ 
     // Recorrido blanco semitransparente encima
     let hw = matrix.width.max(matrix.height) / 1500;
     for &(x, y) in path {
@@ -105,6 +102,6 @@ pub fn make_shaded_png(
             }
         }
     }
-
+ 
     img
 }
