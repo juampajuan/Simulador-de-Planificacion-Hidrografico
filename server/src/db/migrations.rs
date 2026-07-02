@@ -59,7 +59,7 @@ pub fn init(
                 ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS student_results (
+        CREATE TABLE IF NOT EXISTS student_simulations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             selected BOOLEAN NOT NULL DEFAULT FALSE,
             result_max_depth REAL NOT NULL,
@@ -67,15 +67,15 @@ pub fn init(
             
             separation REAL NOT NULL,
             azimuth REAL NOT NULL,
-            gnss TEXT NOT NULL,
+            gnss INTERGER NOT NULL,
             
-            transport TEXT NOT NULL,
+            transport INTERGER NOT NULL,
             transport_speed REAL NOT NULL,
             uses_mareograph BOOLEAN NOT NULL,
             uses_sound_profiler BOOLEAN NOT NULL,
             uses_inertial_sensor BOOLEAN NOT NULL,
             
-            echosounder_mode TEXT NOT NULL,
+            echosounder_mode INTERGER NOT NULL,
             uses_high_frequency BOOLEAN NOT NULL,
             
             min_depth REAL NOT NULL,

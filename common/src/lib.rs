@@ -7,27 +7,72 @@ use serde::{Deserialize, Serialize};
 
 /// Tipo de corrección GNSS aplicada al posicionamiento del recorrido:
 /// sin corrección, DGPS (submétrica) o por fase (la más precisa).
+#[repr(i64)]
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum GnssType {
-    NoCorrection,
-    DGPSCorrection,
-    PhaseCorrection
+    NoCorrection = 0,
+    DGPSCorrection = 1,
+    PhaseCorrection = 2,
+}
+
+// Metodo para obtenerlo del INTEGER de la DB.
+impl TryFrom<i64> for GnssType {
+    type Error = ();
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(GnssType::NoCorrection),
+            1 => Ok(GnssType::DGPSCorrection),
+            2 => Ok(GnssType::PhaseCorrection),
+            _ => Err(()),
+        }
+    }
 }
 
 /// Tipo de embarcación. Influye en cuánto se sacude con las olas:
 /// un barco (Ship) se mueve menos que un bote (Boat) o una lancha (Launch)
+#[repr(i64)]
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Transport {
-    Ship,
-    Boat,
-    Launch
+    Ship = 0,
+    Boat = 1,
+    Launch = 2,
 }
 
+// Metodo para obtenerlo del INTEGER de la DB.
+impl TryFrom<i64> for Transport {
+    type Error = ();
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Transport::Ship),
+            1 => Ok(Transport::Boat),
+            2 => Ok(Transport::Launch),
+            _ => Err(()),
+        }
+    }
+}
+
+
 /// Modo de la ecosonda: monohaz mide un punto por pulso, multihaz mide una franja.
+#[repr(i64)]
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum EcosondaMode {
-    Monohaz,       
-    Multihaz,       
+    Monohaz = 0,
+    Multihaz = 1,      
+}
+
+// Metodo para obtenerlo del INTEGER de la DB.
+impl TryFrom<i64> for EcosondaMode {
+    type Error = ();
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EcosondaMode::Monohaz),
+            1 => Ok(EcosondaMode::Multihaz), 
+            _ => Err(()),
+        }
+    }
 }
 
 /// Parámetros del recorrido del barco: separación entre líneas, azimut (orientación)
