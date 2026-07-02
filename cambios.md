@@ -54,6 +54,17 @@
 	El del reqquests, genero en requests/ un structs.rs y asi.
 - [] Se chequean los intentos en back? o solo front?
 
+## Important
+No lo discutimos, pero no lo veo complicado, asi que lo haria.
+- [] Yo haria que se guarde la foto de la simulacion, junto al intento si es Examen.
+	Luego, con el nombre, la expongo en un endpoint "url/images/<nombre>". Y asi se peuden mostrar.
+
+	Y agrego un metodo para borrar las NO usadas en el CLI. O veo de generar una tarea periodica (cada unos dias.)
+
+	1. Porque, porque seguro es facil gaurdarla, si ya la generan, Usen un nombre random o fecha actual + 5 letras random.
+	2. Se guarda en el student_simulations, como un parametro texto.
+	3. Es mucho mas facil para el profe y los alumnos verlas para elegir.
+
 ## Consultar a fer o expliquen
 1. Que no ocurre en el modo examen? Solamente no deben/pueden entregar?
 2. En NO examen: Es cuendo se muestra la comparacion? o es en ambos?
