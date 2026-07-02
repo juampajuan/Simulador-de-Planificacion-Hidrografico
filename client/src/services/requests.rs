@@ -4,7 +4,7 @@ use crate::structs::state::{PathState, EchoState, FullSimulationRequest, Simulat
 use crate::structs::limits::ConfigLimits;
 use crate::structs::student::{Student, NewStudent};
 use crate::structs::project::{AdminProjectView, NewProject, Project};
-use common::{StudentMeasuringParameters, SimulationBase64Response};
+use common::{StudentMeasuringParameters, SimulationBase64Response, PathParameters, TransportParameters, EchosounderParameters};
 use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
 use crate::services::api_utils::{process_local_login, process_local_logout};
 use crate::pages::student::components::measure_params::AttemptsState;
@@ -25,6 +25,76 @@ pub struct GeoCorners {
     pub inf_izq: (f64, f64),
     pub inf_der: (f64, f64),
     pub centro: (f64, f64),
+}
+
+#[derive(serde::Deserialize, Clone, PartialEq, Debug)]
+pub struct StudentSimulation {
+    pub id: i64,
+    pub selected: bool,
+    pub result_min_depth: f64,
+    pub result_max_depth: f64,
+    pub student_id: i64,
+    pub project_id: i64,
+    pub path_parameters: PathParameters,
+    pub transport_parameters: TransportParameters,
+    pub echosounder_parameters: EchosounderParameters,
+}
+
+/// Obtiene el historial de simulaciones/intentos.
+/// Si `target_student_id` es `Some(id)`, se concatena como query string (usado por docentes).
+/// Si es `None`, se pide la ruta limpia (usado por el alumno autenticado).
+pub fn get_student_simulations_history(
+    target_student_id: Option<i64>,
+    history_handle: UseStateHandle<Vec<StudentSimulation>>,
+    ui_mensaje: UseStateHandle<String>,
+    ui_loading: UseStateHandle<bool>,
+) {
+    let url = match target_student_id {
+        Some(id) => format!("/api/v1/exams/my_simulations?student_id={}", id),
+        None => "/api/v1/exams/my_simulations".to_string(),
+    };
+
+    ui_mensaje.set("Cargando historial de intentos...".to_string());
+
+    let msg_for_error = ui_mensaje.clone();
+
+    send_native_request(
+        &url,
+        "GET",
+        None,
+        Some(ui_mensaje.clone()),
+        Some(ui_loading),
+        move |response_text| {
+            if let Ok(historial) = serde_json::from_str::<Vec<StudentSimulation>>(&response_text) {
+                history_handle.set(historial);
+                ui_mensaje.set(String::new()); 
+            } else {
+                ui_mensaje.set("Error al interpretar el historial de simulaciones".to_string());
+            }
+        },
+        Some(move |status_code: u16| {
+            msg_for_error.set(format!("Error al obtener el historial. Código del servidor: {}", status_code));
+        })
+    );
+}
+
+/// Registra o remueve la entrega de una simulación en el servidor.
+/// Si `simulation_id` es `Some(id)`, se entrega ese intento. Si es `None`, se quita la entrega actual.
+pub fn select_exam_delivery(
+    simulation_id: Option<i64>,
+    ui_mensaje: UseStateHandle<String>,
+) {
+    let payload = serde_json::json!({ "simulation_id": simulation_id }).to_string();
+
+    send_native_request(
+        "/api/v1/exams/select_delivery",
+        "POST",
+        Some(&payload),
+        Some(ui_mensaje),
+        None,
+        move |_| {},
+        Some(|_| {})
+    );
 }
 
 // Devuelve todos los estudiantes (grupo o individuo).

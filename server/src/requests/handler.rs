@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::logging::structs::ThreadMessage;
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{auth, generic, limits, projects, simulation, students, webpage};
+use crate::requests::endpoints::{auth, generic, limits, projects, simulation, students, webpage, exams};
 use crate::db::engine::DBEngine;
 use tiny_http::Response;
 use crate::structs::settings::Settings;
@@ -34,6 +34,11 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
             _ => {
                 match (request.method(), api_path) {
+                    (Method::Get, "/exams/my_simulations") =>
+                        exams::get_my_simulations(&mut request, db),
+
+                    (Method::Post, "/exams/select_delivery") =>
+                        exams::select_exam_simulation(&mut request, db),
                     (Method::Post, "/create_path") =>
                         simulation::create_path(&mut request, cache, db, settings),
 

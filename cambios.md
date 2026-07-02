@@ -21,18 +21,18 @@
 ## Modo Examen
 - [x] Generar nueva tabla que guarde todos los parametros de simulacion + Fk alumno + Fk proyecto + Booleano de "Entrego este" + Valores estadisticos (maximos, desvios, etc)
 - [x] Generar metodos de manipulacion del mismo en la DB. (Get, set, update)
-- [] Enpoints para obtenerlos
-- [] Que se guarde cada vez que tocas simular.
-- [] Enpoint de alumno para seleccionar y modififcar el bool.
+- [x] Enpoints para obtenerlos
+- [x] Que se guarde cada vez que tocas simular.
+- [x] Enpoint de alumno para seleccionar y modififcar el bool.
 - [] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
 - [] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
 
 ## Front
-- [] Info primero al entrar a la simulacion.
+- [x] Info primero al entrar a la simulacion.
 - [] Mover en login desface de textos.
 - [x] Detalles de modales
-- [] Modal para ver las simulaciones y poder entregar. __MISMO MODAL PARA EL DOCENTE__
-	Es decir, solo deberia de cambiar botones, pero la idea seria codearlo 1 vez, como un compoenente generico, voy a hacer que ande la misma api.
+- [x] Interfaz de historial de intentos para el alumno, junto a su selección para entregar.
+- [] Interfaz de entregas obtenidas para el docente.
 - [] Toggle, para ver o **mapa de diferencias**. Osea que muestre o una foto o la otra, alterna.
 - [] Login NO debe redifirigir si pones mal la contrasenia, solo mostrar el mensaje.
 - [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar  por slack o algo.

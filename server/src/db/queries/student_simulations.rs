@@ -3,6 +3,7 @@ use common::{EchosounderParameters, PathParameters, TransportParameters, GnssTyp
 use crate::db::engine::DBEngine;
 
 /// TODO: Mover a algo compartido??
+#[derive(serde::Serialize)]
 pub struct StudentSimulation {
     pub id: i64,
     pub selected: bool,
@@ -64,7 +65,7 @@ pub fn create_student_simulation(
             project_id
         )
         VALUES(
-            ?, ?, ?,
+            ?, ?,
             ?, ?, ?,
             ?, ?, ?, ?, ?,
             ?, ?,
@@ -74,7 +75,7 @@ pub fn create_student_simulation(
         "
     )?;
 
-    statement.bind((1, 0))?;
+    // statement.bind((1, 0))?;
     statement.bind((1, result_max_depth))?;
     statement.bind((2, result_min_depth))?;
 
@@ -107,23 +108,54 @@ pub fn create_student_simulation(
     Ok(())
 }
 
-/// Permite marcar 1 simulacion como la entrega.
-/// TODO: Pregunntar a fernando, si deberia de poder cambiarlo? Si toco mal.
+/// Remueve todas las entregas finales para un alumno específico, dejando todo en FALSE.
+/// Se usa cuando el alumno desmarca el intento que ya estaba entregado.
+pub fn clear_student_simulations(
+    db: &DBEngine,
+    student_id: i64,
+) -> Result<(), sqlite::Error> {
+    let mut statement = db.run_query(
+        "
+        UPDATE student_simulations
+        SET selected = FALSE
+        WHERE student_id = ?
+        "
+    )?;
+
+    statement.bind((1, student_id))?;
+    statement.next()?;
+
+    Ok(())
+}
+
+/// Permite marcar una simulación como la entrega final, asegurando de forma atómica
+/// que todas las demás simulaciones del mismo alumno queden desmarcadas.
 pub fn select_student_simulation(
     db: &DBEngine,
     simulation_id: i64,
 ) -> Result<(), sqlite::Error> {
+    // 1. Primero limpiamos todas las entregas para este alumno en particular
+    // (Buscamos el student_id de forma anidada a través del id de la simulación)
+    let mut clear_statement = db.run_query(
+        "
+        UPDATE student_simulations
+        SET selected = FALSE
+        WHERE student_id = (SELECT student_id FROM student_simulations WHERE id = ?)
+        "
+    )?;
+    clear_statement.bind((1, simulation_id))?;
+    clear_statement.next()?;
 
-    let mut statement = db.run_query(
+    // 2. Ahora sí, marcamos como TRUE el intento que el alumno eligió
+    let mut select_statement = db.run_query(
         "
         UPDATE student_simulations
         SET selected = TRUE
         WHERE id = ?
         "
     )?;
-
-    statement.bind((1, simulation_id))?;
-    statement.next()?;
+    select_statement.bind((1, simulation_id))?;
+    select_statement.next()?;
 
     Ok(())
 }

@@ -2,6 +2,7 @@ use tiny_http::Request;
 use std::sync::{Arc, Mutex};
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
+use crate::db::queries_interface::student_simulations;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, FullSimulationRequest, RequestContext};
 use crate::requests::http_helper::{parse_json_body, create_png_response};
@@ -93,6 +94,22 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
 
     let map_encoded = STANDARD.encode(map_bytes);
     let scale_encoded = STANDARD.encode(scale_bytes); //base64
+
+    if let Err(e) = student_simulations::create_student_simulation_locked(
+        &db,
+        ctx.student_id,
+        ctx.project_id,
+        min_depth,
+        max_depth,
+        &ctx.data.path_parameters,
+        &echo_parameters.transport_parameters,
+        &echo_parameters.echo_sounder_parameters,
+    ) {
+        eprintln!("Error al guardar el intento de simulación en la DB para el alumno {}: {}", ctx.student_id, e);
+        return generic::server_error(
+            "Error al guardar el intento de simulación".to_string()
+        );
+    }
 
     let response_data = SimulationBase64Response {
         min_depth,
@@ -190,7 +207,8 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
         data, 
         student_id, 
         student, 
-        project 
+        project,
+        project_id, 
     })
 }
 
