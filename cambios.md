@@ -41,7 +41,7 @@
 
 
 ## Cache
-- [] Separarlo (Por el amor de dios. 🙏)
+- [x] Separarlo (Por el amor de dios. 🙏)
 
 ## Docker
 - [] Generar el compose.yaml
