@@ -95,9 +95,9 @@ pub fn create_student_simulation(
     statement.bind((14, echo.max_limit))?;
     statement.bind((15, echo.pulse_repetition_interval))?;
     statement.bind((16, echo.sound_speed))?;
-    statement.bind((17, echo.transmited_potency.to_string().as_str()))?;
+    statement.bind((17, echo.transmited_potency))?;
     statement.bind((18, echo.threshold))?;
-    statement.bind((19, echo.gain as i64))?;
+    statement.bind((19, echo.gain))?;
 
     statement.bind((20, student_id))?;
     statement.bind((21, project_id))?;
@@ -194,8 +194,8 @@ pub fn get_student_simulations(
                 min_limit: statement.read("min_depth")?,
                 pulse_repetition_interval: statement.read("pulse_repetition_interval")?,
                 uses_high_frecuency: statement.read::<i64, _>("uses_high_frequency")? == 1,
-                transmited_potency: statement.read::<String,_>("transmitted_potency")?.parse().unwrap(),
-                gain: statement.read::<i64,_>("gain")? as f64,
+                transmited_potency: statement.read("transmitted_potency")?,
+                gain: statement.read("gain")?,
                 threshold: statement.read("threshold")?,
                 sound_speed: statement.read("sound_speed")?,
             },

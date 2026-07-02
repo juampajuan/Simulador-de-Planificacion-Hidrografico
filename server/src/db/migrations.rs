@@ -82,9 +82,9 @@ pub fn init(
             max_depth REAL NOT NULL,
             pulse_repetition_interval REAL NOT NULL,
             sound_speed REAL NOT NULL,
-            transmitted_potency TEXT NOT NULL,
+            transmitted_potency REAL NOT NULL,
             threshold REAL NOT NULL,
-            gain INTEGER NOT NULL,
+            gain REAL NOT NULL,
 
             student_id INTEGER NOT NULL,
             project_id INTEGER NOT NULL,
