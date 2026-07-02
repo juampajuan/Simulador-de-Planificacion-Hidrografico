@@ -2,7 +2,7 @@
 pub mod structs;
 use structs::depth_matrix::DepthMatrix;
 use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
-use crate::{processing::{geotiff::GeotiffCoordinates, interpolation::interpolation_handler:: interpolate, measuring::apply_disturbances}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
+use crate::{processing::{geotiff::{GeotiffCoordinates, get_matrix_avg_depth}, interpolation::interpolation_handler:: interpolate, measuring::{apply_disturbances, beam::calculate_covered_radius}}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
 use image::{RgbaImage};
 use crate::{processing::{images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 mod processing;
@@ -128,15 +128,19 @@ pub fn create_path_with_shadows(
 
     params.echo_sounder_parameters.create_echosounder();
 
+    let avg_depth = get_matrix_avg_depth(&(matrix)).unwrap_or(0.0);
+
     let covered_points: Vec<((usize, usize), f64)> = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
             // Para monohaz mostramos todos los píxeles dentro del círculo del haz,
             // no solo el punto central — así se ve el área real cubierta.
             let mut covered = Vec::new();
+            let radius = calculate_covered_radius(avg_depth, params.echo_sounder_parameters.angle, matrix);
+
             for &point in &points_to_measure {
-                let circle_points = processing::measuring::beam::get_points_circular_to_this(
+                let circle_points = processing::measuring::beam::get_points_in_radius(
                     &point,
-                    params.echo_sounder_parameters.angle,
+                    radius,
                     matrix,
                 );
 
@@ -144,7 +148,6 @@ pub fn create_path_with_shadows(
                     covered.push((p, matrix.data[p.1][p.0]));
                 }
             }
-
             covered
         },
         EcosondaMode::Multihaz => {

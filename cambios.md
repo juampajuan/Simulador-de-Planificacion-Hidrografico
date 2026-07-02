@@ -1,5 +1,5 @@
 ## Simulacion
-- [] recuerdro de zona en los PNG.
+- [x] recuerdro de zona en los PNG.
 - [] Cambiar la cobertura a un valor medio, para no spoilear.
 - [] Lib que genere imagen superpuesta de simulacion con cobertura arriba.
 - [] Porque hardcodeado esas datos? (Los 10cm o 200k hz)
@@ -7,7 +7,7 @@
 		Mismo transductos = diametro.
 			- Osea esto en parametro de CONFIG.
 	- Cambias SOLO la frecuencia.
-- [] Alta frecuena, deberia ser mas chico el angulo.
+- [] Al no usar sensor inercial la medicion deberia venir mas profunda porque tiene mas trayecto que recorrer.
 	10, 15, 20%.
 - [] Generar un GEOTIFF de las simulaciones??
 

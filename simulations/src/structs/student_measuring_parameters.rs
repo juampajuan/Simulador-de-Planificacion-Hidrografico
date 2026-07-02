@@ -1,19 +1,19 @@
 use common::{EchosounderParameters};
 
+const ECOSOUNDER_DIAMETER: f64  = 0.20;      // Diámetro del transductor en metros
+
 // ------------------------------------------------------------
 //  Constantes físicas — Alta frecuencia (200 kHz, D=10cm)
 // ------------------------------------------------------------
 
 const HIGH_FREQ_HZ: f64        = 200000.0; // Frecuencia en Hz
-const HIGH_FREQ_DIAMETER: f64  = 0.10;      // Diámetro del transductor en metros
 const HIGH_FREQ_ALPHA: f64     = 0.060;     // Coeficiente de absorción en dB/m
 
 // ------------------------------------------------------------
-//  Constantes físicas — Baja frecuencia (50 kHz, D=20cm)
+//  Constantes físicas — Baja frecuencia (20 kHz, D=20cm)
 // ------------------------------------------------------------
 
 const LOW_FREQ_HZ: f64         = 20000.0;  // Frecuencia en Hz
-const LOW_FREQ_DIAMETER: f64   = 0.20;      // Diámetro del transductor en metros
 const LOW_FREQ_ALPHA: f64      = 0.004;     // Coeficiente de absorción en dB/m
 
 // ------------------------------------------------------------
@@ -52,12 +52,12 @@ impl EchosounderLogic for EchosounderParameters {
 
 fn calculate_angle_and_absortion_coefficient(uses_high_frecuency: bool) -> (f64, f64) {
     
-    let (frecuencia, diametro, alfa) = if uses_high_frecuency {
-        (HIGH_FREQ_HZ, HIGH_FREQ_DIAMETER, HIGH_FREQ_ALPHA)
+    let (frecuencia, alfa) = if uses_high_frecuency {
+        (HIGH_FREQ_HZ, HIGH_FREQ_ALPHA)
     } else {
-        (LOW_FREQ_HZ, LOW_FREQ_DIAMETER, LOW_FREQ_ALPHA)
+        (LOW_FREQ_HZ, LOW_FREQ_ALPHA)
     };
-    let angulo_grados: f64 = BEAM_WIDTH_FACTOR * (SOUND_VELOCITY / frecuencia) / diametro;
+    let angulo_grados: f64 = BEAM_WIDTH_FACTOR * (SOUND_VELOCITY / frecuencia) / ECOSOUNDER_DIAMETER;
     (angulo_grados, alfa)
 }
 

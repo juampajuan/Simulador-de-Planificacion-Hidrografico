@@ -131,6 +131,33 @@ pub fn get_geotiff_coordinates(path: &str) -> GeotiffCoordinates {
     ))
 }
 
+pub fn get_matrix_avg_depth(matrix: &DepthMatrix) -> Option<f64> {
+    let mut sum = 0.0;
+    let mut count = 0;
+
+    for row in &matrix.data { 
+        for value in row { 
+            if is_valid(*value, matrix){
+                sum += *value;
+                count += 1;
+            }
+        }
+    }
+
+    if count == 0 {
+        None
+    } else {
+        Some(sum / count as f64)
+    }
+}
+
+fn is_valid(val: f64, matrix: &DepthMatrix) -> bool {
+    match matrix.no_data {
+        Some(nd) => val != nd,
+        None => val.is_finite(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

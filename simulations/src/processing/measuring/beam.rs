@@ -190,24 +190,22 @@ fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
 }
 
 ///Calcula el area cubierta para la sonda Monohaz
-fn calculate_covered_radius(current_point: &(usize, usize), angle_deg: f64, matrix: &DepthMatrix) -> f64 {
-    let z = matrix.data[current_point.1][current_point.0];
+pub fn calculate_covered_radius(z: f64, angle_deg: f64, matrix: &DepthMatrix) -> f64 {
     let a = z * (angle_deg.to_radians()/2.0).tan();
     (a/matrix.size_x).abs()
 }
 
-///Retorna todos los puntos en un area cercanos a un punto especifico.
-pub fn get_points_circular_to_this(
+/// Función central: retorna los puntos dentro de un radio específico.
+pub fn get_points_in_radius(
     current_point: &(usize, usize),
-    angle: f64,
+    radius: f64,
     matrix: &DepthMatrix,
 ) -> Vec<(usize, usize)> {
     let center_x = current_point.0 as f64;
     let center_y = current_point.1 as f64;
-    let radius = calculate_covered_radius(current_point, angle, matrix);
     let squared_radius = radius * radius;
 
-    // Definimos los límites de búsqueda controlando que no bajen de 0 (protección contra underflow)
+    // Definimos los límites de búsqueda controlando que no bajen de 0
     let min_x = if center_x > radius { (center_x - radius).floor() as usize } else { 0 };
     let max_x = ((center_x + radius).ceil() as usize).min(matrix.width - 1);
     let min_y = if center_y > radius { (center_y - radius).floor() as usize } else { 0 };
@@ -227,6 +225,17 @@ pub fn get_points_circular_to_this(
     }
 
     points
+}
+
+/// Retorna todos los puntos en un area cercanos a un punto especifico,
+/// calculando el radio en base a la profundidad de ese punto.
+pub fn get_points_circular_to_this(
+    current_point: &(usize, usize),
+    angle: f64,
+    matrix: &DepthMatrix,
+) -> Vec<(usize, usize)> {
+    let radius = calculate_covered_radius(matrix.data[current_point.1][current_point.0], angle, matrix);
+    get_points_in_radius(current_point, radius, matrix)
 }
 
 #[cfg(test)]
