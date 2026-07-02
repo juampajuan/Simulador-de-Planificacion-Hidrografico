@@ -41,7 +41,7 @@
 
 
 ## Cache
-- [x] Separarlo (Por el amor de dios. 🙏)
+- [x] Separarlo
 
 ## Docker
 - [] Generar el compose.yaml
@@ -52,7 +52,7 @@
 - [] Yo moveria los archivos de structs dentro server/structs a cada disciplana a la que pertenecnen
 	Por ejemplo, para las settings, creo un carpeta.
 	El del reqquests, genero en requests/ un structs.rs y asi.
-- [] Se chequean los intentos en back? o solo front?
+- [x] Se chequean los intentos en back y front.
 
 ## Important
 No lo discutimos, pero no lo veo complicado, asi que lo haria.
