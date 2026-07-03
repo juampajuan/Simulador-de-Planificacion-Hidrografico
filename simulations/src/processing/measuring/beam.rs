@@ -4,7 +4,7 @@ use super::points::calculate_distance_between_points;
 
 #[allow(dead_code)]
 pub enum MeasureMode {
-    Perpendicular { avg_depth: Option<f64> },
+    Perpendicular {},
     Circular { angle: f64 },
 }
 
@@ -23,32 +23,44 @@ pub fn get_measures(
             }
             MeasurementsType::Monohaz { measurements: (resulting_measures) }
         },
-        MeasureMode::Perpendicular { avg_depth } => {
+        MeasureMode::Perpendicular {} => {
 
-            let mut previous_point: Option<&(usize, usize)> = None;
-            let mut current_point = &measure_points[0];
-
-            let mut right_group: Vec<((usize, usize), f64)> = Vec::new();
-            let mut left_group: Vec<((usize, usize), f64)> = Vec::new();
-
-            for next_point in measure_points {
-                let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), matrix, avg_depth);
-
-                resulting_measures.extend(center);
-                left_group.extend(left);
-                right_group.extend(right);
-
-                previous_point = Some(current_point);
-                current_point = next_point;
-            }
-
-            let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, matrix, avg_depth);
-            resulting_measures.extend(center);
-            left_group.extend(left);
-            right_group.extend(right);
-            MeasurementsType::Multihaz { central_measurments: (resulting_measures), paralel_measurment_1: (left_group), paralel_measurment_2: (right_group) }
+            get_perpendicular_measurements(measure_points, None, matrix)
         }
     }
+}
+
+pub fn get_perpendicular_measurements(
+    measure_points: &Vec<(usize, usize)>,
+    fixed_depth: Option<f64>,
+    matrix: &DepthMatrix,
+) -> MeasurementsType {
+    let mut resulting_measures: Vec<((usize, usize), f64)> = Vec::new();
+    let mut previous_point: Option<&(usize, usize)> = None;
+    let mut current_point = &measure_points[0];
+ 
+    let mut right_group: Vec<((usize, usize), f64)> = Vec::new();
+    let mut left_group: Vec<((usize, usize), f64)> = Vec::new();
+ 
+    for next_point in measure_points {
+        let z = fixed_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
+        let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), z, matrix);
+ 
+        resulting_measures.extend(center);
+        left_group.extend(left);
+        right_group.extend(right);
+ 
+        previous_point = Some(current_point);
+        current_point = next_point;
+    }
+ 
+    let z = fixed_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
+    let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, z, matrix);
+    resulting_measures.extend(center);
+    left_group.extend(left);
+    right_group.extend(right);
+ 
+    MeasurementsType::Multihaz { central_measurments: (resulting_measures), paralel_measurment_1: (left_group), paralel_measurment_2: (right_group) }
 }
 
 ///Esta funcion seria la simulacion de la sonda en un punto de medicion. Dados todos los puntos que registra la sonda, le da valor a la medicion del punto.
@@ -74,10 +86,10 @@ fn get_points_perpendicular_to_this(
     prev_point: Option<&(usize, usize)>,
     current_point: &(usize, usize),
     next_point: Option<&(usize, usize)>,
+    z: f64,
     matrix: &DepthMatrix,
-    avg_depth: Option<f64>,
 ) -> [Vec<((usize,usize), f64)>; 3] {
-
+ 
     let reference = match (prev_point, next_point) {
         (Some(prev), Some(next)) => {
             let dist_to_prev = calculate_distance_between_points(current_point, prev, matrix);
@@ -88,45 +100,43 @@ fn get_points_perpendicular_to_this(
         (None, Some(next)) => next,
         (None, None) => {return [vec![], vec![], vec![]]}
     };
-
+ 
     //Forma el vector
     let dx = reference.0 as f64 - current_point.0 as f64;
     let dy = reference.1 as f64 - current_point.1 as f64;
     let magnitude = (dx * dx + dy * dy).sqrt();
-
+ 
     let dx_norm = dx / magnitude;
     let dy_norm = dy / magnitude;
-
+ 
     //90 grados
     let perp_x = -dy_norm;
     let perp_y = dx_norm;
-
+ 
     //Coordenadas actuales
     let cx = current_point.0 as f64;
     let cy = current_point.1 as f64;
-
+ 
     //Hay que hacer que se mida una cantidad de puntos ingresada por parametro y lo mismo con el salto entra cada punto
-
-    let depth = avg_depth.unwrap_or(matrix.data[current_point.1][current_point.0]);
     let angle_deg:f64 = 60.0; // Ángulo del haz en grados
-    let mitad_cobertura = (2.0*(depth)*(angle_deg.to_radians()).tan())/2.0/ matrix.size_x; 
-
+    let mitad_cobertura = (2.0*z*(angle_deg.to_radians()).tan())/2.0/ matrix.size_x; 
+ 
     let left_point_x = cx + mitad_cobertura * perp_x;
     let left_point_y = cy + mitad_cobertura * perp_y;
-
+ 
     let right_point_x = cx - mitad_cobertura * perp_x;
     let right_point_y = cy - mitad_cobertura * perp_y;
     
-
+ 
     let der_point: (usize, usize) = (right_point_x.round() as usize, right_point_y.round() as usize);
     let cent_point = (current_point.0, current_point.1);
     let izq_point = (left_point_x.round() as usize, left_point_y.round() as usize);
-
+ 
     let center_vector = vec![(cent_point, matrix.data[cent_point.1][cent_point.0])];
-
+ 
     let right_vector = get_points_on_line(cent_point, der_point, matrix);
     let left_vector = get_points_on_line(cent_point, izq_point, matrix);
-
+ 
     [left_vector, center_vector, right_vector]
 }
 
