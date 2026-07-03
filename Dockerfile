@@ -14,9 +14,6 @@ RUN cargo install trunk
 
 COPY . .
 
-# WORKDIR /server/src/client/ui
-# RUN npm install
-
 WORKDIR /server/client
 RUN trunk build --release --dist dist
 
