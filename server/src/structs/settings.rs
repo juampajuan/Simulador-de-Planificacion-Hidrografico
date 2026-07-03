@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use simulations::structs::simulation_constants::{SimulationConstants, EchosounderConstants, EnvironmentConstants};
 
 /// Tipos de valores que puede tener una entrada del archivo de configuración.
 pub enum ConfigValue {
@@ -36,6 +37,46 @@ pub struct Settings {
     pub echo_umbral_max: f64,
     pub sound_speed_min: f64,
     pub sound_speed_max: f64,
+    pub echo_diameter: f64,
+    pub echo_high_freq_hz: f64,
+    pub echo_high_freq_alpha: f64,
+    pub echo_low_freq_hz: f64,
+    pub echo_low_freq_alpha: f64,
+    pub echo_beam_width_factor: f64,
+    pub echo_multihaz_angle_deg: f64,
+    pub echo_detection_threshold: f64,
+    pub echo_max_gain: f64,
+    pub sound_velocity: f64,
+    pub tide_amplitude: f64,
+    pub tide_period_h: f64,
+    pub tide_phase: f64,
+}
+
+impl Settings {
+    /// Arma el struct de constantes fisicas que necesita `simulations`, a
+    /// partir de los valores ya cargados de config.toml. `simulations` no
+    /// sabe nada de `Settings` ni de config.toml — solo recibe estos datos.
+    pub fn simulation_constants(&self) -> SimulationConstants {
+        SimulationConstants {
+            echosounder: EchosounderConstants {
+                diameter: self.echo_diameter,
+                high_freq_hz: self.echo_high_freq_hz,
+                high_freq_alpha: self.echo_high_freq_alpha,
+                low_freq_hz: self.echo_low_freq_hz,
+                low_freq_alpha: self.echo_low_freq_alpha,
+                beam_width_factor: self.echo_beam_width_factor,
+                multihaz_angle_deg: self.echo_multihaz_angle_deg,
+                detection_threshold: self.echo_detection_threshold,
+                max_gain: self.echo_max_gain,
+            },
+            environment: EnvironmentConstants {
+                sound_velocity: self.sound_velocity,
+                tide_amplitude: self.tide_amplitude,
+                tide_period_h: self.tide_period_h,
+                tide_phase: self.tide_phase,
+            },
+        }
+    }
 }
 
 /// Construye los Settings a partir del HashMap leído del config, validando cada clave.
@@ -65,6 +106,19 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             echo_umbral_max: get_float(&config, "ECHO_UMBRAL_MAX")?,
             sound_speed_min: get_float(&config, "SOUND_SPEED_MIN")?,
             sound_speed_max: get_float(&config, "SOUND_SPEED_MAX")?,
+            echo_diameter: get_float(&config, "ECHO_DIAMETER")?,
+            echo_high_freq_hz: get_float(&config, "ECHO_HIGH_FREQ_HZ")?,
+            echo_high_freq_alpha: get_float(&config, "ECHO_HIGH_FREQ_ALPHA")?,
+            echo_low_freq_hz: get_float(&config, "ECHO_LOW_FREQ_HZ")?,
+            echo_low_freq_alpha: get_float(&config, "ECHO_LOW_FREQ_ALPHA")?,
+            sound_velocity: get_float(&config, "SOUND_VELOCITY")?,
+            echo_beam_width_factor: get_float(&config, "ECHO_BEAM_WIDTH_FACTOR")?,
+            echo_multihaz_angle_deg: get_float(&config, "ECHO_MULTIHAZ_ANGLE_DEG")?,
+            echo_detection_threshold: get_float(&config, "ECHO_DETECTION_THRESHOLD")?,
+            echo_max_gain: get_float(&config, "ECHO_MAX_GAIN")?,
+            tide_amplitude: get_float(&config, "TIDE_AMPLITUDE")?,
+            tide_period_h: get_float(&config, "TIDE_PERIOD_H")?,
+            tide_phase: get_float(&config, "TIDE_PHASE")?,
             log_file_name: get_string(&config, "LOG_FILE_NAME")?,
             logging_type: get_int(&config, "LOGGING_TYPE")?,
             upload_path: get_string(&config, "FILE_UPLOAD_PATH").unwrap_or("./uploads".to_string()),

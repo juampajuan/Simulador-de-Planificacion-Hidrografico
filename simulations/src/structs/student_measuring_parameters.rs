@@ -1,36 +1,12 @@
-use common::{EchosounderParameters};
-
-// ------------------------------------------------------------
-//  Constantes físicas — Alta frecuencia (200 kHz, D=10cm)
-// ------------------------------------------------------------
-
-const HIGH_FREQ_HZ: f64        = 200000.0; // Frecuencia en Hz
-const HIGH_FREQ_DIAMETER: f64  = 0.10;      // Diámetro del transductor en metros
-const HIGH_FREQ_ALPHA: f64     = 0.060;     // Coeficiente de absorción en dB/m
-
-// ------------------------------------------------------------
-//  Constantes físicas — Baja frecuencia (50 kHz, D=20cm)
-// ------------------------------------------------------------
-
-const LOW_FREQ_HZ: f64         = 20000.0;  // Frecuencia en Hz
-const LOW_FREQ_DIAMETER: f64   = 0.20;      // Diámetro del transductor en metros
-const LOW_FREQ_ALPHA: f64      = 0.004;     // Coeficiente de absorción en dB/m
-
-// ------------------------------------------------------------
-//  Constantes del modelo de error
-// ------------------------------------------------------------
-
-const SOUND_VELOCITY: f64      = 1500.0; // Velocidad del sonido en el agua en m/s
-const BEAM_WIDTH_FACTOR: f64   = 60.0;   // Factor para cálculo de ancho del haz (Clase 03b)
-
-
+use common::EchosounderParameters;
+use crate::structs::simulation_constants::SimulationConstants;
 
 // ------------------------------------------------------------
 //  Trait público
 // ------------------------------------------------------------
 
 pub trait EchosounderLogic {
-    fn create_echosounder(&mut self);
+    fn create_echosounder(&mut self, constants: &SimulationConstants);
 }
 
 // ------------------------------------------------------------
@@ -38,8 +14,8 @@ pub trait EchosounderLogic {
 // ------------------------------------------------------------
 
 impl EchosounderLogic for EchosounderParameters {
-    fn create_echosounder(&mut self) {
-        let (angulo_rad, alfa) = calculate_angle_and_absortion_coefficient(self.uses_high_frecuency);
+    fn create_echosounder(&mut self, constants: &SimulationConstants) {
+        let (angulo_rad, alfa) = calculate_angle_and_absortion_coefficient(self.uses_high_frecuency, constants);
         self.angle = angulo_rad;
         self.absortion_coefficient = alfa;
     }
@@ -49,15 +25,14 @@ impl EchosounderLogic for EchosounderParameters {
 //  Cálculo de parámetros físicos de la ecosonda
 // ------------------------------------------------------------
 
+fn calculate_angle_and_absortion_coefficient(uses_high_frecuency: bool, constants: &SimulationConstants) -> (f64, f64) {
 
-fn calculate_angle_and_absortion_coefficient(uses_high_frecuency: bool) -> (f64, f64) {
-    
-    let (frecuencia, diametro, alfa) = if uses_high_frecuency {
-        (HIGH_FREQ_HZ, HIGH_FREQ_DIAMETER, HIGH_FREQ_ALPHA)
+    let (frecuencia, alfa) = if uses_high_frecuency {
+        (constants.echosounder.high_freq_hz, constants.echosounder.high_freq_alpha)
     } else {
-        (LOW_FREQ_HZ, LOW_FREQ_DIAMETER, LOW_FREQ_ALPHA)
+        (constants.echosounder.low_freq_hz, constants.echosounder.low_freq_alpha)
     };
-    let angulo_grados: f64 = BEAM_WIDTH_FACTOR * (SOUND_VELOCITY / frecuencia) / diametro;
+    // sound_velocity es del agua (environment), no de la ecosonda.
+    let angulo_grados: f64 = constants.echosounder.beam_width_factor * (constants.environment.sound_velocity / frecuencia) / constants.echosounder.diameter;
     (angulo_grados, alfa)
 }
-

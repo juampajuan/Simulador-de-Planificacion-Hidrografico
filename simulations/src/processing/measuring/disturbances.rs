@@ -2,23 +2,7 @@ use common::Transport;
 use rand_distr::{Distribution, Normal};
 use common::StudentMeasuringParameters;
 
-use crate::{processing::measuring::calculate_distance_between_points, structs::{depth_matrix::DepthMatrix, measurement_type::{MeasurementsType, MeasurementsTypeWithError}}};
-
-// ------------------------------------------------------------
-//  Umbrales Para Potencia y ganancia
-// ------------------------------------------------------------
-
-const DETECTION_THRESHOLD: f64 = 40.0; //db
-const MAX_GAIN: f64 = 36.0; //db
-
-// ------------------------------------------------------------
-//  Otras constantes
-// ------------------------------------------------------------
-
-const SOUND_VELOCITY: f64     = 1500.0;
-const TIDE_AMPLITUDE: f64     = 1.5;
-const TIDE_PERIOD_H: f64      = 12.4;
-const TIDE_PHASE: f64         = 0.0;
+use crate::{processing::measuring::calculate_distance_between_points, structs::{depth_matrix::DepthMatrix, measurement_type::{MeasurementsType, MeasurementsTypeWithError}, simulation_constants::{SimulationConstants, EnvironmentConstants}}};
 
 // ------------------------------------------------------------
 //  Tipos de respuesta
@@ -55,6 +39,7 @@ fn calculate_tide_levels(
     params: &StudentMeasuringParameters,
     path: &[(usize, usize)],
     matrix: &DepthMatrix,
+    environment: &EnvironmentConstants,
 ) -> Option<Vec<f64>> {
     if params.transport_parameters.uses_mareograph {
         return None;
@@ -67,7 +52,7 @@ fn calculate_tide_levels(
     let levels = (0..n)
         .map(|i| {
             let t = if n > 1 { (i as f64 / (n - 1) as f64) * duration_hours } else { 0.0 };
-            TIDE_AMPLITUDE * (2.0 * std::f64::consts::PI * t / TIDE_PERIOD_H + TIDE_PHASE).sin()
+            environment.tide_amplitude * (2.0 * std::f64::consts::PI * t / environment.tide_period_h + environment.tide_phase).sin()
         })
         .collect();
 
@@ -92,9 +77,10 @@ fn calculate_disturbance_params(
     params: &StudentMeasuringParameters,
     path: &[(usize, usize)],
     matrix: &DepthMatrix,
+    constants: &SimulationConstants,
 ) -> DisturbanceParams {
     DisturbanceParams {
-        tide_levels: calculate_tide_levels(mediciones_len, params, path, matrix),
+        tide_levels: calculate_tide_levels(mediciones_len, params, path, matrix, &constants.environment),
         potency_value: match params.echo_sounder_parameters.transmited_potency as u32 {
             25  => 150.0,
             50  => 200.0,
@@ -119,19 +105,20 @@ pub fn apply_disturbances(
     path: &[(usize, usize)],
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
+    constants: &SimulationConstants,
 ) -> MeasurementsTypeWithError {
     match mediciones {
         MeasurementsType::Monohaz { measurements } => {
-            let dp = calculate_disturbance_params(measurements.len(), params, path, matrix);
+            let dp = calculate_disturbance_params(measurements.len(), params, path, matrix, constants);
             MeasurementsTypeWithError::Monohaz {
-                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp),
+                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants),
             }
         }
 
         MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
             // Los tres pings son simultáneos: calculamos los parámetros una sola vez
             // usando la longitud de la lista central (todas tienen la misma cantidad).
-            let dp = calculate_disturbance_params(central_measurments.len(), params, path, matrix);
+            let dp = calculate_disturbance_params(central_measurments.len(), params, path, matrix, constants);
 
             // Para multihaz aplicamos los errores en conjunto ping a ping, para que
             // central, izquierda y derecha compartan el mismo ángulo inercial y marea.
@@ -142,6 +129,7 @@ pub fn apply_disturbances(
                 params,
                 matrix,
                 &dp,
+                constants,
             );
 
             MeasurementsTypeWithError::Multihaz {
@@ -162,6 +150,7 @@ fn apply_disturbances_monohaz(
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
     dp: &DisturbanceParams,
+    constants: &SimulationConstants,
 ) -> Vec<((usize, usize), Option<f64>)> {
 
     mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
@@ -172,7 +161,7 @@ fn apply_disturbances_monohaz(
             apply_inertial_sensor_error(punto, matrix, dp.angle_std)
         };
 
-        let optional_p = apply_single_measurement(i, punto, p_ideal, params, matrix, dp);
+        let optional_p = apply_single_measurement(i, punto, p_ideal, params, matrix, dp, constants);
         (punto, optional_p)
     }).collect()
 }
@@ -190,6 +179,7 @@ fn apply_disturbances_multihaz(
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
     dp: &DisturbanceParams,
+    constants: &SimulationConstants,
 ) -> (
     MeasuredBeam,
     MeasuredBeam,
@@ -221,9 +211,9 @@ fn apply_disturbances_multihaz(
         let (punto_der, p_der) = apply_inertial_angles(punto_der, matrix, angulo_theta_x, angulo_theta_y);
 
         // Aplicamos el resto de los errores a cada punto por separado
-        result_central.push((punto_c,   apply_single_measurement(i, punto_c,   p_c,   params, matrix, dp)));
-        result_izq.push((punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp)));
-        result_der.push((punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp)));
+        result_central.push((punto_c,   apply_single_measurement(i, punto_c,   p_c,   params, matrix, dp, constants)));
+        result_izq.push((punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp, constants)));
+        result_der.push((punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp, constants)));
     }
 
     (result_central, result_izq, result_der)
@@ -241,12 +231,13 @@ fn apply_single_measurement(
     params: &StudentMeasuringParameters,
     _matrix: &DepthMatrix,
     dp: &DisturbanceParams,
+    constants: &SimulationConstants,
 ) -> Option<f64> {
     let echo = &params.echo_sounder_parameters;
  
     // 2. Potencia y ganancia (se aplica siempre, sin el gate de PRI)
     let optional_p =
-        apply_power_and_gain_noise(p_ideal, dp.potency_value, dp.gain_value, echo.absortion_coefficient);
+        apply_power_and_gain_noise(p_ideal, dp.potency_value, dp.gain_value, echo.absortion_coefficient, constants.echosounder.detection_threshold, constants.echosounder.max_gain);
  
     // 3. Filtro de límites
     let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
@@ -258,7 +249,7 @@ fn apply_single_measurement(
             p = if params.transport_parameters.uses_sound_profiler {
                 p
             } else {
-                apply_sound_velocity_noise(p, echo.sound_speed)
+                apply_sound_velocity_noise(p, echo.sound_speed, constants.environment.sound_velocity)
             };
  
             // 5. Marea — mismo nivel para central, izquierda y derecha del mismo ping
@@ -311,8 +302,30 @@ fn apply_inertial_angles(
 
     let x_des = (punto.0 as i64 + dx).clamp(0, matrix.width as i64 - 1) as usize;
     let y_des = (punto.1 as i64 + dy).clamp(0, matrix.height as i64 - 1) as usize;
+    let profundidad_real = matrix.data[y_des][x_des];
 
-    (punto, matrix.data[y_des][x_des])
+    // A mayor inclinacion, el trayecto real del eco es mas largo que la
+    // vertical (hipotenusa en vez de cateto), y la sonda reporta mas
+    // profundidad de la que hay en realidad. Umbrales acordados con el profesor.
+    let angulo_total_deg = (theta_x.powi(2) + theta_y.powi(2)).sqrt().to_degrees();
+    let profundidad_medida = profundidad_real * depth_inflation_factor(angulo_total_deg);
+
+    (punto, profundidad_medida)
+}
+
+/// Factor multiplicador de la profundidad segun el angulo de inclinacion
+/// total del ping (magnitud combinada de theta_x/theta_y), en grados.
+/// menor a 1°: sin ajuste, entre 1° - 4°: +10%, entre 4° - 7°: +15%, mayor a 7°: +20%.
+fn depth_inflation_factor(angulo_total_deg: f64) -> f64 {
+    if angulo_total_deg <= 1.0 {
+        1.0
+    } else if angulo_total_deg <= 4.0 {
+        1.02
+    } else if angulo_total_deg <= 7.0 {
+        1.05
+    } else {
+        1.07
+    }
 }
 
 /// Sin sensor inercial para monohaz: muestrea y aplica el ángulo en un solo paso.
@@ -342,6 +355,8 @@ pub fn apply_power_and_gain_noise(
     potency: f64,
     gain: f64,
     alpha: f64,
+    detection_threshold: f64,
+    max_gain: f64,
 ) -> Option<f64> {
     // 1. Pérdida de transmisión (ida y vuelta)
     let tl = 2.0 * (20.0 * p.log10() + alpha * p);
@@ -352,9 +367,9 @@ pub fn apply_power_and_gain_noise(
     // 3. Señal final post-amplificación
     let signal_final = signal_return + gain;
 
-    if signal_final < DETECTION_THRESHOLD {
+    if signal_final < detection_threshold {
         None
-    } else if gain == MAX_GAIN {
+    } else if gain == max_gain {
         // Eco falso: profundidad un 90% menor a la real
         Some(p * 0.9)
     } else {
@@ -365,8 +380,8 @@ pub fn apply_power_and_gain_noise(
 
 /// Si el alumno no utiliza un perfilador de sonido, 
 /// la velocidad del agua tiene un error con respecto a la velocidad de la sonda
-fn apply_sound_velocity_noise(p: f64, v_alumno: f64) -> f64 {
-    p * (v_alumno / SOUND_VELOCITY)
+fn apply_sound_velocity_noise(p: f64, v_alumno: f64, sound_velocity: f64) -> f64 {
+    p * (v_alumno / sound_velocity)
 }
 
 /// Si el alumno no utiliza un mareografo, se aplica error de marea

@@ -1,6 +1,6 @@
 use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
-use super::helpers::{depth_color,depth_range};
+use super::images_helpers::{depth_color,depth_range};
 
 /// Genera el png del resultado de la simulacion segun los puntos medidos
 /// Utiliza los colores especificados en helpers.rs para las alturas

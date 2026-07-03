@@ -1,11 +1,16 @@
 // Asi se puede usar en servar.
 pub mod structs;
-use structs::depth_matrix::DepthMatrix;
-use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
-use crate::{processing::{geotiff::GeotiffCoordinates, interpolation::interpolation_handler:: interpolate, measuring::apply_disturbances}, structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic}};
-use image::{RgbaImage};
-use crate::{processing::{images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image}, measuring::{MeasureMode, get_measures}, routing::generate_route}}; 
 mod processing;
+mod lib_helpers;
+pub use structs::depth_matrix::DepthMatrix;
+use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters};
+use processing::geotiff::GeotiffCoordinates;
+use processing::interpolation::handler::interpolate;
+use processing::measuring::{apply_disturbances, MeasureMode, get_measures}; 
+use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, COVERAGE_OVERLAY_COLOR};
+use processing::routing::generate_route; 
+use structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic, simulation_constants::SimulationConstants};
+use image::{RgbaImage};
 
 
 /// Crea la matriz segun el tiff cargado para el alumno
@@ -55,6 +60,7 @@ pub fn run_simulation(
     matrix: &DepthMatrix,
     students_path: &Vec<(usize, usize)>,
     mut params: StudentMeasuringParameters,
+    constants: SimulationConstants,
 ) -> Vec<Vec<f64>> {
 
     println!("Simulando...");
@@ -68,18 +74,18 @@ pub fn run_simulation(
         matrix,
     );
 
-    params.echo_sounder_parameters.create_echosounder();
+    params.echo_sounder_parameters.create_echosounder(&constants);
 
     let measurements_points: MeasurementsType = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
             get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure)
         },
         EcosondaMode::Multihaz => {
-            get_measures(MeasureMode::Perpendicular {}, matrix, &points_to_measure)
+            get_measures(MeasureMode::Perpendicular { angle: constants.echosounder.multihaz_angle_deg }, matrix, &points_to_measure)
         },
     };
 
-    let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix);
+    let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix, &constants);
 
     interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix)
 }
@@ -110,58 +116,37 @@ pub fn create_scale_pure_image() -> RgbaImage {
 
 /// Genera un png que muestra la cobertura segun el tipo de medicion seleccionada por el alumno.
 /// Utiliza processing::measures, processing::images
-pub fn create_path_with_shadows(
+pub fn create_path_with_coverage(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
     mut params: StudentMeasuringParameters,
+    constants: SimulationConstants,
 ) -> RgbaImage {
-    println!("Generando PNG con sombras ...");
-
-    let boat_speed = params.transport_parameters.speed;
-    let distance_between_points = boat_speed * params.echo_sounder_parameters.pulse_repetition_interval.recip();
-
-    let points_to_measure = processing::measuring::find_measuring_points(
-        path,
-        distance_between_points,
-        matrix,
-    );
-
-    params.echo_sounder_parameters.create_echosounder();
-
-    let covered_points: Vec<((usize, usize), f64)> = match params.echo_sounder_parameters.mode {
-        EcosondaMode::Monohaz => {
-            // Para monohaz mostramos todos los píxeles dentro del círculo del haz,
-            // no solo el punto central — así se ve el área real cubierta.
-            let mut covered = Vec::new();
-            for &point in &points_to_measure {
-                let circle_points = processing::measuring::beam::get_points_circular_to_this(
-                    &point,
-                    params.echo_sounder_parameters.angle,
-                    matrix,
-                );
-
-                for p in circle_points {
-                    covered.push((p, matrix.data[p.1][p.0]));
-                }
-            }
-
-            covered
-        },
-        EcosondaMode::Multihaz => {
-            let measurements = get_measures(MeasureMode::Perpendicular {}, matrix, &points_to_measure);
-            match measurements {
-                MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
-                    let mut all = central_measurments;
-                    all.extend(paralel_measurment_1);
-                    all.extend(paralel_measurment_2);
-                    all
-                },
-                MeasurementsType::Monohaz { measurements } => measurements,
-            }
-        },
-    };
-
+    println!("Generando PNG con cobertura ...");
+ 
+    // false = radio uniforme por profundidad promedio, para no espoilear el resultado
+    let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, false, constants);
+ 
     make_shaded_png(matrix, &covered_points, path)
+}
+
+pub fn create_simulation_with_coverage(
+    matrix: &DepthMatrix,
+    student_interpolation: &[Vec<f64>],
+    path: &Vec<(usize, usize)>,
+    mut params: StudentMeasuringParameters,
+    constants: SimulationConstants,
+) -> (RgbaImage, f64, f64) {
+    println!("Generando PNG de simulacion con cobertura ...");
+ 
+    let (mut img, min_val, max_val) = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
+    // true = radio real por punto, el resultado ya esta a la vista igual
+    let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, true, constants);
+    draw_covered_points(&mut img, &covered_points, COVERAGE_OVERLAY_COLOR);
+
+    draw_path(&mut img, matrix, path, image::Rgba([255, 255, 255, 180]));
+ 
+    (img, min_val, max_val)
 }
 
 /// Obtiene las cordenadas del centro y las esquinas del geotiff y las devuelve

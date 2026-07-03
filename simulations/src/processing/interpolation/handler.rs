@@ -1,4 +1,4 @@
-use crate::processing::interpolation::helpers::create_matrix_with_measurments_and_eliminate_none_points;
+use crate::processing::interpolation::interpolation_helpers::create_matrix_with_measurments_and_eliminate_none_points;
 use crate::processing::interpolation::interpolation_method::old_interpolations::idw::interpolation_idw_kdtrees;
 use crate::processing::interpolation::interpolation_method::old_interpolations::kriging::interpolation_kriging;
 use crate::processing::interpolation::interpolation_method::old_interpolations::tin::interpolation_tin;

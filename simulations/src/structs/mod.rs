@@ -1,5 +1,5 @@
 pub mod depth_matrix;
 pub mod student_measuring_parameters;
-pub mod professor_parameters;
 pub mod measurement_type;
 pub mod interpolation_type;
+pub mod simulation_constants;
