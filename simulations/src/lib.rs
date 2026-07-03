@@ -7,7 +7,7 @@ use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters}
 use processing::geotiff::GeotiffCoordinates;
 use processing::interpolation::handler::interpolate;
 use processing::measuring::{apply_disturbances, MeasureMode, get_measures}; 
-use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, COVERAGE_OVERLAY_COLOR};
+use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, COVERAGE_OVERLAY_COLOR};
 use processing::routing::generate_route; 
 use structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic};
 use image::{RgbaImage};
@@ -140,6 +140,8 @@ pub fn create_simulation_with_coverage(
     // true = radio real por punto, el resultado ya esta a la vista igual
     let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, true);
     draw_covered_points(&mut img, &covered_points, COVERAGE_OVERLAY_COLOR);
+
+    draw_path(&mut img, matrix, path, image::Rgba([255, 255, 255, 180]));
  
     (img, min_val, max_val)
 }

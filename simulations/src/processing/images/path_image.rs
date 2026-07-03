@@ -1,7 +1,7 @@
 use image::{Rgba, RgbaImage};
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::processing::processing_helpers::is_valid;
-use super::images_helpers::{depth_color, depth_range, fill_zone_translucent, draw_covered_points, ZONE_FILL_COLOR, COVERAGE_OVERLAY_COLOR};
+use super::images_helpers::{depth_color, depth_range, fill_zone_translucent, draw_covered_points, draw_path, ZONE_FILL_COLOR, COVERAGE_OVERLAY_COLOR};
 
 #[allow(dead_code)]
 pub fn makepng_with_matrix_and_path(
@@ -55,19 +55,7 @@ pub fn makepng_transparent_with_path(
 
     fill_zone_translucent(&mut img, matrix, ZONE_FILL_COLOR);
     
-    for &(x, y) in path {
-        if y < matrix.height && x < matrix.width {
-            let y_min = y.saturating_sub(hw);
-            let y_max = (y + hw).min(matrix.height - 1);
-            let x_min = x.saturating_sub(hw);
-            let x_max = (x + hw).min(matrix.width - 1);
-            for ny in y_min..=y_max {
-                for nx in x_min..=x_max {
-                    img.put_pixel(nx as u32, ny as u32, Rgba([255, 255, 255, 255]));
-                }
-            }
-        }
-    }
+    draw_path(&mut img, matrix, path, Rgba([255, 255, 255, 255]));
 
     img
 }
@@ -88,20 +76,7 @@ pub fn make_shaded_png(
     draw_covered_points(&mut img, covered_points, COVERAGE_OVERLAY_COLOR);
  
     // Recorrido blanco semitransparente encima
-    let hw = matrix.width.max(matrix.height) / 1500;
-    for &(x, y) in path {
-        if y < matrix.height && x < matrix.width {
-            let y_min = y.saturating_sub(hw);
-            let y_max = (y + hw).min(matrix.height - 1);
-            let x_min = x.saturating_sub(hw);
-            let x_max = (x + hw).min(matrix.width - 1);
-            for ny in y_min..=y_max {
-                for nx in x_min..=x_max {
-                    img.put_pixel(nx as u32, ny as u32, Rgba([255, 255, 255, 180]));
-                }
-            }
-        }
-    }
+    draw_path(&mut img, matrix, path, Rgba([255, 255, 255, 180]));
  
     img
 }

@@ -9,4 +9,5 @@ pub use simulation_image::makepng_with_matrix_and_interpolation;
 pub use path_image::make_shaded_png;
 pub use simulation_image::create_scale_image;
 pub use images_helpers::draw_covered_points;
+pub use images_helpers::draw_path;
 pub use images_helpers::COVERAGE_OVERLAY_COLOR;

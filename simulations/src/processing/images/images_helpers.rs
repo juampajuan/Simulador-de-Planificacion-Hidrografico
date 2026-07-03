@@ -88,3 +88,25 @@ pub fn draw_covered_points(
         }
     }
 }
+
+pub fn draw_path(
+    img: &mut image::RgbaImage,
+    matrix: &DepthMatrix,
+    path: &[(usize, usize)],
+    color: Rgba<u8>,
+) {
+    let hw = matrix.width.max(matrix.height) / 1500;
+    for &(x, y) in path {
+        if y < matrix.height && x < matrix.width {
+            let y_min = y.saturating_sub(hw);
+            let y_max = (y + hw).min(matrix.height - 1);
+            let x_min = x.saturating_sub(hw);
+            let x_max = (x + hw).min(matrix.width - 1);
+            for ny in y_min..=y_max {
+                for nx in x_min..=x_max {
+                    img.put_pixel(nx as u32, ny as u32, color);
+                }
+            }
+        }
+    }
+}
