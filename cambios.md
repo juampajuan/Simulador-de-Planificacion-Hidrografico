@@ -19,24 +19,52 @@
 	2. __TODO: Pongan aca donde lo fueron agregando, asi ya esta__.
 
 ## Modo Examen
-- [] Generar nueva tabla que guarde todos los parametros de simulacion + Fk alumno + Fk proyecto + Booleano de "Entrego este" + Valores estadisticos (maximos, desvios, etc)
+- [x] Generar nueva tabla que guarde todos los parametros de simulacion + Fk alumno + Fk proyecto + Booleano de "Entrego este" + Valores estadisticos (maximos, desvios, etc)
+- [x] Generar metodos de manipulacion del mismo en la DB. (Get, set, update)
 - [] Enpoints para obtenerlos
 - [] Que se guarde cada vez que tocas simular.
 - [] Enpoint de alumno para seleccionar y modififcar el bool.
 - [] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
+- [] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
 
 ## Front
 - [] Info primero al entrar a la simulacion.
 - [] Mover en login desface de textos.
 - [x] Detalles de modales
-- [] Modal para alumnos, para ver las simulaciones y poder entregar
+- [] Modal para ver las simulaciones y poder entregar. __MISMO MODAL PARA EL DOCENTE__
+	Es decir, solo deberia de cambiar botones, pero la idea seria codearlo 1 vez, como un compoenente generico, voy a hacer que ande la misma api.
 - [] Toggle, para ver o **mapa de diferencias**. Osea que muestre o una foto o la otra, alterna.
 - [] Login NO debe redifirigir si pones mal la contrasenia, solo mostrar el mensaje.
 - [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar  por slack o algo.
- 
+- [] Agregar el MODO EXAMEN o no al crear un proyecto.
+- [] Quitar lo de los intentos, si no es modo examen??
+
 
 ## Cache
 - [] Separarlo (Por el amor de dios. 🙏)
 
 ## Docker
 - [] Generar el compose.yaml
+
+## Otros detalles
+- [] Mover metodos auxiales fuera de los archivos de endpoints.
+	Hay que pensar a donde, para charlar
+- [] Yo moveria los archivos de structs dentro server/structs a cada disciplana a la que pertenecnen
+	Por ejemplo, para las settings, creo un carpeta.
+	El del reqquests, genero en requests/ un structs.rs y asi.
+- [] Se chequean los intentos en back? o solo front?
+
+## Important
+No lo discutimos, pero no lo veo complicado, asi que lo haria.
+- [] Yo haria que se guarde la foto de la simulacion, junto al intento si es Examen.
+	Luego, con el nombre, la expongo en un endpoint "url/images/<nombre>". Y asi se peuden mostrar.
+
+	Y agrego un metodo para borrar las NO usadas en el CLI. O veo de generar una tarea periodica (cada unos dias.)
+
+	1. Porque, porque seguro es facil gaurdarla, si ya la generan, Usen un nombre random o fecha actual + 5 letras random.
+	2. Se guarda en el student_simulations, como un parametro texto.
+	3. Es mucho mas facil para el profe y los alumnos verlas para elegir.
+
+## Consultar a fer o expliquen
+1. Que no ocurre en el modo examen? Solamente no deben/pueden entregar?
+2. En NO examen: Es cuendo se muestra la comparacion? o es en ambos?
