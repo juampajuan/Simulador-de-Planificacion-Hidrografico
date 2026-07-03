@@ -1,6 +1,6 @@
 ## Simulacion
 - [x] recuerdro de zona en los PNG.
-- [] Cambiar la cobertura a un valor medio, para no spoilear.
+- [x] Cambiar la cobertura a un valor medio, para no spoilear.
 - [x] Lib que genere imagen superpuesta de simulacion con cobertura arriba.
 - [] Porque hardcodeado esas datos? (Los 10cm o 200k hz)
 	- Revisar el angulo

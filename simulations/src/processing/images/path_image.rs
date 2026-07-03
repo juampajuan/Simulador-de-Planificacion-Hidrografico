@@ -50,9 +50,6 @@ pub fn makepng_transparent_with_path(
 ) -> RgbaImage {
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
 
-    // grosor proporcional a la resolucion: fino en rasters chicos, visible en grandes
-    let hw = matrix.width.max(matrix.height) / 1500;
-
     fill_zone_translucent(&mut img, matrix, ZONE_FILL_COLOR);
     
     draw_path(&mut img, matrix, path, Rgba([255, 255, 255, 255]));
