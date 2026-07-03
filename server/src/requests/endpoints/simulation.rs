@@ -79,7 +79,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
     
-    let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters);
+    let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters, settings.simulation_constants());
     
     // aca cambia con respecto a las otras req que usan blob
     // los pixeles rgb se pasan a bytes png y luego a strings de base 64, para mandarlos en el struct
@@ -142,7 +142,7 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
  
-    let image = simulations::create_path_with_coverage(&matrix, &path, echo_parameters);
+    let image = simulations::create_path_with_coverage(&matrix, &path, echo_parameters, settings.simulation_constants());
     let response = create_png_response(image);
  
     println!("Imagen de cobertura generada.");

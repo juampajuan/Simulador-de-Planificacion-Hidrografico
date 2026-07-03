@@ -31,7 +31,25 @@ ECHO_UMBRAL_MIN = 10.0
 ECHO_UMBRAL_MAX = 90.0
 SOUND_SPEED_MIN = 1450.0
 SOUND_SPEED_MAX = 1500.0
-    # Se debe reiniciar el servidor, para que se apliquen.
+
+# Constantes fisicas de la ecosonda, usadas para calcular el angulo del haz
+# y la absorcion
+ECHO_DIAMETER = 0.20            # Diametro del transductor, en metros
+ECHO_HIGH_FREQ_HZ = 200000.0    # Frecuencia en modo alta frecuencia, en Hz
+ECHO_HIGH_FREQ_ALPHA = 0.060    # Coeficiente de absorcion en alta frecuencia, en dB/m
+ECHO_LOW_FREQ_HZ = 20000.0      # Frecuencia en modo baja frecuencia, en Hz
+ECHO_LOW_FREQ_ALPHA = 0.004     # Coeficiente de absorcion en baja frecuencia, en dB/m
+ECHO_BEAM_WIDTH_FACTOR = 60.0   # Factor para el calculo del ancho del haz Monohaz (Clase 03b)
+ECHO_MULTIHAZ_ANGLE_DEG = 120.0 # Angulo TOTAL del haz Multihaz, en grados
+ECHO_DETECTION_THRESHOLD = 40.0 # Umbral minimo de senal para detectar el eco, en dB
+ECHO_MAX_GAIN = 36.0            # Ganancia maxima configurable, en dB (a esa ganancia se simula eco falso)
+
+# Constantes del ambiente/agua (no son de la ecosonda), usadas para el
+# modelo de marea y de error de velocidad del sonido
+SOUND_VELOCITY = 1500.0 # Velocidad del sonido en el agua, en m/s (no confundir con SOUND_SPEED_MIN/MAX de arriba, que es el rango que puede elegir el alumno)
+TIDE_AMPLITUDE = 1.5    # Amplitud de la marea, en metros
+TIDE_PERIOD_H = 12.4    # Periodo de la marea, en horas
+TIDE_PHASE = 0.0        # Fase inicial de la marea, en radianes
 
 # Nombre en donde se almacenaran los LOGS.
 LOG_FILE_NAME = "logs.txt"

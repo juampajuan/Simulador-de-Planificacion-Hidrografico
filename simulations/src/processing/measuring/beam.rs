@@ -4,7 +4,7 @@ use super::points::calculate_distance_between_points;
 
 #[allow(dead_code)]
 pub enum MeasureMode {
-    Perpendicular {},
+    Perpendicular { angle: f64 },
     Circular { angle: f64 },
 }
 
@@ -23,16 +23,19 @@ pub fn get_measures(
             }
             MeasurementsType::Monohaz { measurements: (resulting_measures) }
         },
-        MeasureMode::Perpendicular {} => {
-
-            get_perpendicular_measurements(measure_points, None, matrix)
+        MeasureMode::Perpendicular { angle } => {
+            //el avg_depth enviado como None en los parametros hace que se use la profundidad real de cada punto, en vez de una fija para todos
+            //Se utilizaria una profundidad fija solamente para ver la cobertura de la sonda en toda la matriz, sin importar la profundidad real de cada punto.
+            //Osea el boton de cobertura en la aplicacion.
+            get_perpendicular_measurements(measure_points, angle, None, matrix)
         }
     }
 }
 
 pub fn get_perpendicular_measurements(
     measure_points: &Vec<(usize, usize)>,
-    fixed_depth: Option<f64>,
+    angle_deg: f64,
+    avg_depth: Option<f64>,
     matrix: &DepthMatrix,
 ) -> MeasurementsType {
     let mut resulting_measures: Vec<((usize, usize), f64)> = Vec::new();
@@ -43,8 +46,8 @@ pub fn get_perpendicular_measurements(
     let mut left_group: Vec<((usize, usize), f64)> = Vec::new();
  
     for next_point in measure_points {
-        let z = fixed_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
-        let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), z, matrix);
+        let z = avg_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
+        let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), angle_deg, z, matrix);
  
         resulting_measures.extend(center);
         left_group.extend(left);
@@ -54,8 +57,8 @@ pub fn get_perpendicular_measurements(
         current_point = next_point;
     }
  
-    let z = fixed_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
-    let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, z, matrix);
+    let z = avg_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
+    let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, angle_deg, z, matrix);
     resulting_measures.extend(center);
     left_group.extend(left);
     right_group.extend(right);
@@ -86,6 +89,7 @@ fn get_points_perpendicular_to_this(
     prev_point: Option<&(usize, usize)>,
     current_point: &(usize, usize),
     next_point: Option<&(usize, usize)>,
+    angle_deg: f64,
     z: f64,
     matrix: &DepthMatrix,
 ) -> [Vec<((usize,usize), f64)>; 3] {
@@ -118,8 +122,7 @@ fn get_points_perpendicular_to_this(
     let cy = current_point.1 as f64;
  
     //Hay que hacer que se mida una cantidad de puntos ingresada por parametro y lo mismo con el salto entra cada punto
-    let angle_deg:f64 = 60.0; // Ángulo del haz en grados
-    let mitad_cobertura = (2.0*z*(angle_deg.to_radians()).tan())/2.0/ matrix.size_x; 
+    let mitad_cobertura = (2.0*z*((angle_deg/ 2.0).to_radians()).tan())/2.0/ matrix.size_x; 
  
     let left_point_x = cx + mitad_cobertura * perp_x;
     let left_point_y = cy + mitad_cobertura * perp_y;
@@ -294,5 +297,71 @@ mod tests {
         let puntos = get_points_circular_to_this(&centro, 60.0, &matrix);
  
         assert!(puntos.contains(&centro));
+    }
+
+    // Matriz donde la mitad izquierda es muy profunda y la mitad derecha
+    // muy poco profunda -- para poder distinguir si el ancho del swath usa
+    // la profundidad real de cada punto o una fija para todos.
+    fn matriz_con_dos_profundidades(width: usize, height: usize) -> DepthMatrix {
+        let mut data = vec![vec![0.0; width]; height];
+        for row in data.iter_mut() {
+            for (x, cell) in row.iter_mut().enumerate() {
+                *cell = if x < width / 2 { 100.0 } else { 1.0 };
+            }
+        }
+        DepthMatrix {
+            data,
+            width,
+            height,
+            no_data: None,
+            size_x: 1.0,
+            size_y: 1.0,
+            geo_transform: [0.0, 1.0, 0.0, 0.0, 0.0, -1.0],
+            projection: String::new(),
+        }
+    }
+
+    #[test]
+    fn con_profundidad_fija_el_ancho_del_swath_es_igual_en_toda_la_matriz() {
+        let matrix = matriz_con_dos_profundidades(100, 20);
+        let path: Vec<(usize, usize)> = (10..90).map(|x| (x, 10)).collect();
+
+        let result = get_perpendicular_measurements(&path, 60.0, Some(50.0), &matrix);
+        let MeasurementsType::Multihaz { paralel_measurment_1: left, .. } = result else {
+            panic!("se esperaba Multihaz");
+        };
+
+        let ancho_en_x = |target_x: usize| -> usize {
+            left.iter().filter(|(p, _)| p.0 == target_x).count()
+        };
+        let ancho_zona_profunda = ancho_en_x(30);
+        let ancho_zona_poco_profunda = ancho_en_x(70);
+
+        assert!(
+            (ancho_zona_profunda as i64 - ancho_zona_poco_profunda as i64).abs() <= 1,
+            "el ancho deberia ser igual con profundidad fija: profunda={ancho_zona_profunda}, poco profunda={ancho_zona_poco_profunda}"
+        );
+    }
+
+    #[test]
+    fn con_profundidad_real_el_ancho_del_swath_varia_segun_la_zona() {
+        let matrix = matriz_con_dos_profundidades(100, 20);
+        let path: Vec<(usize, usize)> = (10..90).map(|x| (x, 10)).collect();
+
+        let result = get_perpendicular_measurements(&path, 60.0, None, &matrix);
+        let MeasurementsType::Multihaz { paralel_measurment_1: left, .. } = result else {
+            panic!("se esperaba Multihaz");
+        };
+
+        let ancho_en_x = |target_x: usize| -> usize {
+            left.iter().filter(|(p, _)| p.0 == target_x).count()
+        };
+        let ancho_zona_profunda = ancho_en_x(30);
+        let ancho_zona_poco_profunda = ancho_en_x(70);
+
+        assert!(
+            ancho_zona_profunda > ancho_zona_poco_profunda * 2,
+            "con profundidad real se esperaba una diferencia notable: profunda={ancho_zona_profunda}, poco profunda={ancho_zona_poco_profunda}"
+        );
     }
 }

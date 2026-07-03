@@ -1,9 +1,8 @@
-
-
 use common::{
     EchosounderParameters, EcosondaMode, GnssType, StudentMeasuringParameters, Transport,
     TransportParameters,
 };
+use simulations::structs::simulation_constants::{SimulationConstants, EchosounderConstants, EnvironmentConstants};
 
 const GEOTIFF_PATH: &str = "uploads/geotiffs/Darsena_20cm_v2_1781927635.tif";
 
@@ -13,8 +12,8 @@ fn main() {
 
     let path = simulations::create_path(
         &matrix,
-        90.0,              // azimuth_deg
-        90.0,               // separation_meters
+        90.0, // azimuth_deg
+        90.0, // separation_meters
         GnssType::PhaseCorrection,
     );
 
@@ -41,10 +40,30 @@ fn main() {
         },
     };
 
-    let student_interpolation = simulations::run_simulation(&matrix, &path, params);
+    let constants = SimulationConstants {
+        echosounder: EchosounderConstants {
+            diameter: 0.20,
+            high_freq_hz: 200000.0,
+            high_freq_alpha: 0.060,
+            low_freq_hz: 20000.0,
+            low_freq_alpha: 0.004,
+            beam_width_factor: 60.0,
+            multihaz_angle_deg: 120.0,
+            detection_threshold: 40.0,
+            max_gain: 36.0,
+        },
+        environment: EnvironmentConstants {
+            sound_velocity: 1500.0,
+            tide_amplitude: 1.5,
+            tide_period_h: 12.4,
+            tide_phase: 0.0,
+        },
+    };
+
+    let student_interpolation = simulations::run_simulation(&matrix, &path, params, constants);
 
     let (img, min_val, max_val) =
-        simulations::create_simulation_with_coverage(&matrix, &student_interpolation, &path, params);
+        simulations::create_simulation_with_coverage(&matrix, &student_interpolation, &path, params, constants);
 
     println!("Rango de profundidad: {min_val:.2} a {max_val:.2}");
 

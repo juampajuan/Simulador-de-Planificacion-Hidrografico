@@ -1,15 +1,17 @@
 use crate::DepthMatrix;
 use common::{EcosondaMode, StudentMeasuringParameters};
 use crate::processing::geotiff::get_matrix_avg_depth;
-use crate::processing::measuring::{find_measuring_points, beam::{calculate_covered_radius, get_points_in_radius, get_points_circular_to_this, get_perpendicular_measurements}, MeasureMode, get_measures};
+use crate::processing::measuring::{find_measuring_points, beam::{calculate_covered_radius, get_points_in_radius, get_points_circular_to_this, get_perpendicular_measurements}};
 use crate::structs::measurement_type::MeasurementsType;
 use crate::structs::student_measuring_parameters::EchosounderLogic;
+use crate::structs::simulation_constants::SimulationConstants;
 
 pub(super) fn get_covered_points(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
     params: &mut StudentMeasuringParameters,
     use_real_depth: bool,
+    constants: SimulationConstants,
 ) -> Vec<((usize, usize), f64)> {
     let boat_speed = params.transport_parameters.speed;
     let distance_between_points = boat_speed * params.echo_sounder_parameters.pulse_repetition_interval.recip();
@@ -20,7 +22,7 @@ pub(super) fn get_covered_points(
         matrix,
     );
  
-    params.echo_sounder_parameters.create_echosounder();
+    params.echo_sounder_parameters.create_echosounder(&constants);
  
     match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
@@ -57,7 +59,7 @@ pub(super) fn get_covered_points(
                 Some(get_matrix_avg_depth(matrix).unwrap_or(0.0))
             };
  
-            let measurements = get_perpendicular_measurements(&points_to_measure, fixed_depth, matrix);
+            let measurements = get_perpendicular_measurements(&points_to_measure, constants.echosounder.multihaz_angle_deg, fixed_depth, matrix);
             match measurements {
                 MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
                     let mut all = central_measurments;
@@ -71,4 +73,3 @@ pub(super) fn get_covered_points(
         },
     }
 }
-
