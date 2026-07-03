@@ -21,22 +21,22 @@ pub(super) fn get_covered_points(
     );
  
     params.echo_sounder_parameters.create_echosounder();
+    
+    let avg_depth = get_matrix_avg_depth(matrix).unwrap_or(0.0);
 
     // Si no es profundidad real, el radio es el mismo para todos
     // los puntos (uniforme, en base al promedio).
-    let uniform_radius = if use_real_depth {
-        None
-    } else {
-        let avg_depth = get_matrix_avg_depth(matrix).unwrap_or(0.0);
-        Some(calculate_covered_radius(avg_depth, params.echo_sounder_parameters.angle, matrix))
-    };
  
     match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
             // Para monohaz mostramos todos los píxeles dentro del círculo del haz,
             // no solo el punto central — así se ve el área real cubierta.
             let mut covered = Vec::new();
- 
+            let uniform_radius = if use_real_depth {
+                None
+            } else {
+                Some(calculate_covered_radius(avg_depth, params.echo_sounder_parameters.angle, matrix))
+            };
             for &point in &points_to_measure {
                 let circle_points = match uniform_radius {
                     Some(radius) => get_points_in_radius(&point, radius, matrix),
@@ -49,7 +49,7 @@ pub(super) fn get_covered_points(
             covered
         },
         EcosondaMode::Multihaz => {
-            let measurements = get_measures(MeasureMode::Perpendicular {}, matrix, &points_to_measure);
+            let measurements = get_measures(MeasureMode::Perpendicular{ avg_depth: Some(avg_depth) }, matrix, &points_to_measure);
             match measurements {
                 MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
                     let mut all = central_measurments;

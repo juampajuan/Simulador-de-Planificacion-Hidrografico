@@ -4,7 +4,7 @@ use super::points::calculate_distance_between_points;
 
 #[allow(dead_code)]
 pub enum MeasureMode {
-    Perpendicular {  },
+    Perpendicular { avg_depth: Option<f64> },
     Circular { angle: f64 },
 }
 
@@ -23,7 +23,7 @@ pub fn get_measures(
             }
             MeasurementsType::Monohaz { measurements: (resulting_measures) }
         },
-        MeasureMode::Perpendicular { } => {
+        MeasureMode::Perpendicular { avg_depth } => {
 
             let mut previous_point: Option<&(usize, usize)> = None;
             let mut current_point = &measure_points[0];
@@ -32,7 +32,7 @@ pub fn get_measures(
             let mut left_group: Vec<((usize, usize), f64)> = Vec::new();
 
             for next_point in measure_points {
-                let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), matrix);
+                let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), matrix, avg_depth);
 
                 resulting_measures.extend(center);
                 left_group.extend(left);
@@ -42,7 +42,7 @@ pub fn get_measures(
                 current_point = next_point;
             }
 
-            let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, matrix);
+            let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, matrix, avg_depth);
             resulting_measures.extend(center);
             left_group.extend(left);
             right_group.extend(right);
@@ -75,6 +75,7 @@ fn get_points_perpendicular_to_this(
     current_point: &(usize, usize),
     next_point: Option<&(usize, usize)>,
     matrix: &DepthMatrix,
+    avg_depth: Option<f64>,
 ) -> [Vec<((usize,usize), f64)>; 3] {
 
     let reference = match (prev_point, next_point) {
@@ -106,8 +107,9 @@ fn get_points_perpendicular_to_this(
 
     //Hay que hacer que se mida una cantidad de puntos ingresada por parametro y lo mismo con el salto entra cada punto
 
+    let depth = avg_depth.unwrap_or(matrix.data[current_point.1][current_point.0]);
     let angle_deg:f64 = 60.0; // Ángulo del haz en grados
-    let mitad_cobertura = (2.0*(matrix.data[current_point.1][current_point.0])*(angle_deg.to_radians()).tan())/2.0/ matrix.size_x; 
+    let mitad_cobertura = (2.0*(depth)*(angle_deg.to_radians()).tan())/2.0/ matrix.size_x; 
 
     let left_point_x = cx + mitad_cobertura * perp_x;
     let left_point_y = cy + mitad_cobertura * perp_y;

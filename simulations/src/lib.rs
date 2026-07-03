@@ -80,7 +80,7 @@ pub fn run_simulation(
             get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure)
         },
         EcosondaMode::Multihaz => {
-            get_measures(MeasureMode::Perpendicular {}, matrix, &points_to_measure)
+            get_measures(MeasureMode::Perpendicular { avg_depth: None }, matrix, &points_to_measure)
         },
     };
 
