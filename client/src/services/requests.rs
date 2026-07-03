@@ -31,6 +31,7 @@ pub struct GeoCorners {
 pub struct StudentSimulation {
     pub id: i64,
     pub selected: bool,
+    pub attempt_number: i64,
     pub result_min_depth: f64,
     pub result_max_depth: f64,
     pub student_id: i64,
@@ -225,6 +226,7 @@ pub fn create_project(
         name,
         description,
         file,
+        exam_mode,
         attempts_limit,
         weather,
         seabed_hardness,
@@ -238,6 +240,7 @@ pub fn create_project(
         "name": name,
         "description": if description.is_empty() { None } else { Some(description) },
         "filename": file.name(),
+        "exam_mode": exam_mode,
         "attempts_limit": attempts_limit,
         "weather": weather,
         "seabed_hardness": seabed_hardness,

@@ -95,10 +95,15 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     let map_encoded = STANDARD.encode(map_bytes);
     let scale_encoded = STANDARD.encode(scale_bytes); //base64
 
+    let db_lock = db.lock().unwrap();
+    let attempt_number = student_simulations::get_next_attempt_number(&db_lock, ctx.student_id).unwrap_or(1);
+    drop(db_lock);
+
     if let Err(e) = student_simulations::create_student_simulation_locked(
         &db,
         ctx.student_id,
         ctx.project_id,
+        attempt_number,
         min_depth,
         max_depth,
         &ctx.data.path_parameters,

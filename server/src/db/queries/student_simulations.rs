@@ -6,6 +6,7 @@ use crate::db::engine::DBEngine;
 #[derive(serde::Serialize)]
 pub struct StudentSimulation {
     pub id: i64,
+    pub attempt_number: i64,
     pub selected: bool,
 
     pub result_min_depth: f64,
@@ -27,6 +28,7 @@ pub fn create_student_simulation(
     db: &DBEngine,
     student_id: i64,
     project_id: i64,
+    attempt_number: i64,
     result_min_depth: f64,
     result_max_depth: f64,
     path: &PathParameters,
@@ -37,6 +39,7 @@ pub fn create_student_simulation(
     let mut statement = db.run_query(
         "
         INSERT INTO student_simulations(
+            attempt_number,
             result_max_depth,
             result_min_depth,
 
@@ -65,7 +68,7 @@ pub fn create_student_simulation(
             project_id
         )
         VALUES(
-            ?, ?,
+            ?, ?, ?,
             ?, ?, ?,
             ?, ?, ?, ?, ?,
             ?, ?,
@@ -76,32 +79,33 @@ pub fn create_student_simulation(
     )?;
 
     // statement.bind((1, 0))?;
-    statement.bind((1, result_max_depth))?;
-    statement.bind((2, result_min_depth))?;
+    statement.bind((1, attempt_number))?;
+    statement.bind((2, result_max_depth))?;
+    statement.bind((3, result_min_depth))?;
 
-    statement.bind((3, path.separacion))?;
-    statement.bind((4, path.azimut))?;
-    statement.bind((5, path.gnss_type as i64))?;
+    statement.bind((4, path.separacion))?;
+    statement.bind((5, path.azimut))?;
+    statement.bind((6, path.gnss_type as i64))?;
 
-    statement.bind((6, transport.transport as i64))?;
-    statement.bind((7, transport.speed))?;
-    statement.bind((8, transport.uses_mareograph as i64))?;
-    statement.bind((9, transport.uses_sound_profiler as i64))?;
-    statement.bind((10, transport.uses_inertial_sensor as i64))?;
+    statement.bind((7, transport.transport as i64))?;
+    statement.bind((8, transport.speed))?;
+    statement.bind((9, transport.uses_mareograph as i64))?;
+    statement.bind((10, transport.uses_sound_profiler as i64))?;
+    statement.bind((11, transport.uses_inertial_sensor as i64))?;
 
-    statement.bind((11, echo.mode as i64))?;
-    statement.bind((12, echo.uses_high_frecuency as i64))?;
+    statement.bind((12, echo.mode as i64))?;
+    statement.bind((13, echo.uses_high_frecuency as i64))?;
 
-    statement.bind((13, echo.min_limit))?;
-    statement.bind((14, echo.max_limit))?;
-    statement.bind((15, echo.pulse_repetition_interval))?;
-    statement.bind((16, echo.sound_speed))?;
-    statement.bind((17, echo.transmited_potency))?;
-    statement.bind((18, echo.threshold))?;
-    statement.bind((19, echo.gain))?;
+    statement.bind((14, echo.min_limit))?;
+    statement.bind((15, echo.max_limit))?;
+    statement.bind((16, echo.pulse_repetition_interval))?;
+    statement.bind((17, echo.sound_speed))?;
+    statement.bind((18, echo.transmited_potency))?;
+    statement.bind((19, echo.threshold))?;
+    statement.bind((20, echo.gain))?;
 
-    statement.bind((20, student_id))?;
-    statement.bind((21, project_id))?;
+    statement.bind((21, student_id))?;
+    statement.bind((22, project_id))?;
 
     statement.next()?;
 
@@ -185,6 +189,7 @@ pub fn get_student_simulations(
         simulations.push(StudentSimulation {
             id: statement.read("id")?,
             selected: statement.read::<i64, _>("selected")? == 1,
+            attempt_number: statement.read("attempt_number")?,
 
             result_max_depth: statement.read("result_max_depth")?,
             result_min_depth: statement.read("result_min_depth")?,

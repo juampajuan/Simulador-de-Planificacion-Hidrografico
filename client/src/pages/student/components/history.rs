@@ -8,9 +8,10 @@ use lucide_yew::{History, ChevronDown, ChevronUp, Check, Circle};
 pub struct HistoryProps {
     pub history_state: UseStateHandle<Vec<StudentSimulation>>,
     pub ui_mensaje: UseStateHandle<String>,
+    pub exam_mode: bool,
 }
 
-/// Pestaña "Historial": Muestra los intentos de simulación del estudiante.
+/// Pestaña "Historial": Muestra los intentos de simulación del estudiante utilizando la persistencia real de la DB.
 #[function_component(HistoryParams)]
 pub fn history_params(props: &HistoryProps) -> Html {
     let input_cls = "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full font-mono";
@@ -91,7 +92,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                         <div class="flex items-center justify-between w-full">
                                             <div class="flex items-center shrink-0">
                                                 <Subtitle
-                                                    text={format!("Intento #{}", sim.id)}
+                                                    text={format!("Intento #{}", sim.attempt_number)}
                                                     icon={html! { <History size={16} /> }}
                                                 />
                                             </div>
@@ -108,12 +109,18 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                             </div>
                                         </div>
 
-                                        <div class="w-full pt-0.5">
-                                            <button onclick={on_select_delivery} class={btn_cls}>
-                                                { if is_selected { html!{ <Check size={14} /> } } else { html!{ <Circle size={14} /> } } }
-                                                { if is_selected { "ENTREGADO" } else { "ENTREGAR" } }
-                                            </button>
-                                        </div>
+                                        { if props.exam_mode {
+                                            html! {
+                                                <div class="w-full pt-0.5">
+                                                    <button onclick={on_select_delivery} class={btn_cls}>
+                                                        { if is_selected { html!{ <Check size={14} /> } } else { html!{ <Circle size={14} /> } } }
+                                                        { if is_selected { "ENTREGADO" } else { "ENTREGAR" } }
+                                                    </button>
+                                                </div>
+                                            }
+                                        } else {
+                                            html! {}
+                                        } }
                                     </div>
 
                                     { if is_expanded {

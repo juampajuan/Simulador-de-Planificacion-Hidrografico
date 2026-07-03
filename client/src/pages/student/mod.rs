@@ -164,11 +164,19 @@ pub fn student_page() -> Html {
                                 <MeasuresParams ui_state={ui_state.clone()} path_state={path_state.clone()} limits={limits_state.clone()} attempts={attempts_state.clone()} /> 
                             </>
                         },
-                        ActiveTab::Historial => html! {
-                            <HistoryParams 
-                                history_state={history_state.clone()} 
-                                ui_mensaje={mensaje.clone()}
-                            />
+                        ActiveTab::Historial => {
+                            let is_exam_mode = info_project_state
+                                .as_ref()
+                                .map(|p| p.metadata.exam_mode)
+                                .unwrap_or(false);
+
+                            html! {
+                                <HistoryParams 
+                                    history_state={history_state.clone()} 
+                                    ui_mensaje={mensaje.clone()}
+                                    exam_mode={is_exam_mode}
+                                />
+                            }
                         }
                     }
                 }

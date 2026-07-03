@@ -6,6 +6,7 @@ use crate::pages::admin::sections::projects::projects_fields::ProjectFormFields;
 #[derive(Properties, PartialEq)]
 pub struct ProjectParamsFormProps {
     pub form_state: UseStateHandle<ProjectFormFields>,
+    pub exam_mode: bool,
 }
 
 /// Form reutilizable con los parámetros del proyecto (intentos, clima, fondo, presupuesto, profundidades).
