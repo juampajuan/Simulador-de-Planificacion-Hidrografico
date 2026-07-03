@@ -25,7 +25,7 @@
 - [x] Que se guarde cada vez que tocas simular.
 - [x] Enpoint de alumno para seleccionar y modififcar el bool.
 - [] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
-- [] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
+- [x] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
 
 ## Front
 - [x] Info primero al entrar a la simulacion.
@@ -36,9 +36,7 @@
 - [] Toggle, para ver o **mapa de diferencias**. Osea que muestre o una foto o la otra, alterna.
 - [] Login NO debe redifirigir si pones mal la contrasenia, solo mostrar el mensaje.
 - [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar  por slack o algo.
-- [] Agregar el MODO EXAMEN o no al crear un proyecto.
-- [] Quitar lo de los intentos, si no es modo examen??
-
+- [x] Agregar el MODO EXAMEN o no al crear un proyecto.
 
 ## Cache
 - [x] Separarlo
