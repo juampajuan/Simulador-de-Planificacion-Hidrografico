@@ -7,3 +7,4 @@ pub mod echosounder;
 pub mod info;
 pub mod depthcolors;
 pub mod mapback;
+pub mod history;

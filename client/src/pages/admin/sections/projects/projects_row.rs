@@ -74,6 +74,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
     };
 
     let desc_text = props.project.description.clone().unwrap_or_else(|| "Sin descripción".to_string());
+    let is_exam_project = props.project.exam_mode;
 
     html! {
         <>
@@ -85,31 +86,41 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                     "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_0_1px_rgba(255,255,255,0.1)]"
                 )}
             >
-                <td class="px-4 py-2 text-left font-medium">{ props.row_number }</td>
+                <td class="px-4 py-2 text-left font-medium">{ props.row_number }</td>   
                 <td class="px-4 py-3">
                     <div class="space-y-1">
-                        <div>{ &props.project.name }</div>
+                        <div class="font-medium text-white">{ &props.project.name }</div>
                         <div class="text-xs text-white/70">{ desc_text }</div>
                     </div>
                 </td>
-                <td class="px-4 py-3">
+
+                <td class="px-4 py-3 whitespace-nowrap align-middle">
+                    <div class="font-medium text-white select-none">
+                        { if is_exam_project { "Entrega" } else { "Libre" } }
+                    </div>
+                </td>
+
+                <td class="px-4 py-3 whitespace-nowrap align-middle">
+                    <div class="font-medium text-white/90">
+                        { format!("{}", props.project.attempts_limit) }
+                    </div>
+                </td>
+
+                <td class="px-4 py-3 align-middle">
                     <div class="flex items-center">
                         <div class="bg-cyan-800 font-mono tracking-wider border border-white/20 px-3 py-1 rounded-full">
                             { &props.project.filename }
                         </div>
                     </div>
                 </td>
-                <td class="p-3 rounded-r-lg">
+
+                <td class="p-3 rounded-r-lg align-middle">
                     <div class="flex justify-end gap-2 items-center h-full">
                         <button 
                             onclick={toggle_edit}
                             class={classes!(
                                 "p-2", "rounded-full", "transition-colors", "cursor-pointer",
-                                if *is_editing { 
-                                    "bg-cyan-200 text-slate-900" 
-                                } else { 
-                                    "bg-white/15 hover:bg-white/25 text-white" 
-                                }
+                                if *is_editing { "bg-cyan-200 text-slate-900" } else { "bg-white/15 hover:bg-white/25 text-white" }
                             )}
                         >
                             if *is_editing { <X size={18}/> } else { <Pencil size={18}/> }
@@ -126,7 +137,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
 
             if *is_editing {
                 <tr class="text-sm">
-                    <td colspan="4" class="p-3 bg-slate-600 rounded-lg border border-white/20">
+                    <td colspan="6" class="p-4 bg-slate-600 rounded-lg border border-white/20">
                         <ProjectEdit
                             project_state={props.project.clone()} 
                             projects_state={props.projects_state.clone()}

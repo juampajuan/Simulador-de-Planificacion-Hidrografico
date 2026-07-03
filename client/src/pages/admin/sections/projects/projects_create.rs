@@ -18,6 +18,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
     let name_input = use_state(String::new);
     let description_input = use_state(String::new);
     let selected_file = use_state(|| None::<web_sys::File>); 
+    let exam_mode_input = use_state(|| false);
     
     let form_fields_state = use_state(ProjectFormFields::new_empty);
 
@@ -30,6 +31,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
         let file_opt = (*selected_file).clone();
         let name = (*name_input).clone();
         let description = (*description_input).clone();
+        let is_exam = *exam_mode_input;
         
         let fields = form_fields_state.clone();
         let error_msg = error_msg.clone();
@@ -82,6 +84,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                     description: description.clone(),
                     file,
                     attempts_limit: attempts,
+                    exam_mode: is_exam,
                     weather: fields.weather.clone(),
                     seabed_hardness: fields.seabed_hardness.clone(),
                     budget: b,
@@ -97,9 +100,9 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
         })
     };
 
-    // let file_name_preview = selected_file.as_ref().map(|f| f.name()).unwrap_or_default();
     let is_open_close = props.is_open.clone();
     let is_open_cancel = props.is_open.clone();
+    let exam_mode_clone = exam_mode_input.clone();
 
     html! {
         <Modal 
@@ -128,9 +131,6 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                                 if let Some(files) = e.target_unchecked_into::<web_sys::HtmlInputElement>().files() 
                                     && let Some(f) = files.get(0) { selected_file.set(Some(f)); }
                             })} />
-                        // if !file_name_preview.is_empty() { 
-                        //     <p class="text-[10px] text-cyan-300 truncate mt-0.5">{"Seleccionado: "}{file_name_preview}</p> 
-                        // }
                     </div>
                 </div>
 
@@ -140,10 +140,29 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                         oninput={Callback::from(move |e: InputEvent| description_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))} />
                 </div>
 
+                <div class="flex flex-col space-y-1 select-none">
+                    <label class="text-xs font-semibold text-white/80 mb-1">{"Modo de Trabajo"}</label>
+                    <div class="flex items-center gap-3 p-2 bg-slate-950 rounded-lg border border-white/10 focus-within:border-cyan-400 h-[38px] transition-colors">
+                        <input 
+                            id="exam_mode_checkbox"
+                            type="checkbox" 
+                            checked={*exam_mode_input}
+                            onchange={Callback::from(move |e: Event| {
+                                let target = e.target_unchecked_into::<web_sys::HtmlInputElement>();
+                                exam_mode_clone.set(target.checked());
+                            })}
+                            class="w-4 h-4 rounded text-cyan-400 bg-slate-900 border-white/20 focus:ring-0 focus:ring-offset-0 accent-cyan-200 cursor-pointer ml-1"
+                        />
+                        <label for="exam_mode_checkbox" class="text-sm text-white/90 cursor-pointer pt-0.5">
+                            {"Habilitar Modo Entrega"}
+                        </label>
+                    </div>
+                </div>
+
                 <div class="border-t border-white/5 my-2" />
                 <div class="text-xs font-bold text-cyan-300 uppercase tracking-wider">{"Parámetros Iniciales de Simulación"}</div>
 
-                <ProjectParamsForm form_state={form_fields_state} />
+                <ProjectParamsForm form_state={form_fields_state} exam_mode={*exam_mode_input} />
 
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" onclick={move |_| is_open_cancel.set(false)} class="px-4 py-2 text-sm font-medium bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">{"Cancelar"}</button>

@@ -18,6 +18,8 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
     let form_state = use_state(|| ProjectFormFields::from_project(&props.project_state));
     let error_msg = use_state(String::new);
 
+    let is_exam = props.project_state.exam_mode; 
+
     let on_submit = {
         let on_save = props.on_save.clone();
         let project_base = props.project_state.clone();
@@ -25,15 +27,25 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
         let error_msg = error_msg.clone();
 
         Callback::from(move |_| {
-            let attempts = match fields.attempts_limit.parse::<i64>() { Ok(n) => n, Err(_) => { error_msg.set("Intentos inválidos".into()); return; }};
             let b = match fields.budget.parse::<f64>() { Ok(n) => n, Err(_) => { error_msg.set("Presupuesto inválido".into()); return; }};
             let mind = match fields.min_depth.parse::<f64>() { Ok(n) => n, Err(_) => { error_msg.set("Prof. mínima inválida".into()); return; }};
             let maxd = match fields.max_depth.parse::<f64>() { Ok(n) => n, Err(_) => { error_msg.set("Prof. máxima inválida".into()); return; }};
-            if mind >= maxd {error_msg.set("La profundidad máxima debe ser mayor a la mínima".to_string()); return;}
-            if attempts <= 0 {error_msg.set("El límite de intentos debe ser mayor a cero".to_string()); return;}
+            if mind >= maxd { error_msg.set("La profundidad máxima debe ser mayor a la mínima".to_string()); return; }
+            
+            let attempts = match fields.attempts_limit.parse::<i64>() { 
+                Ok(n) => {
+                    if n <= 0 {
+                        error_msg.set("El límite de intentos debe ser mayor a cero".to_string());
+                        return;
+                    }
+                    n
+                } 
+                Err(_) => { error_msg.set("Intentos inválidos".into()); return; }
+            };
+
             error_msg.set(String::new());
 
-            let updated_project = Project {
+            let mut updated_project = Project {
                 attempts_limit: attempts,
                 weather: fields.weather.clone(),
                 seabed_hardness: fields.seabed_hardness.clone(),
@@ -42,17 +54,20 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
                 geotiff_max_depth: maxd,
                 ..project_base.clone()
             };
+            updated_project.exam_mode = is_exam; 
             on_save.emit(updated_project);
         })
     };
 
     html! {
         <div class="space-y-4">
-            <div class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                { "Editar Parámetros de Proyecto" }
+            <div class="flex justify-between items-center">
+                <div class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                    { "Editar Parámetros de Proyecto" }
+                </div>
             </div>
 
-            <ProjectParamsForm form_state={form_state} />
+            <ProjectParamsForm form_state={form_state} exam_mode={is_exam} />
 
             if !error_msg.is_empty() {
                 <p class="text-red-400 text-xs font-medium">{ &*error_msg }</p>

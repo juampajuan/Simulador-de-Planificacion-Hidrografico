@@ -86,10 +86,10 @@ pub struct FullSimulationRequest {
 }
 
 pub struct RequestContext {
-    pub cache_key: String,
     pub file_path: String,
     pub data: FullSimulationRequest,
     pub student_id: i64,
     pub student: Student, 
     pub project: AdminProjectView,
+    pub project_id: i64,
 }
