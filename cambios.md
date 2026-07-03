@@ -42,7 +42,7 @@
 - [x] Separarlo
 
 ## Docker
-- [] Generar el compose.yaml
+- [x] Generar el compose.yaml
 
 ## Otros detalles
 - [] Mover metodos auxiales fuera de los archivos de endpoints.

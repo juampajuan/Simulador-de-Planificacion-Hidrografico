@@ -1,91 +1,157 @@
-# Taller de Programacion {Grupo}
+# Taller de Programacion 5
 
-## Integrantes
+### Integrantes
 
 - Julen Gaumard
 - Juan Torga
 - Felipe Gazcon
 - Juan Pablo Dominguez Lucia
 
-## Como usar
-
-A continuacion se detallan los pasos para compilar y ejecutar el programa.
-
 ### Limitaciones/Aclaraciones
 
 - Las coordenadas deben ser **proyectadas**
 - El area debe ser **rectangular**
 
-### Requerimientos
-
-Se recomienda usar `rustc 1.96.0 (ac68faa20 2026-05-25)`.
-
-*Con otras versiones de rust, algunos crates pueden ser rechazados.*
- 
 <br/>
 
-Se debe tener instalada la libreria `gdal`.
+# Ejecución
+
+A continuacion se detallan las 2 formas esperables para ejecutar el servidor.
+
+## 1. Docker
+
+*Se puede ejecutar el proyecto bajo un contenedor de docker.*
+
+El `compose.yaml` gestionará la descarga, compilacion y ejecucion del proyecto.
 
 ```bash
-sudo apt install libgdal-dev gdal-bin
+# Dentro de la carpeta del proyecto
+docker compose up
+```
+
+> [!important]
+> Esto lo va a inicializar con la configuracion establecida en `config.toml`. 
+>
+> __Se recomienda cambiar ANTES la `ADMIN_PASS`.__
+
+<br/>
+
+Para realizar interactuar con el `CLI`, hay 2 opciones.
+
+1. Desde docker
+
+    Desde una terminal en el mismo dispositivo que ejecuta __Docker__.
+
+    ```bash
+    docker attach <id_container>
+    ```
+
+2. Desde otro dispositivo
+
+    Compilando y ejecutando el `CLI` de forma manual como se explica [debajo](###Ejecución).
+
+
+## 2. Manual
+
+*Se puede compilar y ejecutar el proyecto de forma manual.*
+
+### Requerimientos
+
+* Se recomienda usar `rustc 1.96.0 (ac68faa20 2026-05-25)`.
+
+    *Con otras versiones de rust, algunos crates pueden ser rechazados.*
+  
+* Se debe tener instalada la libreria `gdal`.
+
+    ```bash
+    sudo apt install libgdal-dev gdal-bin
+    ```
+
+* Por ultimos se instalan dependencias para compilar el front `wasm`.
+
+    ```bash
+    rustup target add wasm32-unknown-unknown
+    cargo install trunk
+    ```
+
+
+### Compilación
+
+*Se pueden compilar en distintas terminales y al mismo tiempo.*
+
+Para compilar el front:
+
+```bash
+# En la ruta /src/client
+trunk build --release --dist dist
+```
+
+Para compilar el server:
+
+```bash
+cargo build -p server --release
+# Automaticamente instala el resto de dependencias/crates.
+# Deja el binario compilado en /target/release/
 ```
 
 ### Ejecución
 
-Como el server se encarga de servir a la web, con levantarlo es suficiente para tener todo el proyecto funcionando.
+Como el `server` tambien entrega el front, con ejecutarlo ya tendremos toda el proyecto en funcionamiento.
 
 ```bash
-cargo run -p server 
-# Automanticamente instala el resto de dependencias/crates y lo ejecuta.
+./target/release/server 
+# Lo ejecuta.
 ```
 
-<br/>
-
-Si se necesita utilizar el `CLI`, en otra pc, para gestionar docentes.
+Si se necesita utilizar el `CLI`, para gestionar docentes desde otro dispositivo.
 
 ```bash
 cargo run -p cli
 ```
 
-### Desarrollo
+## Desarrollo
 
-Para el desarrollo, puede ser necesario levantar el client. Para que actualice el front.
+Para el desarrollo, se agregan unas dependencias para compilar cambios de estilo en el `front`.
 
-#### Requerimientos
-
-Primero, se debe instarlar crates extras para `wasm`.
+Se debe tener `node` instalado:
 
 ```bash
-rustup target add wasm32-unknown-unknown
-cargo install trunk
+sudo apt install nodejs npm -y
 ```
 
-Y para `tailwind` que maneja los estilos.
+Y luego:
 
 ```bash
-# En la segunda
-# Con la ruta en /src/client/ui
+# En /src/client/ui
 npm install
 ```
 
-#### Compilacion
+1. Server/Simulation
 
-Una vez instalada las dependencias del front se puede inicar su desarrollo ejecutando.
+    Para ejecutar el servidor en desarrollo, se puede usar: 
 
-```bash
-# En primera terminal:
-# En la ruta root/src/client
-trunk serve
+    ```bash
+    cargo run -p server
+    # Compila y ejecuta con 1 solo comando.
+    ```
 
-# En la segunda
-# En la ruta root/src/client/ui 
-npx tailwindcss -i ./styles.css -o ./tailwind.css --watch      
-```
+    *Tambien se puede hacer por separado, como se mostró con anterioridad.*
 
-<br/>
+2. Front
 
-Para el servidor, se utiliza el mismo comando que para su comun ejecución.
+    Una vez instaladas las dependencias del `front` se puede iniciar su desarrollo ejecutando.
 
-```bash
-cargo run -p server
-```
+    ```bash
+    # En primera terminal:
+    # En la ruta root/src/client
+    trunk serve
+
+    # En la segunda
+    # En la ruta root/src/client/ui 
+    npx tailwindcss -i ./styles.css -o ./tailwind.css --watch      
+    ```
+
+    Esto otorga `hot reload` antes los cambios, para hacer el desarrollo mas ameno.
+
+> [!warning]
+> *Será necesario desabilitar `CORS` del server, para que se acepten las requests.*
