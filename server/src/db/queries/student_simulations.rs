@@ -3,8 +3,10 @@ use common::{EchosounderParameters, PathParameters, TransportParameters, GnssTyp
 use crate::db::engine::DBEngine;
 
 /// TODO: Mover a algo compartido??
+#[derive(serde::Serialize)]
 pub struct StudentSimulation {
     pub id: i64,
+    pub attempt_number: i64,
     pub selected: bool,
 
     pub result_min_depth: f64,
@@ -26,6 +28,7 @@ pub fn create_student_simulation(
     db: &DBEngine,
     student_id: i64,
     project_id: i64,
+    attempt_number: i64,
     result_min_depth: f64,
     result_max_depth: f64,
     path: &PathParameters,
@@ -36,6 +39,7 @@ pub fn create_student_simulation(
     let mut statement = db.run_query(
         "
         INSERT INTO student_simulations(
+            attempt_number,
             result_max_depth,
             result_min_depth,
 
@@ -74,56 +78,88 @@ pub fn create_student_simulation(
         "
     )?;
 
-    statement.bind((1, 0))?;
-    statement.bind((1, result_max_depth))?;
-    statement.bind((2, result_min_depth))?;
+    // statement.bind((1, 0))?;
+    statement.bind((1, attempt_number))?;
+    statement.bind((2, result_max_depth))?;
+    statement.bind((3, result_min_depth))?;
 
-    statement.bind((3, path.separacion))?;
-    statement.bind((4, path.azimut))?;
-    statement.bind((5, path.gnss_type as i64))?;
+    statement.bind((4, path.separacion))?;
+    statement.bind((5, path.azimut))?;
+    statement.bind((6, path.gnss_type as i64))?;
 
-    statement.bind((6, transport.transport as i64))?;
-    statement.bind((7, transport.speed))?;
-    statement.bind((8, transport.uses_mareograph as i64))?;
-    statement.bind((9, transport.uses_sound_profiler as i64))?;
-    statement.bind((10, transport.uses_inertial_sensor as i64))?;
+    statement.bind((7, transport.transport as i64))?;
+    statement.bind((8, transport.speed))?;
+    statement.bind((9, transport.uses_mareograph as i64))?;
+    statement.bind((10, transport.uses_sound_profiler as i64))?;
+    statement.bind((11, transport.uses_inertial_sensor as i64))?;
 
-    statement.bind((11, echo.mode as i64))?;
-    statement.bind((12, echo.uses_high_frecuency as i64))?;
+    statement.bind((12, echo.mode as i64))?;
+    statement.bind((13, echo.uses_high_frecuency as i64))?;
 
-    statement.bind((13, echo.min_limit))?;
-    statement.bind((14, echo.max_limit))?;
-    statement.bind((15, echo.pulse_repetition_interval))?;
-    statement.bind((16, echo.sound_speed))?;
-    statement.bind((17, echo.transmited_potency.to_string().as_str()))?;
-    statement.bind((18, echo.threshold))?;
-    statement.bind((19, echo.gain as i64))?;
+    statement.bind((14, echo.min_limit))?;
+    statement.bind((15, echo.max_limit))?;
+    statement.bind((16, echo.pulse_repetition_interval))?;
+    statement.bind((17, echo.sound_speed))?;
+    statement.bind((18, echo.transmited_potency))?;
+    statement.bind((19, echo.threshold))?;
+    statement.bind((20, echo.gain))?;
 
-    statement.bind((20, student_id))?;
-    statement.bind((21, project_id))?;
+    statement.bind((21, student_id))?;
+    statement.bind((22, project_id))?;
 
     statement.next()?;
 
     Ok(())
 }
 
-/// Permite marcar 1 simulacion como la entrega.
-/// TODO: Pregunntar a fernando, si deberia de poder cambiarlo? Si toco mal.
+/// Remueve todas las entregas finales para un alumno específico, dejando todo en FALSE.
+/// Se usa cuando el alumno desmarca el intento que ya estaba entregado.
+pub fn clear_student_simulations(
+    db: &DBEngine,
+    student_id: i64,
+) -> Result<(), sqlite::Error> {
+    let mut statement = db.run_query(
+        "
+        UPDATE student_simulations
+        SET selected = FALSE
+        WHERE student_id = ?
+        "
+    )?;
+
+    statement.bind((1, student_id))?;
+    statement.next()?;
+
+    Ok(())
+}
+
+/// Permite marcar una simulación como la entrega final, asegurando de forma atómica
+/// que todas las demás simulaciones del mismo alumno queden desmarcadas.
 pub fn select_student_simulation(
     db: &DBEngine,
     simulation_id: i64,
 ) -> Result<(), sqlite::Error> {
+    // 1. Primero limpiamos todas las entregas para este alumno en particular
+    // (Buscamos el student_id de forma anidada a través del id de la simulación)
+    let mut clear_statement = db.run_query(
+        "
+        UPDATE student_simulations
+        SET selected = FALSE
+        WHERE student_id = (SELECT student_id FROM student_simulations WHERE id = ?)
+        "
+    )?;
+    clear_statement.bind((1, simulation_id))?;
+    clear_statement.next()?;
 
-    let mut statement = db.run_query(
+    // 2. Ahora sí, marcamos como TRUE el intento que el alumno eligió
+    let mut select_statement = db.run_query(
         "
         UPDATE student_simulations
         SET selected = TRUE
         WHERE id = ?
         "
     )?;
-
-    statement.bind((1, simulation_id))?;
-    statement.next()?;
+    select_statement.bind((1, simulation_id))?;
+    select_statement.next()?;
 
     Ok(())
 }
@@ -153,6 +189,7 @@ pub fn get_student_simulations(
         simulations.push(StudentSimulation {
             id: statement.read("id")?,
             selected: statement.read::<i64, _>("selected")? == 1,
+            attempt_number: statement.read("attempt_number")?,
 
             result_max_depth: statement.read("result_max_depth")?,
             result_min_depth: statement.read("result_min_depth")?,
@@ -194,8 +231,8 @@ pub fn get_student_simulations(
                 min_limit: statement.read("min_depth")?,
                 pulse_repetition_interval: statement.read("pulse_repetition_interval")?,
                 uses_high_frecuency: statement.read::<i64, _>("uses_high_frequency")? == 1,
-                transmited_potency: statement.read::<String,_>("transmitted_potency")?.parse().unwrap(),
-                gain: statement.read::<i64,_>("gain")? as f64,
+                transmited_potency: statement.read("transmitted_potency")?,
+                gain: statement.read("gain")?,
                 threshold: statement.read("threshold")?,
                 sound_speed: statement.read("sound_speed")?,
             },

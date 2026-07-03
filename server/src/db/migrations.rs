@@ -30,6 +30,7 @@ pub fn init(
             description TEXT,
             filename TEXT NOT NULL,
             
+            exam_mode BOOLEAN NOT NULL DEFAULT FALSE,
             attempts_limit INTEGER NOT NULL,
             weather TEXT NOT NULL,
             seabed_hardness TEXT NOT NULL,
@@ -61,6 +62,7 @@ pub fn init(
 
         CREATE TABLE IF NOT EXISTS student_simulations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            attempt_number INTEGER NOT NULL,
             selected BOOLEAN NOT NULL DEFAULT FALSE,
             result_max_depth REAL NOT NULL,
             result_min_depth REAL NOT NULL,
@@ -82,9 +84,9 @@ pub fn init(
             max_depth REAL NOT NULL,
             pulse_repetition_interval REAL NOT NULL,
             sound_speed REAL NOT NULL,
-            transmitted_potency TEXT NOT NULL,
+            transmitted_potency REAL NOT NULL,
             threshold REAL NOT NULL,
-            gain INTEGER NOT NULL,
+            gain REAL NOT NULL,
 
             student_id INTEGER NOT NULL,
             project_id INTEGER NOT NULL,

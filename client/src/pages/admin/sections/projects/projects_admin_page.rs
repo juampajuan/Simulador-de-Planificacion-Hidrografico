@@ -75,18 +75,20 @@ pub struct ProjectsTableProps {
     pub projects_state: UseStateHandle<Vec<Project>>,
 }
 
-/// Tabla de proyectos: una fila (`ProjectRow`) por proyecto.
+/// Tabla de proyectos: arma el encabezado y renderiza una fila (`ProjectRow`) por proyecto.
 #[function_component(ProjectsTable)]
 pub fn projects_table(props: &ProjectsTableProps) -> Html {
     html! {
-        <div class="overflow-x-auto text-white">
-            <table class="min-w-full border-separate border-spacing-y-2">
+        <div class="overflow-x-auto text-white w-full">
+            <table class="w-full table-fixed border-separate border-spacing-y-2">
                 <thead class="text-xs bg-slate-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] rounded-lg">
                     <tr>
-                        <th class="px-4 py-2 text-left rounded-l-lg">{"#"}</th>
-                        <th class="px-4 py-2 text-left">{"Nombres/descripcion"}</th>
-                        <th class="px-4 py-2 text-left">{"Archivo"}</th>
-                        <th class="px-4 py-2 text-end rounded-r-lg">{"Acciones"}</th>
+                        <th class="w-[5%] px-4 py-2 text-left rounded-l-lg">{"#"}</th>
+                        <th class="w-[30%] px-4 py-2 text-left">{"Nombre / Descripción"}</th>
+                        <th class="w-[15%] px-4 py-2 text-left">{"Modo"}</th>
+                        <th class="w-[15%] px-4 py-2 text-left">{"Límite de intentos"}</th>
+                        <th class="w-[25%] px-4 py-2 text-left">{"Archivo GeoTIFF"}</th>
+                        <th class="w-[10%] px-4 py-2 text-end rounded-r-lg">{"Acciones"}</th>
                     </tr>
                 </thead>
                 <tbody>

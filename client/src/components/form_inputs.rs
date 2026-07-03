@@ -40,9 +40,12 @@ pub struct FormSelectProps {
 #[function_component(FormSelect)]
 pub fn form_select(props: &FormSelectProps) -> Html {
     html! {
-        <div class="flex flex-col gap-1 w-full">
-            <label class="text-xs text-white/50">{props.label}</label>
-            <select onchange={props.onchange.clone()} class="bg-slate-950 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer w-full">
+        <div class="flex flex-col space-y-1 w-full">
+            <label class="text-xs font-semibold text-white/80">{props.label}</label>
+            <select 
+                onchange={props.onchange.clone()} 
+                class="bg-slate-950 border border-white/10 rounded-lg p-2.5 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer w-full transition-all"
+            >
                 {
                     props.options.iter().map(|opt| html! {
                         <option value={*opt} selected={props.value == *opt}>{opt}</option>
