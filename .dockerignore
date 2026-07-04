@@ -1,0 +1,8 @@
+target/
+node_modules/
+uploads/
+.git/
+.env
+*.log
+dist/
+*.sqlite

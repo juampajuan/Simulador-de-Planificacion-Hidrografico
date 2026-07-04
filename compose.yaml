@@ -1,0 +1,9 @@
+services:
+  server:
+    build: .
+    container_name: simulador_hidrografico_fiuba_rust
+    ports:
+      - "3000:3000"
+    tty: true
+    stdin_open: true
+    command: ["./target/release/server"]
