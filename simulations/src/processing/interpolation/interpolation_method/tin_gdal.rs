@@ -1,10 +1,29 @@
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
  
 use gdal::{Dataset, DatasetOptions, GdalOpenFlags};
  
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::processing::geotiff::processing_geotiff;
+
+/// Se encarga de borrar los 3 archivos temporales de esta llamada al salir
+/// de la funcion -- sea porque termino bien, o porque cualquiera de los `?`
+struct TempFilesGuard {
+    csv_path: PathBuf,
+    vrt_path: PathBuf,
+    tif_path: PathBuf,
+}
+
+impl Drop for TempFilesGuard {
+    fn drop(&mut self) {
+        // Puede que alguno todavia no se haya llegado a crear -- remove_file
+        // en ese caso da error, lo ignoramos a proposito con el `let _ =`.
+        let _ = fs::remove_file(&self.csv_path);
+        let _ = fs::remove_file(&self.vrt_path);
+        let _ = fs::remove_file(&self.tif_path);
+    }
+}
  
 fn export_points_to_csv(
     points: &[(usize, usize)],
@@ -69,6 +88,15 @@ pub fn interpolation_gdal_tin(
     let csv_path_str = csv_path.to_str().ok_or("Ruta de CSV inválida")?;
     let vrt_path_str = vrt_path.to_str().ok_or("Ruta de VRT inválida")?;
     let tif_path_str = tif_path.to_str().ok_or("Ruta de TIF inválida")?;
+
+    // A partir de aca, pase lo que pase (exito o cualquiera de los `?` de
+    // abajo cortando antes), este guard borra los 3 archivos al salir de
+    // la funcion -- no hace falta acordarse de limpiar en cada punto de salida.
+    let _cleanup = TempFilesGuard {
+        csv_path: csv_path.clone(),
+        vrt_path: vrt_path.clone(),
+        tif_path: tif_path.clone(),
+    };
  
     export_points_to_csv(measuring_points, matrix, geotiff.height, csv_path_str)
         .map_err(|e| format!("Error escribiendo CSV: {e}"))?;
@@ -109,25 +137,22 @@ pub fn interpolation_gdal_tin(
                 ..DatasetOptions::default()
             },
         )
-        .map_err(|e| format!("No se pudo abrir el resultado de gdal_grid para editar: {e}"))?;
+        .map_err(|e| format!("No se pudo abrir el el tiff temporal de gdal_grid para agregar la projeccion y geo_transform: {e}"))?;
  
         output_dataset
             .set_geo_transform(&geotiff.geo_transform)
-            .map_err(|e| format!("Error seteando geo_transform: {e}"))?;
+            .map_err(|e| format!("Error seteando geo_transform al tiff temporal:: {e}"))?;
  
         if !geotiff.projection.is_empty() {
             output_dataset
                 .set_projection(&geotiff.projection)
-                .map_err(|e| format!("Error seteando projection: {e}"))?;
+                .map_err(|e| format!("Error seteando projection al tiff temporal: {e}"))?;
         }
     }
  
     let result_matrix_struct = processing_geotiff(tif_path_str)
-        .map_err(|e| format!("Error leyendo resultado de gdal_grid: {e}"))?;
+        .map_err(|e| format!("Error leyendo resultado de la tiff temporal al interpolar con gdal_grid: {e}"))?;
  
-    let _ = fs::remove_file(&csv_path);
-    let _ = fs::remove_file(&vrt_path);
-    let _ = fs::remove_file(&tif_path);
  
     // gdal_grid interpola tambien donde el geotiff original es no_data
     // (fuera del cuerpo de agua). Restauramos el no_data ahi para no mostrar

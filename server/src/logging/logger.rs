@@ -57,7 +57,7 @@ pub fn logging_writter_loop(rx: Receiver<ThreadMessage>, file: &mut File, loggin
 }
 
 pub fn send_message_to_logger(
-    tx: Sender<ThreadMessage>,
+    tx: &Sender<ThreadMessage>,
     msg: String,
     log_type: LogType
 ) {
@@ -73,4 +73,11 @@ pub fn send_message_to_logger(
         eprintln!("\x1b[93m[LOGGER]: El servidor funcionará con regularidad, pero no se almacenarán los LOG en el archivo.\x1b[0m");
     }
 
+}
+
+/// Arma el closure de debug logging atado a un `tx`
+/// El '_ indica que el closure tiene una vida útil atada a la vida del `tx` que se le pasa como parámetro.
+/// El move indica que el closure toma la propiedad de `tx` y lo mueve dentro del closure.
+pub fn debug_logger(tx: &Sender<ThreadMessage>) -> impl Fn(&str) + '_ {
+    move |msg: &str| send_message_to_logger(tx, msg.to_string(), LogType::Debug)
 }

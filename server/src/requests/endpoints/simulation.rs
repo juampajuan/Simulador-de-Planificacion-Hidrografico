@@ -1,5 +1,8 @@
 use tiny_http::Request;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Sender;
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::{send_message_to_logger,debug_logger};
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
 use crate::db::queries_interface::student_simulations;
@@ -18,25 +21,29 @@ use std::io::Cursor;
 
 /// Endpoint para la creacion del recorrido. 
 /// Utiliza contenidos de la cache y la db, si los hay.
-pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
+pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx);
+    
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
     };
 
     // reutilizamos la depthmatrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
-    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters, tx) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
 
-    let image = simulations::create_path_image(&matrix, &path);
+    let image = simulations::create_path_image(&matrix, &path, &log_debug);
     let response = create_png_response(image);
 
     (response.boxed(), 200, None)
@@ -45,7 +52,11 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
 /// Endpoint para la simulacion/interpolacion. 
 /// Utiliza recursos de la db y cache si los hay, sino debera tambien crear el path.
 /// Revisa y compara la cantidad de intentos realizados. 
-pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
+pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>,tx: &Sender<ThreadMessage>) -> HandlerResult {
+    
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx);
+
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
@@ -65,13 +76,13 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     };
 
     // reutilizamos la depth matrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path,tx) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
-    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters,tx) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -80,12 +91,15 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
     
-    let interpolation = simulations::run_simulation(&matrix, &path, echo_parameters, settings.simulation_constants());
+    let interpolation = match simulations::run_simulation(&matrix, &path, echo_parameters, settings.simulation_constants(), &log_debug) {
+        Ok(interp) => interp,
+        Err(e) => return generic::server_error(e),
+    };
     
     // aca cambia con respecto a las otras req que usan blob
     // los pixeles rgb se pasan a bytes png y luego a strings de base 64, para mandarlos en el struct
-    let (map_image, min_depth, max_depth) = simulations::create_simulation_image(&matrix, &interpolation);
-    let scale_image = simulations::create_scale_pure_image();
+    let (map_image, min_depth, max_depth) = simulations::create_simulation_image(&matrix, &interpolation, &log_debug);
+    let scale_image = simulations::create_scale_pure_image(&log_debug);
 
     let mut map_bytes = Vec::new();
     let mut scale_bytes = Vec::new();
@@ -110,7 +124,8 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         &echo_parameters.transport_parameters,
         &echo_parameters.echo_sounder_parameters,
     ) {
-        eprintln!("Error al guardar el intento de simulación en la DB para el alumno {}: {}", ctx.student_id, e);
+        send_message_to_logger(tx, format!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e), LogType::Error);
+        
         return generic::server_error(
             "Error al guardar el intento de simulación".to_string()
         );
@@ -129,9 +144,10 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
             "Error al serializar la respuesta de la simulación".to_string()
         ),
     };
-    println!("Simulación completada con éxito.");
+
+    send_message_to_logger(tx, "Simulación completada con éxito.".to_string(), LogType::Info);
     if let Err(e) = crate::db::queries_interface::student::increment_student_attempts_locked(&db, ctx.student_id) {
-        eprintln!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e);
+        send_message_to_logger(tx, format!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e), LogType::Error);
         return generic::server_error("Error interno al registrar el intento".to_string());
     }
     string_response(json_payload, 200)
@@ -139,7 +155,11 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
 
 /// Genera la imagen de cubrimiento del recorrido con los parametros actuales. 
 /// Sirve para ver de manera preliminar que areas cubre el recorrido. 
-pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
+pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>,tx: &Sender<ThreadMessage>) -> HandlerResult {
+    
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx);
+    
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
@@ -150,12 +170,12 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
         None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
     };
  
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
  
-    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters,tx) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -164,10 +184,11 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
         return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
  
-    let image = simulations::create_path_with_coverage(&matrix, &path, echo_parameters, settings.simulation_constants());
+    let image = simulations::create_path_with_coverage(&matrix, &path, echo_parameters, settings.simulation_constants(), &log_debug);
     let response = create_png_response(image);
  
-    println!("Imagen de cobertura generada.");
+    send_message_to_logger(tx, "Imagen de cobertura generada.".to_string(), LogType::Debug);
+
     (response.boxed(), 200, None)
 }
  
@@ -175,6 +196,7 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
 /// Toma los permisos y comprueba la existencia de alumno y proyecto en db. 
 /// Extrae y prepara los datos esenciales de la request.
 fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> Result<RequestContext, HandlerResult> {
+
     let student_id = match check_student_auth(request, db) {
         Ok(Some(id)) => id,
         Ok(None) => return Err(generic::string_response("Sin autorizar".to_string(), 401)),
@@ -220,27 +242,31 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
 /// Genera la matrix a partir del archivo
 /// Primero intenta obtenerla desde la cache, si no la encuentra, ejecuta el metodo para crearla.
 /// Una vez creada, si no existia, la agrega al cache, para futuros usos.
-fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str) -> Result<DepthMatrix, String> {
+fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str, tx: &Sender<ThreadMessage>) -> Result<DepthMatrix, String> {
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx);
+
     let mut lock = match cache.lock() {
         Ok(l) => l,
-        Err(_) => return Err("Error interno: no se pudo acceder al cache (500)".to_string()),
+        Err(_) => return Err("Error interno: no se pudo acceder al cache".to_string()),
     };
 
     // La nueva estructura busca mapas globalmente usando el file_path
     if let Some(m) = lock.get_map(file_path) {
-        println!("Re-utilizando depth matrix del cache...");
+        send_message_to_logger(tx, "Re-utilizando depth matrix del cache...".to_string(), LogType::Debug);
         return Ok(m.clone());
     }
+    
     drop(lock);
     
-    let m = match simulations::create_depth_matrix(file_path) {
+    let m = match simulations::create_depth_matrix(file_path, &log_debug) {
         Ok(mat) => mat,
-        Err(_) => return Err("Error intero: no se pudo procesar el TIFF (500)".to_string()),
+        Err(e) => return Err(e),
     };
     
     let mut relock = match cache.lock() {
         Ok(l) => l,
-        Err(_) => return Err("Error interno: no se pudo acceder al cache (500)".to_string()),
+        Err(_) => return Err("Error interno: no se pudo acceder al cache".to_string()),
     };
 
     // Verificación de doble check ante concurrencia
@@ -255,24 +281,26 @@ fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str) -> 
 /// Genera el recorrido a partir de una matrix profesada
 /// Primero intenta obtenerlo desde la cache, si no lo encuentra, ejecuta el metodo para crearlo.
 /// Una vez creado, lo agrega al cache, para futuros usos.
-fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: i64, matrix: &DepthMatrix, path_params: &PathParameters) -> Result<Vec<(usize, usize)>, String> {
+fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: i64, matrix: &DepthMatrix, path_params: &PathParameters, tx: &Sender<ThreadMessage>) -> Result<Vec<(usize, usize)>, String> {
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx);
+
     let mut lock = match cache.lock() {
         Ok(l) => l,
         Err(_) => return Err("Error interno: no se pudo acceder al cache".to_string()),
     };
     
     if let Some(path_coor) = lock.get_path_if_valid(cache_key, path_params) {
-        println!("Re-utilizando path del cache...");
+        send_message_to_logger(tx, "Re-utilizando path del cache...".to_string(), LogType::Debug);
         Ok(path_coor)
     } else {
         drop(lock);
-        
-        println!("Calculando nuevo recorrido...");
         let p = simulations::create_path(
             matrix, 
             path_params.azimut, 
             path_params.separacion, 
-            path_params.gnss_type
+            path_params.gnss_type,
+            &log_debug
         );
         
         let mut lock = match cache.lock() {

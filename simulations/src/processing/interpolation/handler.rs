@@ -16,7 +16,7 @@ pub fn interpolate(
     method: InterpolationMethod,
     measuring_points: MeasurementsTypeWithError,
     geotiff: &DepthMatrix,
-) -> Vec<Vec<f64>> {
+) -> Result<Vec<Vec<f64>>, String> {
 
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
@@ -49,20 +49,14 @@ pub fn interpolate(
     };
 
     match method {
-        InterpolationMethod::Idw     => interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff),
-        InterpolationMethod::Kriging => interpolation_kriging(&new_points, &new_matrix, geotiff),
-        InterpolationMethod::Tin     => interpolation_tin(&new_points, &new_matrix, geotiff),
-        InterpolationMethod::GdalTin => {
-            match interpolation_gdal_tin(&new_points, &new_matrix, geotiff) {
-                Ok(result) => result,
-                Err(e) => {
-                    println!("gdal_grid falló ({e}), usando TIN como fallback");
-                    interpolation_tin(&new_points, &new_matrix, geotiff)
-                }
-            }
-        }
+        InterpolationMethod::Idw     => Ok(interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff)),
+        InterpolationMethod::Kriging => Ok(interpolation_kriging(&new_points, &new_matrix, geotiff)),
+        InterpolationMethod::Tin     => Ok(interpolation_tin(&new_points, &new_matrix, geotiff)),
+        InterpolationMethod::GdalTin => interpolation_gdal_tin(&new_points, &new_matrix, geotiff),
     }
+    
 }
+
 
 
 

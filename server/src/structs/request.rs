@@ -47,7 +47,7 @@ impl RequestLog {
         );
     }
 
-    pub fn send_to_logger(&self, tx: Sender<ThreadMessage>) {
+    pub fn send_to_logger(&self, tx: &Sender<ThreadMessage>) {
         let log_type = match self.status_code {
             200..=299 => LogType::Info,
             300..=499 => LogType::Warn,
