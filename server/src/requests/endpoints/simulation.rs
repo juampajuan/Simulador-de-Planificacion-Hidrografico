@@ -221,7 +221,7 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
         Err(_) => return Err(generic::server_error("Error al obtener el proyecto".to_string())),
     };
 
-    let file_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
+    let file_path = format!("{}/geotiffs/{}", settings.storage_path, project.filename);
 
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,

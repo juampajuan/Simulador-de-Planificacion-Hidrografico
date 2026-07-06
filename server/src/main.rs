@@ -29,7 +29,7 @@ fn main() {
     };
 
     // Creamos el directorio donde se van a subir los archivo .tif
-    if create_dirs(&settings.upload_path).is_none() {
+    if create_dirs(&settings.storage_path).is_none() {
         eprintln!("Error creando directorios");
         return;
     }

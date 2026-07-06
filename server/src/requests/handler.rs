@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::logging::structs::ThreadMessage;
 use crate::structs::request::{RequestLog, HandlerResult};
 use crate::structs::filecache::{FileCache};
-use crate::requests::endpoints::{auth, generic, limits, projects, simulation, students, webpage, exams};
+use crate::requests::endpoints::{auth, exams, generic, files, limits, projects, simulation, students};
 use crate::db::engine::DBEngine;
 use tiny_http::Response;
 use crate::structs::settings::Settings;
@@ -24,82 +24,79 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
     // TODO: Pasar el tx, ese a donde corresponda para enviar al logger
     // Y usar el metodo send_message_to_logger
 
-    let result = if let Some(api_path) = request.url().strip_prefix(API_V1) {
+    let result = match request.url().strip_prefix(API_V1) {
+        Some(api_path) => {
 
-        match (request.method(), api_path) {
+            match (request.method(), api_path) {
+                (Method::Options, _) =>
+                    (Response::empty(200).boxed(), 200, None),
+                
+                (Method::Get, "/exams/my_simulations") =>
+                    exams::get_my_simulations(&mut request, db),
 
-            (Method::Options, _) => {
-                (Response::empty(200).boxed(), 200, None)
-            }
+                (Method::Post, "/exams/select_delivery") =>
+                    exams::select_exam_simulation(&mut request, db),
+                (Method::Post, "/create_path") =>
+                    simulation::create_path(&mut request, cache, db, settings, tx),
 
-            _ => {
-                match (request.method(), api_path) {
-                    (Method::Get, "/exams/my_simulations") =>
-                        exams::get_my_simulations(&mut request, db),
-
-                    (Method::Post, "/exams/select_delivery") =>
-                        exams::select_exam_simulation(&mut request, db),
-                    (Method::Post, "/create_path") =>
-                        simulation::create_path(&mut request, cache, db, settings, tx),
-
-                    (Method::Post, "/run_simulation") =>
-                        simulation::run_simulation(&mut request, cache, db, settings,tx),
-                        
-                    (Method::Post, "/coverage_image") =>
-                        simulation::create_coverage_image(&mut request, cache, db, settings,tx),
-
-                    (Method::Get, "/limits") =>
-                        limits::get_limits(settings),
-
-                    (Method::Get, "/projects") =>
-                        projects::get_projects(&mut request, db), 
-
-                    (Method::Post, "/projects") =>
-                        projects::create(&mut request, db, settings), 
-
-                    (Method::Delete, url) if url.starts_with("/projects/") =>
-                        projects::delete_project(&mut request, db, settings),
+                (Method::Post, "/run_simulation") =>
+                    simulation::run_simulation(&mut request, cache, db, settings,tx),
                     
-                    (Method::Put, url) if url.starts_with("/projects/") =>
-                        projects::update_a_project(&mut request, db),
+                (Method::Post, "/coverage_image") =>
+                    simulation::create_coverage_image(&mut request, cache, db, settings,tx),
 
-                    (Method::Get, "/student_project") =>
-                        projects::get_student_project(&mut request, db, settings,tx),  
+                (Method::Get, "/limits") =>
+                    limits::get_limits(settings),
 
-                    (Method::Get, "/students") =>
-                        students::get_all_students(&mut request, db),
+                (Method::Get, "/projects") =>
+                    projects::get_projects(&mut request, db), 
 
-                    (Method::Post, "/students") =>
-                        students::create_new_student(&mut request, db),
-                        
-                    (Method::Delete, url) if url.starts_with("/students/") =>
-                        students::delete_a_student(&mut request, db),
+                (Method::Post, "/projects") =>
+                    projects::create(&mut request, db, settings), 
 
-                    (Method::Put, url) if url.starts_with("/students/") => 
-                        students::update_an_student(&mut request, db),  
+                (Method::Delete, url) if url.starts_with("/projects/") =>
+                    projects::delete_project(&mut request, db, settings),
+                
+                (Method::Put, url) if url.starts_with("/projects/") =>
+                    projects::update_a_project(&mut request, db),
 
-                    (Method::Post, "/auth/create_professor_user") =>
-                        auth::create_professor(&mut request, db),
+                (Method::Get, "/student_project") =>
+                    projects::get_student_project(&mut request, db, settings,tx),  
 
-                    (Method::Post, "/auth/change_professor_pass") =>
-                        auth::change_pass(&mut request, db),
+                (Method::Get, "/students") =>
+                    students::get_all_students(&mut request, db),
 
-                    (Method::Post, "/auth/login") =>
-                        auth::login(&mut request, db),
+                (Method::Post, "/students") =>
+                    students::create_new_student(&mut request, db),
+                    
+                (Method::Delete, url) if url.starts_with("/students/") =>
+                    students::delete_a_student(&mut request, db),
 
-                    (Method::Post, "/auth/close_session") =>
-                        auth::close_session(&mut request, db),
+                (Method::Put, url) if url.starts_with("/students/") => 
+                    students::update_an_student(&mut request, db),  
 
-                    (Method::Post, "/auth/close_all") =>
-                        auth::close_all(&mut request, db),
+                (Method::Post, "/auth/create_professor_user") =>
+                    auth::create_professor(&mut request, db),
 
-                    _ => generic::not_found(),
-                }
+                (Method::Post, "/auth/change_professor_pass") =>
+                    auth::change_pass(&mut request, db),
+
+                (Method::Post, "/auth/login") =>
+                    auth::login(&mut request, db),
+
+                (Method::Post, "/auth/close_session") =>
+                    auth::close_session(&mut request, db),
+
+                (Method::Post, "/auth/close_all") =>
+                    auth::close_all(&mut request, db),
+
+                _ => generic::not_found(),
             }
-        }
+        },
 
-    } else {
-        webpage::get_page_file(&request)
+        None if request.url().starts_with("/images/") => files::get_file_from_storage(&request, settings),
+        None if request.url().starts_with("/simulations/") => files::get_file_from_storage(&request, settings),
+        _ => files::get_page_file(&request)
     };
 
     response_sender(request, result)
