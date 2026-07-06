@@ -13,7 +13,7 @@ ADMIN_PASS = "Magicpass2"
 MAPTILER_API_KEY = "EVEAYM1Cx9nGoDR5OVX6"
 
 # Directorio donde se almacenan los archivos. (geofiff)
-# FILE_UPLOAD_PATH = "./uploads"
+# FILE_STORAGE_PATH = "./storage"
     # Descomentar y cambiarlo hara que dejen de funcionar los proyectos actuales.
     # Requiriendo volver a subirlos.
 

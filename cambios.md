@@ -29,6 +29,10 @@
 - [] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
 - [x] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
 
+## Backend
+- [x] Api que entrega images, de carpeta de storage.
+- [x] Modifico carpeta de ./uploads a ./storage. Ya que se almacenan mas cosas.
+
 ## Front
 - [x] Info primero al entrar a la simulacion.
 - [] Mover en login desface de textos.
@@ -37,7 +41,7 @@
 - [] Interfaz de entregas obtenidas para el docente.
 - [] Toggle, para ver o **mapa de diferencias**. Osea que muestre o una foto o la otra, alterna.
 - [] Login NO debe redifirigir si pones mal la contrasenia, solo mostrar el mensaje.
-- [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar  por slack o algo.
+- [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar por slack o algo.
 - [x] Agregar el MODO EXAMEN o no al crear un proyecto.
 
 ## Cache

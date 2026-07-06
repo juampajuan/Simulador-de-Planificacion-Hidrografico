@@ -18,7 +18,7 @@ pub struct Settings {
     pub port: i32,
     pub cache_amount: usize,
     pub db_name: String,
-    pub upload_path: String,
+    pub storage_path: String,
     pub log_file_name: String,
     pub logging_type: i32,
     #[serde(skip)]  
@@ -81,7 +81,7 @@ impl Settings {
 
 /// Construye los Settings a partir del HashMap leído del config, validando cada clave.
 /// Si falta alguna obligatoria o tiene el tipo equivocado, devuelve Err y la app no arranca
-/// (salvo `FILE_UPLOAD_PATH`, que cae a "./uploads" por defecto).
+/// (salvo `FILE_STORAGE_PATH`, que cae a "./storage" por defecto).
 impl TryFrom<HashMap<String, ConfigValue>> for Settings {
     type Error = String;
 
@@ -121,7 +121,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             tide_phase: get_float(&config, "TIDE_PHASE")?,
             log_file_name: get_string(&config, "LOG_FILE_NAME")?,
             logging_type: get_int(&config, "LOGGING_TYPE")?,
-            upload_path: get_string(&config, "FILE_UPLOAD_PATH").unwrap_or("./uploads".to_string()),
+            storage_path: get_string(&config, "FILE_STORAGE_PATH").unwrap_or("./storage".to_string()),
         })
     }
 }

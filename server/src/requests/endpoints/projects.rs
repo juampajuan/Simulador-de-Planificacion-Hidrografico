@@ -129,7 +129,7 @@ pub fn create(
 
 
                     let mut out = match File::create(
-                        format!("{}/geotiffs/{}", settings.upload_path, filename)
+                        format!("{}/geotiffs/{}", settings.storage_path, filename)
                     ) {
                         Ok(f) => f,
                         Err(e) => {
@@ -247,7 +247,7 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
     };
 
     // Le enchufo al Json las coordenadas del tiff en lat,lon
-    let geotiff_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
+    let geotiff_path = format!("{}/geotiffs/{}", settings.storage_path, project.filename);
 
     let (sup_izq, sup_der, inf_izq, inf_der, centro) = match simulations::get_geotiff_corners(&geotiff_path, &log_debug) {
         Ok(c) => c,
@@ -299,7 +299,7 @@ pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings:
 
     match projects::delete_project_by_id_locked(&db, id, professor_id) {
         Ok(true) => {
-            let path = format!("{}/geotiffs/{}", settings.upload_path, filename);
+            let path = format!("{}/geotiffs/{}", settings.storage_path, filename);
             let _ = std::fs::remove_file(&path);
             string_response("Proyecto eliminado.".to_string(), 200)
         }
