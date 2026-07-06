@@ -5,7 +5,7 @@ use super::images_helpers::{depth_color, depth_range, ImageType};
 /// Genera el png del resultado de la simulacion segun los puntos medidos
 /// Utiliza los colores especificados en helpers.rs para las alturas
 pub fn makepng_with_matrix_and_interpolation(
-    matrix: &Vec<Vec<f64>>,
+    matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
     image_type: ImageType,
 ) -> (RgbaImage, f64, f64) {

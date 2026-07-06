@@ -99,7 +99,7 @@ pub fn diff_color(t: f64) -> Rgb<u8> {
     ])
 }
 
-pub fn depth_range(matrix: &Vec<Vec<f64>>, no_data: Option<f64>) -> (f64, f64) {
+pub fn depth_range(matrix: &[Vec<f64>], no_data: Option<f64>) -> (f64, f64) {
     let mut min = f64::MAX;
     let mut max = f64::MIN;
     for row in matrix {
