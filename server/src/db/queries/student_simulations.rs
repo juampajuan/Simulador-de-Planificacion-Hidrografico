@@ -18,6 +18,8 @@ pub struct StudentSimulation {
     pub path_parameters: PathParameters,
     pub transport_parameters: TransportParameters,
     pub echosounder_parameters: EchosounderParameters,
+
+    pub simulation_image_path: Option<String>,
 }
 
 
@@ -34,6 +36,7 @@ pub fn create_student_simulation(
     path: &PathParameters,
     transport: &TransportParameters,
     echo: &EchosounderParameters,
+    simulation_image_path: Option<&str>,
 ) -> Result<(), sqlite::Error> {
 
     let mut statement = db.run_query(
@@ -65,7 +68,9 @@ pub fn create_student_simulation(
             gain,
 
             student_id,
-            project_id
+            project_id,
+
+            simulation_image_path
         )
         VALUES(
             ?, ?, ?,
@@ -73,7 +78,8 @@ pub fn create_student_simulation(
             ?, ?, ?, ?, ?,
             ?, ?,
             ?, ?, ?, ?, ?, ?, ?,
-            ?, ?
+            ?, ?,
+            ?
         )
         "
     )?;
@@ -106,6 +112,11 @@ pub fn create_student_simulation(
 
     statement.bind((21, student_id))?;
     statement.bind((22, project_id))?;
+
+    match simulation_image_path {
+        Some(p) => statement.bind((23, p))?,
+        None => statement.bind((23, ""))?,
+    };
 
     statement.next()?;
 
@@ -186,6 +197,8 @@ pub fn get_student_simulations(
 
     while let sqlite::State::Row = statement.next()? {
 
+        let simulation_image_path: String = statement.read("simulation_image_path")?;
+
         simulations.push(StudentSimulation {
             id: statement.read("id")?,
             selected: statement.read::<i64, _>("selected")? == 1,
@@ -236,6 +249,8 @@ pub fn get_student_simulations(
                 threshold: statement.read("threshold")?,
                 sound_speed: statement.read("sound_speed")?,
             },
+
+            simulation_image_path: if simulation_image_path.is_empty() { None } else { Some(simulation_image_path) },
         });
     }
 

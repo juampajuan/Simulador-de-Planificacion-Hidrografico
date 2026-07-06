@@ -1,6 +1,7 @@
 use tiny_http::Request;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Sender;
+use chrono::Local;
 use crate::logging::structs::{ThreadMessage, LogType};
 use crate::logging::logger::{send_message_to_logger,debug_logger};
 use crate::db::queries_interface::projects;
@@ -14,6 +15,7 @@ use crate::requests::endpoints::generic::{string_response};
 use crate::db::engine::DBEngine;
 use crate::structs::settings::Settings;
 use crate::utils::helpers_endpoints::check_student_auth;
+use crate::utils::helpers::random_letters;
 use common::{PathParameters, SimulationBase64Response};
 use simulations::structs::depth_matrix::DepthMatrix;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -106,12 +108,27 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     let _ = map_image.write_to(&mut Cursor::new(&mut map_bytes), image::ImageFormat::Png);
     let _ = scale_image.write_to(&mut Cursor::new(&mut scale_bytes), image::ImageFormat::Png);
 
-    let map_encoded = STANDARD.encode(map_bytes);
-    let scale_encoded = STANDARD.encode(scale_bytes); //base64
-
     let db_lock = db.lock().unwrap();
     let attempt_number = student_simulations::get_next_attempt_number(&db_lock, ctx.student_id).unwrap_or(1);
     drop(db_lock);
+
+    // Guardamos el PNG de simulacion en storage/images/, ademas de mandarlo en base64
+    // (por ahora dejo las dos formas para que funcione la simulacion jajajja).
+    let fecha = Local::now().format("%Y%m%d").to_string();
+    let sufijo_random = random_letters(5);
+    let map_filename = format!("{}_{}_simulacion_{}_{}.png", fecha, sufijo_random, ctx.student_id, attempt_number);
+    let map_path = format!("{}/images/{}", settings.storage_path, map_filename);
+    let map_saved = match std::fs::write(&map_path, &map_bytes) {
+        Ok(()) => Some(map_filename.as_str()),
+        Err(e) => {
+            send_message_to_logger(tx, format!("No se pudo guardar el PNG de simulacion en storage ({}): {}", map_path, e), LogType::Error);
+            None
+        },
+    };
+
+    let map_encoded = STANDARD.encode(map_bytes);
+    let scale_encoded = STANDARD.encode(scale_bytes); //base64
+
 
     if let Err(e) = student_simulations::create_student_simulation_locked(
         &db,
@@ -123,6 +140,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         &ctx.data.path_parameters,
         &echo_parameters.transport_parameters,
         &echo_parameters.echo_sounder_parameters,
+        map_saved
     ) {
         send_message_to_logger(tx, format!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e), LogType::Error);
         
@@ -227,7 +245,6 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
         Ok(d) => d,
         Err(err) => return Err(generic::server_error(format!("Bad Request: {}", err))),
     };
-
 
     Ok(RequestContext {
         file_path, 

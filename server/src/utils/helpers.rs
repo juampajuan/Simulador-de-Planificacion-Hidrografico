@@ -58,3 +58,16 @@ pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
             }
         })
 }
+
+// Genera 5 letras random para el guardado de imagenes
+pub fn random_letters(n: usize) -> String {
+    const LETTERS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let mut rng = rand::rng();
+
+    (0..n)
+        .map(|_| {
+            let idx = rng.random_range(0..LETTERS.len());
+            LETTERS[idx] as char
+        })
+        .collect()
+}

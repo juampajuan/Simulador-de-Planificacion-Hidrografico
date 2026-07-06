@@ -90,6 +90,7 @@ pub fn init(
 
             student_id INTEGER NOT NULL,
             project_id INTEGER NOT NULL,
+            simulation_image_path TEXT,
             FOREIGN KEY (student_id)
                 REFERENCES students(id)
                 ON DELETE CASCADE,
