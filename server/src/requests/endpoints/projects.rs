@@ -9,6 +9,9 @@ use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
 use crate::structs::strudent_project_response::{StudentProjectResponse,GeoCorners};
 use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
+use crate::logging::structs::{ThreadMessage};
+use crate::logging::logger::{debug_logger};
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -210,7 +213,9 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
 /// Retorna el proyecto de un alumno especifico.
 /// Esto lo hace en base a la cookie que recibe en la request.
 /// Con la cookie obtiene el id del mismo y con eso el proyecto
-pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
+pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx);
 
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -244,7 +249,7 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
     // Le enchufo al Json las coordenadas del tiff en lat,lon
     let geotiff_path = format!("{}/geotiffs/{}", settings.upload_path, project.filename);
 
-    let (sup_izq, sup_der, inf_izq, inf_der, centro) = match simulations::get_geotiff_corners(&geotiff_path) {
+    let (sup_izq, sup_der, inf_izq, inf_der, centro) = match simulations::get_geotiff_corners(&geotiff_path, &log_debug) {
         Ok(c) => c,
         Err(e) => return server_error(format!("No se pudieron calcular las coordenadas: {}", e)),
     };

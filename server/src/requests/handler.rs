@@ -40,13 +40,13 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                     (Method::Post, "/exams/select_delivery") =>
                         exams::select_exam_simulation(&mut request, db),
                     (Method::Post, "/create_path") =>
-                        simulation::create_path(&mut request, cache, db, settings),
+                        simulation::create_path(&mut request, cache, db, settings, tx),
 
                     (Method::Post, "/run_simulation") =>
-                        simulation::run_simulation(&mut request, cache, db, settings),
+                        simulation::run_simulation(&mut request, cache, db, settings,tx),
                         
                     (Method::Post, "/coverage_image") =>
-                        simulation::create_coverage_image(&mut request, cache, db, settings),
+                        simulation::create_coverage_image(&mut request, cache, db, settings,tx),
 
                     (Method::Get, "/limits") =>
                         limits::get_limits(settings),
@@ -64,7 +64,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                         projects::update_a_project(&mut request, db),
 
                     (Method::Get, "/student_project") =>
-                        projects::get_student_project(&mut request, db, settings),  
+                        projects::get_student_project(&mut request, db, settings,tx),  
 
                     (Method::Get, "/students") =>
                         students::get_all_students(&mut request, db),

@@ -16,7 +16,7 @@ pub fn create_request_thread(request: Request, cache: Arc<Mutex<FileCache>>, set
     thread::spawn(move || {
         let log = handle_request(request, cache, db, settings, &tx);
         log.print();
-        log.send_to_logger(tx);
+        log.send_to_logger(&tx);
     })
 }
 

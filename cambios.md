@@ -17,6 +17,8 @@
 - [] Agregarlo en todos lados
 	1. Ya agregado en la respuesta del las requests.
 	2. __TODO: Pongan aca donde lo fueron agregando, asi ya esta__.
+		simulation.rs: cache hit/miss de matrix y de path, calculo de recorrido nuevo (Debug), simulacion completada (Info), error al registrar el intento en la DB (Error), imagen de cobertura generada (Debug).
+	3. simulations (lib.rs), Cubre: create_depth_matrix, create_path, run_simulation (puntos de medicion, mediciones tomadas, si se aplicaron errores, interpolacion completada), create_path_image, create_simulation_image, create_scale_pure_image, create_path_with_coverage, create_simulation_with_coverage, get_geotiff_corners.
 
 ## Modo Examen
 - [x] Generar nueva tabla que guarde todos los parametros de simulacion + Fk alumno + Fk proyecto + Booleano de "Entrego este" + Valores estadisticos (maximos, desvios, etc)

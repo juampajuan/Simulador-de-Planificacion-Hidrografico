@@ -54,7 +54,7 @@ TIDE_PHASE = 0.0        # Fase inicial de la marea, en radianes
 # Nombre en donde se almacenaran los LOGS.
 LOG_FILE_NAME = "logs.txt"
 # Criterio para determinar que se deben loggear en el archivo
-LOGGING_TYPE = 2
+LOGGING_TYPE = 0
     # Debug = 0,
     # Info  = 1,
     # Warn  = 2,

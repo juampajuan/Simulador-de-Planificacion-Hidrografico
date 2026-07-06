@@ -15,27 +15,24 @@ use image::{RgbaImage};
 
 /// Crea la matriz segun el tiff cargado para el alumno
 /// Utiliza el crate processing::Geotiff
-#[allow(clippy::result_unit_err)]
-pub fn create_depth_matrix(file_path :&str) -> Result<DepthMatrix,()>{
+pub fn create_depth_matrix(file_path :&str, log_debug: &dyn Fn(&str)) -> Result<DepthMatrix, String> {
+ 
+    log_debug("Generando depth_matrix...");
+ 
+    match processing::geotiff::processing_geotiff(file_path) {
+        Ok(matrix) => {
+            log_debug("depth_matrix generada.");
+            Ok(matrix)},
 
-    println!("Generando depth_matrix ...");
+        Err(e) => Err(e.to_string()),
+    }
 
-    let matrix = match processing::geotiff::processing_geotiff(file_path) {
-        Ok(matrix) => matrix,
-        Err(e) => {
-            println!("Error: {}", e);
-            return Err(());
-        }
-    };
-
-    Ok(matrix) 
 }
-
 /// Crea el recorrido segun los parametros indicados por el alumno
 /// processing::routing
-pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64, gnss_type: GnssType) -> Vec<(usize,usize)> {
+pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f64, gnss_type: GnssType, log_debug: &dyn Fn(&str)) -> Vec<(usize,usize)> {
 
-    println!("Generando recorrido ...");
+    log_debug("Generando recorrido...");
 
     let path_params = PathParameters {
         azimut: azimuth_deg,
@@ -49,7 +46,10 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
         GnssType::PhaseCorrection => {1.0},
     };
 
-    generate_route(matrix, path_params.azimut, path_params.separacion, max_offset)
+    let path= generate_route(matrix, path_params.azimut, path_params.separacion, max_offset);
+    log_debug(&format!("Recorrido generado ({} puntos).", path.len()));
+
+    path
 }
 
 /// Hace toda la logica de simulacion en base al recorrido del barco y los parametros seleccionados
@@ -61,9 +61,11 @@ pub fn run_simulation(
     students_path: &Vec<(usize, usize)>,
     mut params: StudentMeasuringParameters,
     constants: SimulationConstants,
-) -> Vec<Vec<f64>> {
+    log_debug: &dyn Fn(&str),
+    
+) -> Result<Vec<Vec<f64>>, String> {
 
-    println!("Simulando...");
+    log_debug("Simulando...");
 
     let boat_speed = params.transport_parameters.speed;
     let distance_between_points = boat_speed * params.echo_sounder_parameters.pulse_repetition_interval.recip();
@@ -73,6 +75,8 @@ pub fn run_simulation(
         distance_between_points,
         matrix,
     );
+
+    log_debug(&format!("Puntos de medicion calculados ({}).", points_to_measure.len()));
 
     params.echo_sounder_parameters.create_echosounder(&constants);
 
@@ -85,9 +89,19 @@ pub fn run_simulation(
         },
     };
 
+    log_debug("Mediciones tomadas.");
+
     let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix, &constants);
 
-    interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix)
+    log_debug("Errores aplicados a las mediciones.");
+
+    let resultado = interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix);
+
+    if resultado.is_ok() {
+        log_debug("Interpolacion completada.");
+    }
+
+    resultado
 }
 
 /// Devuelve el PNG del recorrido hecho por el barco segun los parametros del alumno
@@ -95,22 +109,28 @@ pub fn run_simulation(
 pub fn create_path_image(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
+    log_debug: &dyn Fn(&str),
 )-> RgbaImage  {
-    println!("Generando PNG ...");
 
-    makepng_transparent_with_path(matrix, path)
+    log_debug("Generando PNG de recorrido...");
+    let img = makepng_transparent_with_path(matrix, path);
+    log_debug("PNG de recorrido generado.");
+    img
 }
 
 /// Devuelve el PNG de la matriz interpolada con la escala de colores correspondiente
 /// Utiliza processing::images
-pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>]) -> (RgbaImage, f64, f64) {
-    println!("Generando PNG ...");
+pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>], log_debug: &dyn Fn(&str)) -> (RgbaImage, f64, f64) {
 
-    makepng_with_matrix_and_interpolation(student_interpolation, matrix)
+    log_debug("Generando PNG de simulacion...");
+    let result = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
+    log_debug("PNG de simulacion generado.");
+    result
 }
 
-pub fn create_scale_pure_image() -> RgbaImage {
-    println!("Generando escala ...");
+pub fn create_scale_pure_image(log_debug: &dyn Fn(&str)) -> RgbaImage {
+
+    log_debug("Generando escala...");
     create_scale_image()
 }
 
@@ -121,13 +141,18 @@ pub fn create_path_with_coverage(
     path: &Vec<(usize, usize)>,
     mut params: StudentMeasuringParameters,
     constants: SimulationConstants,
+    log_debug: &dyn Fn(&str),
 ) -> RgbaImage {
-    println!("Generando PNG con cobertura ...");
+
+    log_debug("Generando PNG con cobertura...");
  
     // false = radio uniforme por profundidad promedio, para no espoilear el resultado
     let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, false, constants);
+    log_debug("Cobertura calculada.");
  
-    make_shaded_png(matrix, &covered_points, path)
+    let img = make_shaded_png(matrix, &covered_points, path);
+    log_debug("PNG con cobertura generado.");
+    img
 }
 
 pub fn create_simulation_with_coverage(
@@ -136,16 +161,21 @@ pub fn create_simulation_with_coverage(
     path: &Vec<(usize, usize)>,
     mut params: StudentMeasuringParameters,
     constants: SimulationConstants,
+    log_debug: &dyn Fn(&str),
 ) -> (RgbaImage, f64, f64) {
-    println!("Generando PNG de simulacion con cobertura ...");
+
+    log_debug("Generando PNG de simulacion con cobertura...");
  
     let (mut img, min_val, max_val) = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
     // true = radio real por punto, el resultado ya esta a la vista igual
     let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, true, constants);
+    log_debug("Cobertura calculada.");
     draw_covered_points(&mut img, &covered_points, COVERAGE_OVERLAY_COLOR);
 
     draw_path(&mut img, matrix, path, image::Rgba([255, 255, 255, 180]));
- 
+
+    log_debug("PNG de simulacion con cobertura generado.");
+
     (img, min_val, max_val)
 }
 
@@ -153,7 +183,9 @@ pub fn create_simulation_with_coverage(
 /// Utiliza processing::Geotiff.
 pub fn get_geotiff_corners(
     file_path: &str,
+    log_debug: &dyn Fn(&str),
 ) -> GeotiffCoordinates {
+    log_debug(&format!("Calculando coordenadas del geotiff {file_path}..."));
     // (sup_izq, sup_der, inf_izq, inf_der, centro), cada uno (lat, lon)
     let coordinates = match processing::geotiff::get_geotiff_coordinates(file_path) {
         Ok(coordinates) => coordinates,
@@ -161,6 +193,8 @@ pub fn get_geotiff_corners(
             return Err(e);
         }
     };
+
+    log_debug("Coordenadas calculadas.");
 
     Ok(coordinates)
 }
