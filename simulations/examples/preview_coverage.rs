@@ -4,7 +4,7 @@ use common::{
 };
 use simulations::structs::simulation_constants::{SimulationConstants, EchosounderConstants, EnvironmentConstants};
 
-const GEOTIFF_PATH: &str = "uploads/geotiffs/Darsena_20cm_v2_1781927635.tif";
+const GEOTIFF_PATH: &str = "storage/geotiffs/Darsena_20cm_v2_1783364203.tif";
 
 fn main() {
 
@@ -74,4 +74,11 @@ fn main() {
     img.save("preview_coverage.png").expect("No se pudo guardar el PNG");
 
     println!("Listo: preview_coverage.png");
+
+    let difference_matrix = simulations::generate_difference_matrix(&matrix, student_interpolation);
+    let difference_img = simulations::generate_difference_png(&matrix, difference_matrix);
+
+    difference_img.save("difference.png").expect("No se pudo guardar el PNG");
+
+    println!("Listo: diference.png");
 }

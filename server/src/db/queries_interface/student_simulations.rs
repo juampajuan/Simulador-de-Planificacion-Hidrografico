@@ -15,6 +15,7 @@ pub fn create_student_simulation_locked(
     path: &PathParameters,
     transport: &TransportParameters,
     echo: &EchosounderParameters,
+    simulation_image_path: Option<&str>,
 ) -> Result<(), sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
@@ -36,6 +37,7 @@ pub fn create_student_simulation_locked(
         path,
         transport,
         echo,
+        simulation_image_path
     )
 }
 

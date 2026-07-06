@@ -7,7 +7,7 @@ use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters}
 use processing::geotiff::GeotiffCoordinates;
 use processing::interpolation::handler::interpolate;
 use processing::measuring::{apply_disturbances, MeasureMode, get_measures}; 
-use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, COVERAGE_OVERLAY_COLOR};
+use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, COVERAGE_OVERLAY_COLOR, ImageType};
 use processing::routing::generate_route; 
 use structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic, simulation_constants::SimulationConstants};
 use image::{RgbaImage};
@@ -123,7 +123,7 @@ pub fn create_path_image(
 pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>], log_debug: &dyn Fn(&str)) -> (RgbaImage, f64, f64) {
 
     log_debug("Generando PNG de simulacion...");
-    let result = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
+    let result = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage);
     log_debug("PNG de simulacion generado.");
     result
 }
@@ -166,7 +166,7 @@ pub fn create_simulation_with_coverage(
 
     log_debug("Generando PNG de simulacion con cobertura...");
  
-    let (mut img, min_val, max_val) = makepng_with_matrix_and_interpolation(student_interpolation, matrix);
+    let (mut img, min_val, max_val) = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage);
     // true = radio real por punto, el resultado ya esta a la vista igual
     let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, true, constants);
     log_debug("Cobertura calculada.");
@@ -197,4 +197,28 @@ pub fn get_geotiff_corners(
     log_debug("Coordenadas calculadas.");
 
     Ok(coordinates)
+}
+
+pub fn generate_difference_matrix(matrix: &DepthMatrix, student_matrix: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    
+    let no_data = matrix.no_data.unwrap_or(f64::MAX);
+
+    let mut difference_matrix = vec![vec![0.0; matrix.width]; matrix.height];
+
+    for i in 0..matrix.height{
+        for j in 0..matrix.width{
+            if matrix.data[i][j] != no_data{
+                difference_matrix[i][j] = (matrix.data[i][j] - student_matrix[i][j]).abs();
+            } else {
+                difference_matrix[i][j] = no_data;
+            }
+        }
+    }
+    
+    difference_matrix
+}
+
+pub fn generate_difference_png(matrix: &DepthMatrix, difference_matrix: Vec<Vec<f64>>) -> RgbaImage {
+    let (res,_,_)= makepng_with_matrix_and_interpolation(&difference_matrix, matrix, ImageType::DifferenceImage);
+    res
 }

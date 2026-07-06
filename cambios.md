@@ -60,7 +60,7 @@
 
 ## Important
 No lo discutimos, pero no lo veo complicado, asi que lo haria.
-- [] Yo haria que se guarde la foto de la simulacion, junto al intento si es Examen.
+- [x] Yo haria que se guarde la foto de la simulacion, junto al intento si es Examen.
 	Luego, con el nombre, la expongo en un endpoint "url/images/<nombre>". Y asi se peuden mostrar.
 
 	Y agrego un metodo para borrar las NO usadas en el CLI. O veo de generar una tarea periodica (cada unos dias.)
