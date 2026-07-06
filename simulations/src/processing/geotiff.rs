@@ -138,7 +138,7 @@ pub fn get_matrix_avg_depth(matrix: &DepthMatrix) -> Option<f64> {
 
     for row in &matrix.data { 
         for value in row { 
-            if is_valid(*value, matrix){
+            if is_valid(*value, matrix.no_data){
                 sum += *value;
                 count += 1;
             }

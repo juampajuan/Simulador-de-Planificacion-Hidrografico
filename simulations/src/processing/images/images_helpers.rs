@@ -99,12 +99,12 @@ pub fn diff_color(t: f64) -> Rgb<u8> {
     ])
 }
 
-pub fn depth_range(matrix: &DepthMatrix) -> (f64, f64) {
+pub fn depth_range(matrix: &Vec<Vec<f64>>, no_data: Option<f64>) -> (f64, f64) {
     let mut min = f64::MAX;
     let mut max = f64::MIN;
-    for row in &matrix.data {
+    for row in matrix {
         for &val in row {
-            if is_valid(val, matrix) {
+            if is_valid(val, no_data) {
                 min = min.min(val);
                 max = max.max(val);
             }
@@ -120,7 +120,7 @@ pub fn fill_zone_translucent(
 ) {
     for (y, row) in matrix.data.iter().enumerate() {
         for (x, &val) in row.iter().enumerate() {
-            if is_valid(val, matrix) {
+            if is_valid(val, matrix.no_data) {
                 img.put_pixel(x as u32, y as u32, color);
             }
         }
