@@ -8,14 +8,14 @@ pub fn makepng_with_matrix_and_path(
     matrix: &DepthMatrix,
     path: &Vec<(usize, usize)>,
 ) -> RgbaImage {
-    let (min_depth, max_depth) = depth_range(matrix);
+    let (min_depth, max_depth) = depth_range(&matrix.data, matrix.no_data);
     let range = if (max_depth - min_depth).abs() < 1e-10 { 1.0 } else { max_depth - min_depth };
 
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
 
     for (y, row) in matrix.data.iter().enumerate() {
         for (x, &val) in row.iter().enumerate() {
-            let color = if !is_valid(val, matrix) {
+            let color = if !is_valid(val, matrix.no_data) {
                 Rgba([0u8, 0u8, 0u8, 0u8])
             } else {
                 let c = depth_color((val - min_depth) / range);
