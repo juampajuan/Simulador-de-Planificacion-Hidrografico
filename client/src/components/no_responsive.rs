@@ -8,7 +8,7 @@ use wasm_bindgen::closure::Closure;
 /// pidiendo usar una pantalla más grande. Se actualiza al redimensionar.
 #[function_component(NoResponsive)]
 pub fn no_responsive() -> Html {
-    let max_width = 768;
+    let max_width = 900;
 
     let width = use_state(|| {
         window()

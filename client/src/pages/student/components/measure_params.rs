@@ -82,12 +82,15 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
  
             <EchosounderParams echo_state={state} />
 
-            <div class="p-4 pt-0 flex flex-col gap-3">
+            <div class="p-3 pt-0 flex flex-col gap-3">
                 <Subtitle text={"4. Simulación"} icon={html! { <Play size={18} /> }} />
 
                 <div class="flex flex-col gap-2">
-                    <p class="text-xs text-center text-zinc-400 mt-0.5">
-                            {"Intentos gastados: "}
+                    <div class="flex justify-between">
+                        <p class="text-xs text-center text-zinc-400 mt-0.5">
+                            {"Intentos utilizados"}
+                        </p>
+                        <p class="text-xs text-center text-zinc-400 mt-0.5">
                             <span class="text-white font-bold">{props.attempts.spent}</span>
                             {" / "}
                             <span class="text-white font-bold">
@@ -100,6 +103,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                                 }
                             </span>
                         </p>
+                    </div>
                     <button 
                         onclick={on_coverage_click}
                         class="uppercase text-center disabled:opacity-30 bg-zinc-600 p-3 text-white font-bold w-full hover:bg-zinc-500 transition-all rounded shadow-xl disabled:bg-zinc-700 text-sm"

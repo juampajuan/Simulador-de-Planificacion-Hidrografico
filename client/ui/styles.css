@@ -4,14 +4,14 @@
 
 
 :root {
-    --sb-thumb: rgba(0, 0, 0, 0.486);
+    --sb-thumb: rgba(0, 0, 0, 0.3);
 }
 
 /* Dark automático */
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --sb-thumb: rgba(255, 255, 255, 0.548);
+        --sb-thumb: rgba(255, 255, 255, 0.3);
     }
 }
 

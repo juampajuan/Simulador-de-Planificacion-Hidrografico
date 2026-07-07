@@ -49,7 +49,7 @@ pub fn transport_params(props: &TransportParamsProps) -> Html {
                     html! {
                         <button 
                             type="button"
-                            class={format!("flex-1 p-2 text-[10px] font-bold rounded transition-colors {}", 
+                            class={format!("flex-1 p-2 text-[10px] font-bold rounded-sm transition-colors {}", 
                                 if is_selected { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
                             )}
                             onclick={Callback::from(move |_| {
