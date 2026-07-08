@@ -24,7 +24,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
         <div class="flex flex-col w-full text-white divide-y divide-white/10">
             { if props.history_state.is_empty() {
                 html! {
-                    <div class="text-center py-8 text-white/30 italic text-sm w-full">
+                    <div class="text-center py-8 text-white/40 italic text-sm w-full">
                         {"Las simulaciones que realices aparecerán aquí."}
                     </div>
                 }
@@ -84,10 +84,10 @@ pub fn history_params(props: &HistoryProps) -> Html {
                             };
 
                             html! {
-                                <div key={sim.id} class="p-3 flex flex-col gap-2.5">
+                                <div key={sim.id} class="p-3 first:pt-1 flex flex-col gap-2.5">
                                     <div 
                                         onclick={toggle_expand}
-                                        class="flex flex-col gap-2 cursor-pointer select-none py-0.5"
+                                        class="flex flex-col gap-2 cursor-pointer select-none"
                                     >
                                         <div class="flex items-center justify-between w-full">
                                             <div class="flex items-center shrink-0">

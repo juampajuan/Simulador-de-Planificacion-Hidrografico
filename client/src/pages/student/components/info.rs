@@ -68,7 +68,7 @@ pub fn info_params(props: &InfoProps) -> Html {
                     }
                 </div>
 
-                <div class="border-white/25 p-3 pb-2 flex flex-col gap-3">
+                <div class="border-white/25 p-3 flex flex-col gap-3">
                     <div 
                         onclick={toggle_restrictions}
                         class="flex justify-between items-center transition-colors cursor-pointer py-1"

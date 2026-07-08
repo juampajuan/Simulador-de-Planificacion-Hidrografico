@@ -30,8 +30,7 @@ pub fn path_params(props: &PathProps) -> Html {
     });
 
     html! {
-        // border-white/15 p-3 bg-zinc-900 rounded-md border flex flex-col gap-3
-        <div class="border-white/25 p-3 pt-0 border-b flex flex-col gap-3">
+        <div class="border-white/25 p-3 pt-1 border-b flex flex-col gap-3">
 
             <Subtitle
                 text={"1. Recorrido"}

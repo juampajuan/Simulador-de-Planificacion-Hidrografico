@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::{pages::student::components::{depthcolors::DepthLegend, mapback::MapBackground}, services::requests::StudentProjectResponse, structs::state::SimulationUiState};
+use crate::{pages::student::components::{depthcolors::DepthLegend}, services::requests::StudentProjectResponse, structs::state::SimulationUiState};
 
 #[derive(Properties, PartialEq)]
 pub struct IMGviewerProps {
@@ -23,9 +23,8 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
     html! {
         <div
             class="
-                flex-1 bg-cyan-100 dark:bg-slate-950 flex items-center justify-center
-                overflow-hidden transition-colors border border-white/20
-                rounded-lg dot-grid relative dark:dot-grid-dark
+                flex-1 relative flex items-center justify-center
+                overflow-hidden rounded-lg
             "
         >
             <div class="flex
@@ -35,7 +34,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 p-8 relative
             ">
 
-                <MapBackground project_state={&props.project_state.clone()} />
+                // <MapBackground project_state={&props.project_state.clone()} />
 
                 {
                     if let (Some(m_b64), Some(_)) = (map_base64, scale_base64) { //esto para la simulacion
@@ -46,7 +45,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                                     class="h-full object-contain rounded-lg"
                                 />
 
-                                <div class="absolute right-0 h-full top-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                                <div class="absolute right-0 h-full top-1/2 -translate-y-1/2 flex flex-col items-center z-5">
                                     <DepthLegend
                                         start_m={min_depth}
                                         end_m={max_depth}
@@ -75,11 +74,13 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 { 
                     if loading {
                         html! {
-                            <div class="flex flex-col absolute top-0 z-[100] backdrop-blur left-0 dark:bg-black/50 w-full h-full justify-center items-center">
-                                <div class="loader2"/>
-                                <h2 class="dark:text-cyan-200 font-bold text-center p-5">
-                                    { mensaje }
-                                </h2>
+                            <div class="flex flex-col absolute top-0 z-[100] left-0 w-full h-full justify-center items-center">
+                                <div class="flex flex-col gap-5 rounded-lg px-16 py-8 items-center bg-slate-950/60 backdrop-blur border border-white/15">
+                                    <div class="loader2"/>
+                                    <h2 class="dark:text-cyan-200 font-bold text-center">
+                                        { mensaje }
+                                    </h2>
+                                </div>
                             </div>
                         }
                     } else {

@@ -1,6 +1,7 @@
 use lucide_yew::{DraftingCompass, BookText, History};
 use yew::prelude::*;
 use crate::components::root::{Root};
+use crate::pages::student::components::mapback::MapBackground;
 pub mod components;
 use self::components::img_viewer::IMGviewer;
 use self::components::parameters_cont::ParamCont;
@@ -117,7 +118,7 @@ pub fn student_page() -> Html {
         Callback::from(move |_| active_tab.set(ActiveTab::Historial))
     };
 
-    let base_btn = "py-2 text-xs font-semibold rounded transition-all cursor-pointer text-center flex justify-center items-center gap-2 h-9";
+    let base_btn = "py-2 text-xs font-semibold rounded-sm transition-all cursor-pointer text-center flex justify-center items-center gap-2 h-9";
     
     // Botones de pestañas con estilos condicionales según la pestaña activa.
     let (entorno_cls, entorno_text) = if *active_tab == ActiveTab::Entorno {
@@ -140,48 +141,58 @@ pub fn student_page() -> Html {
 
     html! {
         <Root title={"Simulador de Planificación Hidrográfico"}>
-            <ParamCont
-                header={html! {
-                    <div class="flex gap-1.5 p-1 bg-zinc-900 border border-white/10 rounded w-full items-center">
-                        <button onclick={set_tab_entorno} class={entorno_cls} title="Información">
-                            <BookText size={16}/> {entorno_text}
-                        </button>
-                        <button onclick={set_tab_parametros} class={parametros_cls} title="Simulación">
-                            <DraftingCompass size={16}/> {parametros_text}
-                        </button>
-                        <button onclick={set_tab_historial} class={historial_cls} title="Historial">
-                            <History size={16}/> {historial_text}
-                        </button>
-                    </div>
-                }}
-            >
-                {
-                    match *active_tab {
-                        ActiveTab::Entorno => html! { <InfoParams project_state={info_project_state.clone()} /> },
-                        ActiveTab::Parametros => html! {
-                            <>
-                                <PathParams path_state={path_state.clone()} ui_state={ui_state.clone()} limits={limits_state.clone()} />
-                                <MeasuresParams ui_state={ui_state.clone()} path_state={path_state.clone()} limits={limits_state.clone()} attempts={attempts_state.clone()} /> 
-                            </>
-                        },
-                        ActiveTab::Historial => {
-                            let is_exam_mode = info_project_state
-                                .as_ref()
-                                .map(|p| p.metadata.exam_mode)
-                                .unwrap_or(false);
 
-                            html! {
-                                <HistoryParams 
-                                    history_state={history_state.clone()} 
-                                    ui_mensaje={mensaje.clone()}
-                                    exam_mode={is_exam_mode}
-                                />
+            <div class="overflow-hidden border border-white/20 rounded-2xl relative w-full">
+
+                <MapBackground project_state={project_state.clone()} />
+
+                <div class="flex w-full dot-grid dark:dot-grid-dark bg-slate-950/50 p-2 relative h-full gap-2">
+
+                    <ParamCont
+                        header={html! {
+                            <div class="flex gap-1.5 p-1 bg-zinc-900 border border-white/10 rounded w-full items-center">
+                                <button onclick={set_tab_entorno} class={entorno_cls} title="Información">
+                                    <BookText size={16}/> {entorno_text}
+                                </button>
+                                <button onclick={set_tab_parametros} class={parametros_cls} title="Simulación">
+                                    <DraftingCompass size={16}/> {parametros_text}
+                                </button>
+                                <button onclick={set_tab_historial} class={historial_cls} title="Historial">
+                                    <History size={16}/> {historial_text}
+                                </button>
+                            </div>
+                        }}
+                    >
+                        {
+                            match *active_tab {
+                                ActiveTab::Entorno => html! { <InfoParams project_state={info_project_state.clone()} /> },
+                                ActiveTab::Parametros => html! {
+                                    <>
+                                        <PathParams path_state={path_state.clone()} ui_state={ui_state.clone()} limits={limits_state.clone()} />
+                                        <MeasuresParams ui_state={ui_state.clone()} path_state={path_state.clone()} limits={limits_state.clone()} attempts={attempts_state.clone()} /> 
+                                    </>
+                                },
+                                ActiveTab::Historial => {
+                                    let is_exam_mode = info_project_state
+                                        .as_ref()
+                                        .map(|p| p.metadata.exam_mode)
+                                        .unwrap_or(false);
+
+                                    html! {
+                                        <HistoryParams 
+                                            history_state={history_state.clone()} 
+                                            ui_mensaje={mensaje.clone()}
+                                            exam_mode={is_exam_mode}
+                                        />
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            </ParamCont>
-            <IMGviewer ui_state={ui_state.clone()} project_state={project_state.clone()}/>
+                    </ParamCont>
+                    <IMGviewer ui_state={ui_state.clone()} project_state={project_state.clone()}/>
+                </div>
+
+            </div>
         </Root>
     }
 }

@@ -28,6 +28,7 @@
 - [x] Enpoint de alumno para seleccionar y modififcar el bool.
 - [] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
 - [x] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
+- [] Fecha limite? se pone cuando se crea, pasado, no se puede entregar.
 
 ## Backend
 - [x] Api que entrega images, de carpeta de storage.
@@ -43,6 +44,11 @@
 - [] Login NO debe redifirigir si pones mal la contrasenia, solo mostrar el mensaje.
 - [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar por slack o algo.
 - [x] Agregar el MODO EXAMEN o no al crear un proyecto.
+- [x] Consistencias de borders
+- [x] Consistencia de colores
+- [] Modificar el texto ese feo de image viewver en el medio. Cuando hay error. Copiar la ventana de loader, pero ponerla roja(?)
+- [] Que no se escriba el mensaje debajo del loader.
+- [x] Mapa se expande.
 
 ## Cache
 - [x] Separarlo
