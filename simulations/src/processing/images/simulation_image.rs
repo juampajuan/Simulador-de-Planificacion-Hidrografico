@@ -1,5 +1,5 @@
 use image::{Rgba, RgbaImage};
-use crate::structs::depth_matrix::DepthMatrix;
+use crate::{processing::images::ImageType::{DepthImage, DifferenceImage}, structs::depth_matrix::DepthMatrix};
 use super::images_helpers::{depth_color, depth_range, ImageType};
 
 /// Genera el png del resultado de la simulacion segun los puntos medidos
@@ -15,8 +15,12 @@ pub fn makepng_with_matrix_and_interpolation(
     let width  = matrix[0].len() as u32;
 
     let color_fn = image_type.color_fn();
- 
-    let (min_val, max_val) = depth_range(geotiff);
+    
+    let (min_val, max_val) = match image_type{
+        DepthImage => {depth_range(&geotiff.data, geotiff.no_data)}
+        DifferenceImage => {depth_range(matrix, geotiff.no_data)}
+    };
+
     let range = if (max_val - min_val).abs() < 1e-10 { 1.0 } else { max_val - min_val };
  
     let mut img = RgbaImage::new(width, height);

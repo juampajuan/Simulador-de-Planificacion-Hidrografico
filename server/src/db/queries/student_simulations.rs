@@ -20,6 +20,8 @@ pub struct StudentSimulation {
     pub echosounder_parameters: EchosounderParameters,
 
     pub simulation_image_path: Option<String>,
+    pub coverage_image_path: Option<String>,
+    pub difference_image_path: Option<String>,
 }
 
 
@@ -37,6 +39,8 @@ pub fn create_student_simulation(
     transport: &TransportParameters,
     echo: &EchosounderParameters,
     simulation_image_path: Option<&str>,
+    coverage_image_path: Option<&str>,
+    difference_image_path: Option<&str>,
 ) -> Result<(), sqlite::Error> {
 
     let mut statement = db.run_query(
@@ -70,7 +74,9 @@ pub fn create_student_simulation(
             student_id,
             project_id,
 
-            simulation_image_path
+            simulation_image_path,
+            coverage_image_path,
+            difference_image_path
         )
         VALUES(
             ?, ?, ?,
@@ -79,7 +85,7 @@ pub fn create_student_simulation(
             ?, ?,
             ?, ?, ?, ?, ?, ?, ?,
             ?, ?,
-            ?
+            ?, ?, ?
         )
         "
     )?;
@@ -116,6 +122,14 @@ pub fn create_student_simulation(
     match simulation_image_path {
         Some(p) => statement.bind((23, p))?,
         None => statement.bind((23, ""))?,
+    };
+    match coverage_image_path {
+        Some(p) => statement.bind((24, p))?,
+        None => statement.bind((24, ""))?,
+    };
+    match difference_image_path {
+        Some(p) => statement.bind((25, p))?,
+        None => statement.bind((25, ""))?,
     };
 
     statement.next()?;
@@ -198,6 +212,8 @@ pub fn get_student_simulations(
     while let sqlite::State::Row = statement.next()? {
 
         let simulation_image_path: String = statement.read("simulation_image_path")?;
+        let coverage_image_path: String = statement.read("coverage_image_path")?;
+        let difference_image_path: String = statement.read("difference_image_path")?;
 
         simulations.push(StudentSimulation {
             id: statement.read("id")?,
@@ -251,6 +267,8 @@ pub fn get_student_simulations(
             },
 
             simulation_image_path: if simulation_image_path.is_empty() { None } else { Some(simulation_image_path) },
+            coverage_image_path: if coverage_image_path.is_empty() { None } else { Some(coverage_image_path) },
+            difference_image_path: if difference_image_path.is_empty() { None } else { Some(difference_image_path) },
         });
     }
 

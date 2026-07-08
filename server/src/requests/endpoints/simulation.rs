@@ -16,8 +16,9 @@ use crate::db::engine::DBEngine;
 use crate::structs::settings::Settings;
 use crate::utils::helpers_endpoints::check_student_auth;
 use crate::utils::helpers::random_letters;
-use common::{PathParameters, SimulationBase64Response};
+use common::{PathParameters, SimulationBase64Response, StudentMeasuringParameters};
 use simulations::structs::depth_matrix::DepthMatrix;
+use simulations::structs::simulation_constants::SimulationConstants;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::io::Cursor;
 
@@ -112,19 +113,21 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     let attempt_number = student_simulations::get_next_attempt_number(&db_lock, ctx.student_id).unwrap_or(1);
     drop(db_lock);
 
-    // Guardamos el PNG de simulacion en storage/images/, ademas de mandarlo en base64
-    // (por ahora dejo las dos formas para que funcione la simulacion jajajja).
-    let fecha = Local::now().format("%Y%m%d").to_string();
-    let sufijo_random = random_letters(5);
-    let map_filename = format!("{}_{}_simulacion_{}_{}.png", fecha, sufijo_random, ctx.student_id, attempt_number);
-    let map_path = format!("{}/images/{}", settings.storage_path, map_filename);
-    let map_saved = match std::fs::write(&map_path, &map_bytes) {
-        Ok(()) => Some(map_filename.as_str()),
-        Err(e) => {
-            send_message_to_logger(tx, format!("No se pudo guardar el PNG de simulacion en storage ({}): {}", map_path, e), LogType::Error);
-            None
-        },
-    };
+    // Genera y guarda en storage/images/ las 3 imagenes del intento (mapa,
+    // cobertura, diferencias)
+    let (map_saved, coverage_saved, difference_saved) = save_simulation_images(
+        &matrix,
+        &interpolation,
+        &path,
+        echo_parameters,
+        settings.simulation_constants(),
+        &map_bytes,
+        &settings,
+        ctx.student_id,
+        attempt_number,
+        tx,
+        &log_debug,
+    );
 
     let map_encoded = STANDARD.encode(map_bytes);
     let scale_encoded = STANDARD.encode(scale_bytes); //base64
@@ -140,7 +143,9 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         &ctx.data.path_parameters,
         &echo_parameters.transport_parameters,
         &echo_parameters.echo_sounder_parameters,
-        map_saved
+        map_saved.as_deref(),
+        coverage_saved.as_deref(),
+        difference_saved.as_deref(),
     ) {
         send_message_to_logger(tx, format!("Error al registrar el intento en la DB para el alumno {}: {}", ctx.student_id, e), LogType::Error);
         
@@ -254,6 +259,57 @@ fn extract_request_context(request: &mut Request, db: &Arc<Mutex<DBEngine>>, set
         project,
         project_id, 
     })
+}
+
+/// Genera y guarda en storage/images/ las 3 imagenes de un intento de
+/// simulacion: simulacion, cobertura y diferencias.
+/// Las 3 comparten el mismo prefijo (fecha + letras al azar), y solo cambia la palabra del medio
+/// segun el tipo.
+/// TODO: Esta funcion capaz sacarla de aca y meterla en un archivo aparte.
+fn save_simulation_images(
+    matrix: &DepthMatrix,
+    interpolation: &[Vec<f64>],
+    path: &Vec<(usize, usize)>,
+    params: StudentMeasuringParameters,
+    constants: SimulationConstants,
+    map_bytes: &[u8],
+    settings: &Arc<Settings>,
+    student_id: i64,
+    attempt_number: i64,
+    tx: &Sender<ThreadMessage>,
+    log_debug: &dyn Fn(&str),
+) -> (Option<String>, Option<String>, Option<String>) {
+
+    let fecha = Local::now().format("%Y%m%d").to_string();
+    let sufijo_random = random_letters(5);
+    let base = format!("{}_{}", fecha, sufijo_random);
+
+    let save = |categoria: &str, bytes: &[u8]| -> Option<String> {
+        let filename = format!("{}_{}_{}_{}.png", base, categoria, student_id, attempt_number);
+        let file_path = format!("{}/images/{}", settings.storage_path, filename);
+        match std::fs::write(&file_path, bytes) {
+            Ok(()) => Some(filename),
+            Err(e) => {
+                send_message_to_logger(tx, format!("No se pudo guardar el PNG de {} en storage ({}): {}", categoria, file_path, e), LogType::Error);
+                None
+            },
+        }
+    };
+
+    let map_saved = save("simulacion", map_bytes);
+
+    let (coverage_image, _min, _max) = simulations::create_simulation_with_coverage(matrix, interpolation, path, params, constants, log_debug);
+    let mut coverage_bytes = Vec::new();
+    let _ = coverage_image.write_to(&mut Cursor::new(&mut coverage_bytes), image::ImageFormat::Png);
+    let coverage_saved = save("cobertura", &coverage_bytes);
+
+    let difference_matrix = simulations::generate_difference_matrix(matrix, interpolation.to_vec());
+    let difference_image = simulations::generate_difference_png(matrix, difference_matrix);
+    let mut difference_bytes = Vec::new();
+    let _ = difference_image.write_to(&mut Cursor::new(&mut difference_bytes), image::ImageFormat::Png);
+    let difference_saved = save("diferencias", &difference_bytes);
+
+    (map_saved, coverage_saved, difference_saved)
 }
 
 /// Genera la matrix a partir del archivo

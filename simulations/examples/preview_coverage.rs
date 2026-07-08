@@ -16,7 +16,7 @@ fn main() {
     let path = simulations::create_path(
         &matrix,
         90.0, // azimuth_deg
-        90.0, // separation_meters
+        10.0, // separation_meters
         GnssType::PhaseCorrection,
         &log_debug,
     );
@@ -38,9 +38,9 @@ fn main() {
         transport_parameters: TransportParameters {
             transport: Transport::Boat,
             speed: 1.0,
-            uses_mareograph: false,
-            uses_sound_profiler: false,
-            uses_inertial_sensor: false,
+            uses_mareograph: true,
+            uses_sound_profiler: true,
+            uses_inertial_sensor: true,
         },
     };
 
