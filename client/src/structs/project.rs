@@ -11,6 +11,7 @@ pub struct Project {
     pub professor_id: i64,
 
     pub exam_mode: bool,
+    pub due_date: Option<String>,
     pub attempts_limit: i64,
     pub weather: String,
     pub seabed_hardness: String,
@@ -24,6 +25,7 @@ pub struct NewProject {
     pub description: String,
     pub file: web_sys::File,
     pub exam_mode: bool,
+    pub due_date: Option<String>,
     pub attempts_limit: i64,
     pub weather: String,
     pub seabed_hardness: String,
@@ -38,6 +40,7 @@ pub struct ProjectMetadata {
     pub name: String,
     pub description: Option<String>,
     pub exam_mode: bool,
+    pub due_date: Option<String>,
     pub attempts_limit: i64,
     pub weather: String,
     pub seabed_hardness: String,

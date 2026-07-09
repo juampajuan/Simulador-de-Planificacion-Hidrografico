@@ -26,8 +26,9 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
     let result = match request.url().strip_prefix(API_V1) {
         Some(api_path) => {
+            let path_clean = api_path.split('?').next().unwrap_or(api_path);
 
-            match (request.method(), api_path) {
+            match (request.method(), path_clean) {
                 (Method::Options, _) =>
                     (Response::empty(200).boxed(), 200, None),
                 

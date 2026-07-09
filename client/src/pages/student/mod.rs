@@ -1,6 +1,7 @@
 use lucide_yew::{DraftingCompass, BookText, History};
 use yew::prelude::*;
 use crate::components::root::{Root};
+use crate::components::image_selector::ImageSelector;
 use crate::pages::student::components::mapback::MapBackground;
 pub mod components;
 use self::components::img_viewer::IMGviewer;
@@ -48,6 +49,16 @@ pub fn student_page() -> Html {
 
     let active_tab = use_state(|| ActiveTab::Entorno);
     let history_state = use_state(Vec::<StudentSimulation>::new);
+
+    let active_layers_sim = use_state(|| None::<StudentSimulation>);
+
+    {
+        let active_layers_sim = active_layers_sim.clone();
+        use_effect_with(active_tab.clone(), move |_| {
+            active_layers_sim.set(None);
+            || ()
+        });
+    }
 
     {
         let attempts_handle = attempts_state.clone();
@@ -147,7 +158,7 @@ pub fn student_page() -> Html {
                 <MapBackground project_state={project_state.clone()} />
 
                 <div class="flex w-full dot-grid-dark bg-slate-950/50 p-2 relative h-full gap-2">
-
+                    
                     <ParamCont
                         header={html! {
                             <div class="flex gap-1.5 p-1 bg-zinc-900 border border-white/10 rounded w-full items-center">
@@ -169,27 +180,43 @@ pub fn student_page() -> Html {
                                 ActiveTab::Parametros => html! {
                                     <>
                                         <PathParams path_state={path_state.clone()} ui_state={ui_state.clone()} limits={limits_state.clone()} />
-                                        <MeasuresParams ui_state={ui_state.clone()} path_state={path_state.clone()} limits={limits_state.clone()} attempts={attempts_state.clone()} /> 
+                                        <MeasuresParams ui_state={ui_state.clone()} path_state={path_state.clone()} limits={limits_state.clone()} attempts={attempts_state.clone()} active_layers_sim={active_layers_sim.clone()} history_state={history_state.clone()} /> 
                                     </>
                                 },
                                 ActiveTab::Historial => {
-                                    let is_exam_mode = info_project_state
-                                        .as_ref()
-                                        .map(|p| p.metadata.exam_mode)
-                                        .unwrap_or(false);
+                                    let is_exam_mode = info_project_state.as_ref().map(|p| p.metadata.exam_mode).unwrap_or(false);
+                                    let due_date = info_project_state.as_ref().and_then(|p| p.metadata.due_date.clone());
 
                                     html! {
                                         <HistoryParams 
                                             history_state={history_state.clone()} 
                                             ui_mensaje={mensaje.clone()}
                                             exam_mode={is_exam_mode}
+                                            due_date={due_date.clone()}
+                                            ui_state={ui_state.clone()} 
+                                            active_layers_sim={active_layers_sim.clone()}
                                         />
                                     }
                                 }
                             }
                         }
                     </ParamCont>
-                    <IMGviewer ui_state={ui_state.clone()} project_state={project_state.clone()}/>
+                    
+                    <div class="flex-1 relative flex flex-col h-full">
+                        
+                        { if let Some(sim) = &*active_layers_sim {
+                            html! { 
+                                <div class="absolute top-0 left-3 z-50">
+                                    <ImageSelector ui_state={ui_state.clone()} active_sim={sim.clone()} /> 
+                                </div>
+                            }
+                        } else { html!{} } }
+
+                        <IMGviewer 
+                            ui_state={ui_state.clone()} 
+                        />
+                    </div>
+
                 </div>
 
             </div>
