@@ -1,4 +1,4 @@
-use tiny_http::{Header, Response, Request};
+use tiny_http::{Response, Request};
 use crate::utils::helpers::{check_password, get_cookie};
 use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
@@ -9,8 +9,9 @@ use crate::db::encrypt::{hash_password};
 use crate::db::queries_interface::{auth, professor, student};
 use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
+
+use crate::helpers::auth::{generate_token, create_auth_cookie, is_local_request};
 use serde_json::Value;
-use rand::Rng;
 use std::str::FromStr;
 
 #[derive(serde::Deserialize)]
@@ -225,33 +226,5 @@ pub fn is_admin_request(
     Ok(professor_id == admin_id)
 }
 
-/// TODO: Mover a un lugar generico.
-/// Determina si una request fue formada en el sistema local.
-fn is_local_request(request: &Request) -> bool {
-    match request.remote_addr() {
-        Some(addr) => addr.ip().is_loopback(),
-        None => false,
-    }
-}
 
-/// TODO: Mover a un lugar generico.
-/// Genera la cookie usada para la sesion
-/// mediante el token previamente generado.
-fn create_auth_cookie(
-    token: &str,
-) -> Result<Header, ()> {
 
-    let cookie = format!(
-        "auth_token={}; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax",
-        token
-    );
-
-    Header::from_bytes("Set-Cookie", cookie)
-        .map_err(|_| ())
-}
-
-/// Genera un token random.
-fn generate_token() -> String {
-    let bytes: [u8; 32] = rand :: rng().random();
-    hex::encode(bytes)
-}
