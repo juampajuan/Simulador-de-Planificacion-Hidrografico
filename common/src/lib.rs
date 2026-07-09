@@ -125,9 +125,13 @@ pub struct StudentMeasuringParameters {
 /// interpolado y la barra de escala) viajan como texto base64 
 /// `min_depth`/`max_depth` se usan para rotular la escala de colores.
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
+
 pub struct SimulationBase64Response {
     pub min_depth: f64,
     pub max_depth: f64,
     pub map_base64: String,
     pub scale_base64: String,
+    pub simulation_image_path: Option<String>,
+    pub coverage_image_path: Option<String>,
+    pub difference_image_path: Option<String>,
 }
