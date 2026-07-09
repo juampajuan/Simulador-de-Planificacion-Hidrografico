@@ -11,6 +11,7 @@ mod structs;
 use structs::filecache::{FileCache};
 mod db;
 use db::{engine::DBEngine, queries::professor};
+mod helpers;
 mod logging;
 use crate::logging::structs::ThreadMessage;
 

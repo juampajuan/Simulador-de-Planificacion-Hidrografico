@@ -1,5 +1,5 @@
 use common::{EchosounderParameters, PathParameters, TransportParameters, GnssType, EcosondaMode, Transport};
-
+use std::collections::HashSet;
 use crate::db::engine::DBEngine;
 
 /// TODO: Mover a algo compartido??
@@ -273,4 +273,35 @@ pub fn get_student_simulations(
     }
 
     Ok(simulations)
+}
+
+
+/// Obtiene todas los filenames de intentos de simulacion.
+// Se usara para eliminar los archivos que ya no esten referenciados.
+pub fn get_all_simulation_images(
+    db: &DBEngine,
+) -> Result<HashSet<String>, sqlite::Error> {
+    let mut statement = db.run_query(
+        "
+        SELECT
+            simulation_image_path,
+            coverage_image_path,
+            difference_image_path
+        FROM student_simulations
+        "
+    )?;
+
+    let mut images = HashSet::new();
+
+    while let sqlite::State::Row = statement.next()? {
+        let simulation: String = statement.read("simulation_image_path")?;
+        let coverage: String = statement.read("coverage_image_path")?;
+        let difference: String = statement.read("difference_image_path")?;
+
+        images.insert(simulation);
+        images.insert(coverage);
+        images.insert(difference);
+    }
+
+    Ok(images)
 }

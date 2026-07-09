@@ -19,7 +19,7 @@ pub struct NewStudent {
 }
 
 /// Inserta un alumno nuevo con su código de acceso, nombre, proyecto asignado y profesor dueño.
-pub fn create_student(
+pub(crate) fn create_student(
     db: &DBEngine,
     code: &str,
     name: &str,
@@ -45,7 +45,7 @@ pub fn create_student(
 
 /// Borra un alumno validando que pertenezca al profesor que lo pide.
 /// Devuelve `true` si borró alguna fila o `false` si no existía o no era suyo.
-pub fn delete_student(
+pub(crate) fn delete_student(
     db: &DBEngine,
     id: i64,
     professor_id: i64
@@ -67,7 +67,7 @@ pub fn delete_student(
 
 /// Valida el código de acceso de un alumno (su "login").
 /// Devuelve `Some((id, nombre))` si el código existe o `None` si no.
-pub fn verify_code(
+pub(crate) fn verify_code(
     db: &DBEngine,
     code: &str,
 ) -> Result<Option<(i64, String)>, sqlite::Error> {
@@ -92,7 +92,7 @@ pub fn verify_code(
 }
 
 /// Trae todos los alumnos que pertenecen a un profesor, uno por fila.
-pub fn get_students_for_professor(
+pub(crate) fn get_students_for_professor(
     db: &DBEngine,
     professor_id: i64,
 ) -> Result<Vec<Student>, sqlite::Error> {
@@ -123,7 +123,7 @@ pub fn get_students_for_professor(
 
 /// Actualiza el nombre y el proyecto asignado de un alumno, validando que sea del profesor que lo pide.
 /// Devuelve `true` si modificó alguna fila o `false` si no existía o no era suyo.
-pub fn update_student(
+pub(crate) fn update_student(
     db: &DBEngine,
     id: i64,
     name: &str,
@@ -150,7 +150,7 @@ pub fn update_student(
 
 /// Busca un alumno puntual por su id.
 /// Devuelve `Some(Student)` si existe o `None` si no.
-pub fn get_student_by_id(
+pub(crate) fn get_student_by_id(
     db: &DBEngine,
     student_id: i64,
 ) -> Result<Option<Student>, sqlite::Error> {

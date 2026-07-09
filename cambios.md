@@ -78,3 +78,9 @@ No lo discutimos, pero no lo veo complicado, asi que lo haria.
 ## Consultar a fer o expliquen
 1. Que no ocurre en el modo examen? Solamente no deben/pueden entregar?
 2. En NO examen: Es cuendo se muestra la comparacion? o es en ambos?
+
+
+## Usar la carpeta de Helpers
+- [] Mover funciones de los endpoints ahi
+- [] Moer funciones de las queries
+- [] Mover otros helpers.

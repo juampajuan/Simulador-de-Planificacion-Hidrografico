@@ -64,7 +64,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                         }
                     } else {
                         html! {
-                            <h2 class="text-2xl font-bold dark:text-white text-center p-8">
+                            <h2 class="text-2xl font-bold text-white text-center p-8">
                                 { mensaje }
                             </h2>
                         }
@@ -77,7 +77,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                             <div class="flex flex-col absolute top-0 z-[100] left-0 w-full h-full justify-center items-center">
                                 <div class="flex flex-col gap-5 rounded-lg px-16 py-8 items-center bg-slate-950/60 backdrop-blur border border-white/15">
                                     <div class="loader2"/>
-                                    <h2 class="dark:text-cyan-200 font-bold text-center">
+                                    <h2 class="text-cyan-200 font-bold text-center">
                                         { mensaje }
                                     </h2>
                                 </div>

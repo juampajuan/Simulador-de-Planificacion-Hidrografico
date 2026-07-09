@@ -96,31 +96,29 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                     icon={html! { <History size={16} /> }}
                                                 />
                                             </div>
-                                            
+
                                             <div class="flex items-center gap-2">
-                                                <div class="text-[11px] font-mono text-white/60 bg-zinc-800/40 px-2 py-0.5 rounded border border-white/5 flex gap-2 whitespace-nowrap">
-                                                    <div>{"Mín: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_min_depth)}</span></div>
-                                                    <div class="text-white/25">{"|"}</div>
-                                                    <div>{"Máx: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_max_depth)}</span></div>
-                                                </div>
+                                                {
+                                                    if !is_selected {
+                                                        html!{
+                                                            <div class="text-[11px] font-mono text-white/60 bg-zinc-800/40 px-2 py-0.5 rounded border border-white/5 flex gap-2 whitespace-nowrap">
+                                                                <div>{"Mín: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_min_depth)}</span></div>
+                                                                <div class="text-white/25">{"|"}</div>
+                                                                <div>{"Máx: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_max_depth)}</span></div>
+                                                            </div>
+                                                        }
+                                                    } else {
+                                                        html!{
+                                                            <div class="text-center uppercase text-lime-400 font-bold">{"Entregado"}</div>
+                                                        }
+                                                    }
+                                                }
                                                 <span class="text-white/40 hover:text-white/70 transition-colors w-4 flex justify-end">
                                                     { if is_expanded { html!{ <ChevronUp size={16} /> } } else { html!{ <ChevronDown size={16} /> } } }
                                                 </span>
                                             </div>
                                         </div>
 
-                                        { if props.exam_mode {
-                                            html! {
-                                                <div class="w-full pt-0.5">
-                                                    <button onclick={on_select_delivery} class={btn_cls}>
-                                                        { if is_selected { html!{ <Check size={14} /> } } else { html!{ <Circle size={14} /> } } }
-                                                        { if is_selected { "ENTREGADO" } else { "ENTREGAR" } }
-                                                    </button>
-                                                </div>
-                                            }
-                                        } else {
-                                            html! {}
-                                        } }
                                     </div>
 
                                     { if is_expanded {
@@ -180,6 +178,21 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Límites (Mín/Máx)"}</span>
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}m a {}m", sim.echosounder_parameters.min_limit, sim.echosounder_parameters.max_limit)} />
+                                                </div>
+
+                                                <div class="col-span-2">
+                                                    { if props.exam_mode {
+                                                        html! {
+                                                            <div class="w-full pt-0.5">
+                                                                <button onclick={on_select_delivery} class={btn_cls}>
+                                                                    { if is_selected { html!{ <Check size={14} /> } } else { html!{ <Circle size={14} /> } } }
+                                                                    { if is_selected { "ENTREGADO" } else { "ENTREGAR" } }
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                    } else {
+                                                        html! {}
+                                                    } }
                                                 </div>
                                             </div>
                                         }

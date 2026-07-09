@@ -39,6 +39,13 @@ pub fn menu(host:&str, client: &Client) {
             }
         }
 
+        ["cleanfiles"] => {
+            match requests::clean_files(client, host) {
+                Ok(response) => println!("{}", response),
+                Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
+            }
+        }
+
         ["help"] | ["h"] | ["HELP"] | ["H"] => {
             print::print_help();
         }

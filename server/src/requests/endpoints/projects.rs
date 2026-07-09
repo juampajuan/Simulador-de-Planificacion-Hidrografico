@@ -3,6 +3,7 @@ use crate::db::engine::DBEngine;
 use crate::db::queries::proyects::{ProjectMetadata};
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
+use crate::helpers::files;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::requests::endpoints::generic::{server_error, string_response};
@@ -296,8 +297,16 @@ pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings:
     };
 
     let filename = project.filename;
+    let result = projects::delete_project_by_id_locked(&db, id, professor_id);
 
-    match projects::delete_project_by_id_locked(&db, id, professor_id) {
+    // TODO: Logearlo, pero NO respondemos error al endpoint.
+    // Es irrelevante si logro o no y ademas, tenemos un endpoint en el CLI.
+    match files::clean_unused_images(&db, &settings) {
+        Ok(()) => {}
+        Err(_) => {},
+    }
+
+    match result {
         Ok(true) => {
             let path = format!("{}/geotiffs/{}", settings.storage_path, filename);
             let _ = std::fs::remove_file(&path);

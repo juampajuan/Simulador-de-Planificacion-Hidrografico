@@ -3,6 +3,7 @@ use common::{EchosounderParameters, PathParameters, TransportParameters};
 use crate::db::queries::student_simulations::StudentSimulation;
 use crate::db::queries::{student_simulations};
 use crate::db::engine::DBEngine;
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
 pub fn create_student_simulation_locked(
@@ -88,6 +89,7 @@ pub fn get_student_simulations_locked(
 }
 
 /// Obtiene el número correlativo del próximo intento para un alumno específico.
+/// TODO: Esto esta mal, aca va el wrapper. Osea aca haces el lock.
 pub fn get_next_attempt_number(
     db: &DBEngine,
     student_id: i64,
@@ -104,4 +106,22 @@ pub fn get_next_attempt_number(
     } else {
         Ok(1)
     }
+}
+
+pub fn get_all_simulation_images_locked(
+    db: &Arc<Mutex<DBEngine>>,
+) -> Result<HashSet<String>, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Cannot lock db".to_string()),
+            })
+        }
+    };
+
+    student_simulations::get_all_simulation_images(
+        &db_connection,
+    )
 }

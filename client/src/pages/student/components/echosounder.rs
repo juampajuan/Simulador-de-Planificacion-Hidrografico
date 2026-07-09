@@ -13,7 +13,7 @@ pub struct EchosounderProps {
 #[function_component(EchosounderParams)]
 pub fn echosounder_params(props: &EchosounderProps) -> Html {
     let state = props.echo_state.clone();
-    let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white w-full";
+    let input_cls = "rounded p-2 text-white text-sm bg-zinc-700 w-full";
     let btn_pill_base = "flex-1 p-2 text-[10px] font-bold rounded-sm transition-colors";
     let profiler_in_use: bool = state.uses_sound_profiler;
 

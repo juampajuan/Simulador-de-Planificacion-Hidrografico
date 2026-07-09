@@ -14,8 +14,8 @@ pub fn title(props: &TitleProps) -> Html {
     html! {
         <h1 class="
             font-semibold text-xl
-            dark:text-cyan-200
-            text-cyan-800 flex items-center gap-2
+            text-cyan-200
+            flex items-center gap-2
         ">
             { props.icon.clone() }
             { &props.text }

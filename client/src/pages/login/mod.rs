@@ -1,6 +1,5 @@
 use yew::prelude::*;
 use web_sys::window;
-use crate::components::darkmode_btn::DarkModeButton;
 use crate::components::title::Title;
 use crate::services::requests::trigger_login;
 
@@ -26,7 +25,7 @@ enum LoginMode {
 /// de los campos, el mensaje de feedback (éxito en cyan, error en rojo) y dispara el login.
 #[function_component(LoginPage)]
 pub fn login_page() -> Html {
-    let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white w-full disabled:dark:text-white/50 disabled:dark:bg-zinc-600";
+    let input_cls = "rounded p-2 text-sm bg-zinc-700 text-white w-full disabled:text-white/50 disabled:bg-zinc-600";
 
     let loading = use_state(|| false);
     let student_code = use_state(String::new);
@@ -110,20 +109,16 @@ pub fn login_page() -> Html {
                 />
             </div>
             
-            <div class="absolute right-5 top-5 z-30">
-                <DarkModeButton/>
-            </div>
-
             <div class="h-screen w-screen grid grid-cols-2 bg-gradient-to-t from-slate-900/80 to-transparent relative">
                 
                 <LoginWelcome />
 
-                <div class="flex-1 flex items-center justify-center dot-grid relative dark:dot-grid-dark">
-                    <form onsubmit={on_submit} class="bg-cyan-100 dark:bg-slate-950/70 backdrop-blur w-[420px] border border-white/25 rounded-md shadow-xl">
+                <div class="flex-1 flex items-center justify-center relative dot-grid-dark">
+                    <form onsubmit={on_submit} class="bg-slate-950/70 backdrop-blur w-[420px] border border-white/25 rounded-md shadow-xl">
                         
                         <div class="p-6 border-b border-white/20 space-y-2">
                             <Title text={"Acceso al simulador"} />
-                            <div class="dark:text-white/90 text-xs">
+                            <div class="text-white/90 text-xs">
                                 {"Complete con los datos correspondientes."}
                             </div>
                         </div>

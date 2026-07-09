@@ -86,7 +86,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                     "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_0_1px_rgba(255,255,255,0.1)]"
                 )}
             >
-                <td class="px-4 py-2 text-left font-medium">{ props.row_number }</td>   
+                <td class="px-4 py-2 text-left font-medium rounded-l-lg overflow-hidden">{ props.row_number }</td>   
                 <td class="px-4 py-3">
                     <div class="space-y-1">
                         <div class="font-medium text-white">{ &props.project.name }</div>

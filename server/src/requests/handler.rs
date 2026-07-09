@@ -36,6 +36,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
                 (Method::Post, "/exams/select_delivery") =>
                     exams::select_exam_simulation(&mut request, db),
+
                 (Method::Post, "/create_path") =>
                     simulation::create_path(&mut request, cache, db, settings, tx),
 
@@ -61,7 +62,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                     projects::update_a_project(&mut request, db),
 
                 (Method::Get, "/student_project") =>
-                    projects::get_student_project(&mut request, db, settings,tx),  
+                    projects::get_student_project(&mut request, db, settings, tx),  
 
                 (Method::Get, "/students") =>
                     students::get_all_students(&mut request, db),
@@ -70,7 +71,7 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                     students::create_new_student(&mut request, db),
                     
                 (Method::Delete, url) if url.starts_with("/students/") =>
-                    students::delete_a_student(&mut request, db),
+                    students::delete_a_student(&mut request, db, settings),
 
                 (Method::Put, url) if url.starts_with("/students/") => 
                     students::update_an_student(&mut request, db),  
@@ -89,6 +90,9 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
 
                 (Method::Post, "/auth/close_all") =>
                     auth::close_all(&mut request, db),
+
+                (Method::Post, "/clean_files") =>
+                    files::clean_temp_files(&mut request, db, &settings),
 
                 _ => generic::not_found(),
             }

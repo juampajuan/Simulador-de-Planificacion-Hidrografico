@@ -49,6 +49,11 @@ pub fn print_help() {
             "closeall",
             ""
         ),
+        (
+            "Borra las imagenes que ya no esten asociadas a ningun proyecto o alumno.",
+            "cleanfiles",
+            ""
+        ),
     ];
 
     println!();

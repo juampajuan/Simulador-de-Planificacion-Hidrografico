@@ -146,7 +146,7 @@ pub fn student_page() -> Html {
 
                 <MapBackground project_state={project_state.clone()} />
 
-                <div class="flex w-full dot-grid dark:dot-grid-dark bg-slate-950/50 p-2 relative h-full gap-2">
+                <div class="flex w-full dot-grid-dark bg-slate-950/50 p-2 relative h-full gap-2">
 
                     <ParamCont
                         header={html! {

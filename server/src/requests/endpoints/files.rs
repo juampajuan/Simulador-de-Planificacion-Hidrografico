@@ -1,5 +1,10 @@
 use tiny_http::{Header, Response, Request};
+use crate::db::engine::DBEngine;
+use crate::helpers::files;
+use crate::requests::endpoints::auth::is_admin_request;
+use crate::requests::endpoints::generic::string_response;
 use crate::structs::{request::HandlerResult, settings::Settings};
+use std::sync::Mutex;
 use std::{fs::File, sync::Arc};
 use std::path::{PathBuf, Component, Path};
 use super::generic::{not_found, server_error};
@@ -104,4 +109,22 @@ fn get_relative_path(url: &str) -> Option<&Path> {
     } else {
         Some(relative)
     }
+}
+
+
+/// Limpia los archivos (imagenes), creados en cada simulacion.
+// Los mismos se mantienen para las entregas y una vez borrado el proyecto o alumno, se pueden eliminar.
+pub fn clean_temp_files(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> HandlerResult {
+
+    match is_admin_request(request, &db) {
+        Ok(true) => {}
+        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Err(_err) => return server_error("Error autenticando".into()),
+    }
+ 
+    match files::clean_unused_images(&db, settings) {
+        Ok(()) => string_response("Imagenes borradas correctamente".into(), 200),
+        Err(_) => return server_error("No se pudo borrar las imagenes".to_string()),
+    }
+
 }

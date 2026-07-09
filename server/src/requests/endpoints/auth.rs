@@ -198,9 +198,10 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
     response
 } 
 
+/// TODO: Mover a un lugar generico.
 /// Valida si la request fue realizada por alguien con permisos de administrador.
 /// Autenticandolo en consecuencia.
-fn is_admin_request(
+pub fn is_admin_request(
     request: &Request,
     db: &Arc<Mutex<DBEngine>>,
 ) -> Result<bool, String> {
@@ -224,6 +225,7 @@ fn is_admin_request(
     Ok(professor_id == admin_id)
 }
 
+/// TODO: Mover a un lugar generico.
 /// Determina si una request fue formada en el sistema local.
 fn is_local_request(request: &Request) -> bool {
     match request.remote_addr() {
@@ -232,7 +234,7 @@ fn is_local_request(request: &Request) -> bool {
     }
 }
 
-
+/// TODO: Mover a un lugar generico.
 /// Genera la cookie usada para la sesion
 /// mediante el token previamente generado.
 fn create_auth_cookie(

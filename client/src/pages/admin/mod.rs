@@ -21,9 +21,8 @@ pub fn admin_layout(props: &LayoutProps) -> Html {
                 flex
                 items-center
                 justify-center
-                dot-grid
                 relative
-                dark:dot-grid-dark
+                dot-grid-dark
                 gap-2
             "> 
                 <Sidebar/>
@@ -47,8 +46,7 @@ fn sidebar() -> Html {
         <aside class="
             h-full
             flex flex-col
-            bg-cyan-100
-            dark:bg-slate-950
+            bg-slate-950
             border
             border-white/20
             rounded-xl
@@ -96,8 +94,8 @@ fn sidebar() -> Html {
 
 fn nav_class(active: bool) -> &'static str {
     if active {
-        "flex items-center gap-2 px-3 py-2 [&>span]:pt-0.5 rounded-md bg-cyan-200 text-white dark:text-black/80"
+        "flex items-center gap-2 px-3 py-2 [&>span]:pt-0.5 rounded-md bg-cyan-200 text-black/80"
     } else {
-        "flex items-center gap-2 px-3 py-2 [&>span]:pt-0.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 dark:text-white"
+        "flex items-center gap-2 px-3 py-2 [&>span]:pt-0.5 rounded-md hover:bg-white/10 text-white"
     }
 }
