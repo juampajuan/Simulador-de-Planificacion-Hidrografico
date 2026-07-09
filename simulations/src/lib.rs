@@ -19,7 +19,7 @@ pub fn create_depth_matrix(file_path :&str, log_debug: &dyn Fn(&str)) -> Result<
  
     log_debug("Generando depth_matrix...");
  
-    match processing::geotiff::processing_geotiff(file_path) {
+    match processing::geotiff::processing_geotiff(file_path,log_debug) {
         Ok(matrix) => {
             log_debug("depth_matrix generada.");
             Ok(matrix)},
@@ -97,9 +97,9 @@ pub fn run_simulation(
 
     let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix, &constants, log_debug);
 
-    log_debug("Errores aplicados a las mediciones.");
+    log_debug("Se aplicaron errores a las mediciones.");
 
-    let resultado = interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix);
+    let resultado = interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix, log_debug);
 
     if resultado.is_ok() {
         log_debug("Interpolacion completada.");
@@ -227,7 +227,7 @@ pub fn generate_difference_matrix(matrix: &DepthMatrix, student_matrix: Vec<Vec<
     difference_matrix
 }
 
-pub fn generate_difference_png(matrix: &DepthMatrix, difference_matrix: Vec<Vec<f64>>, log_debug: &dyn Fn(&str)) -> RgbaImage {
+pub fn create_difference_png(matrix: &DepthMatrix, difference_matrix: Vec<Vec<f64>>, log_debug: &dyn Fn(&str)) -> RgbaImage {
     let (res,_,_)= makepng_with_matrix_and_interpolation(&difference_matrix, matrix, ImageType::DifferenceImage, &log_debug);
     res
 }

@@ -95,6 +95,24 @@ fn calculate_disturbance_params(
     }
 }
 
+fn print_debug_log( params: &StudentMeasuringParameters,log_debug: &dyn Fn(&str)){
+    if params.transport_parameters.uses_inertial_sensor {
+        log_debug("Sensor inercial: usado por el alumno, no se aplica error de inclinacion.");
+    } else {
+        log_debug("Sensor inercial: no usado, se aplica error de inclinacion.");
+    }
+    if params.transport_parameters.uses_sound_profiler {
+        log_debug("Perfilador de sonido: usado por el alumno, no se aplica error de velocidad del sonido.");
+    } else {
+        log_debug("Perfilador de sonido: no usado, se aplica error de velocidad del sonido.");
+    }
+    if params.transport_parameters.uses_mareograph {
+        log_debug("Mareografo: usado por el alumno, no se aplica error de marea.");
+    } else {
+        log_debug("Mareografo: no usado, se aplica error de marea.");
+    }
+}
+
 // ------------------------------------------------------------
 //  Aplicación de errores
 // ------------------------------------------------------------
@@ -109,6 +127,8 @@ pub fn apply_disturbances(
     log_debug: &dyn Fn(&str),
 ) -> MeasurementsTypeWithError {
 
+    print_debug_log(params, log_debug);
+    
     match mediciones {
 
         MeasurementsType::Monohaz { measurements } => {
