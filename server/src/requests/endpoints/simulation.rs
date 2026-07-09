@@ -307,8 +307,8 @@ fn save_simulation_images(
     let _ = coverage_image.write_to(&mut Cursor::new(&mut coverage_bytes), image::ImageFormat::Png);
     let coverage_saved = save("cobertura", &coverage_bytes);
 
-    let difference_matrix = simulations::generate_difference_matrix(matrix, interpolation.to_vec());
-    let difference_image = simulations::generate_difference_png(matrix, difference_matrix);
+    let difference_matrix = simulations::generate_difference_matrix(matrix, interpolation.to_vec(), &log_debug);
+    let difference_image = simulations::generate_difference_png(matrix, difference_matrix, &log_debug);
     let mut difference_bytes = Vec::new();
     let _ = difference_image.write_to(&mut Cursor::new(&mut difference_bytes), image::ImageFormat::Png);
     let difference_saved = save("diferencias", &difference_bytes);

@@ -8,7 +8,11 @@ pub fn makepng_with_matrix_and_interpolation(
     matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
     image_type: ImageType,
+    log_debug: &dyn Fn(&str)
 ) -> (RgbaImage, f64, f64) {
+
+    log_debug(&format!("Generando PNG de matriz en modo {image_type}."));
+
     let no_data = geotiff.no_data.unwrap_or(f64::MAX);
 
     let height = matrix.len() as u32;
@@ -20,6 +24,10 @@ pub fn makepng_with_matrix_and_interpolation(
         DepthImage => {depth_range(&geotiff.data, geotiff.no_data)}
         DifferenceImage => {depth_range(matrix, geotiff.no_data)}
     };
+    log_debug("Extremos de la matriz calculados: {min_val}, {max_val}.");
+
+    //Si se quiere hacer lo que dijo Julen que se retorne l min y max de cada interpolacion, se tiene que usar la linea de abajo
+    //let (min_val, max_val) = depth_range(matrix, geotiff.no_data);
 
     let range = if (max_val - min_val).abs() < 1e-10 { 1.0 } else { max_val - min_val };
  
@@ -37,6 +45,8 @@ pub fn makepng_with_matrix_and_interpolation(
             img.put_pixel(x as u32, y as u32, color);
         }
     }
+
+    log_debug("Generacion del PNG concluida.");
  
     (img, min_val, max_val)
 }

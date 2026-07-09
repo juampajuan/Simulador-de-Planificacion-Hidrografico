@@ -106,19 +106,26 @@ pub fn apply_disturbances(
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
     constants: &SimulationConstants,
+    log_debug: &dyn Fn(&str),
 ) -> MeasurementsTypeWithError {
+
     match mediciones {
+
         MeasurementsType::Monohaz { measurements } => {
+            log_debug("Aplicando errores a mediciones monohaz.");
             let dp = calculate_disturbance_params(measurements.len(), params, path, matrix, constants);
+            log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
             MeasurementsTypeWithError::Monohaz {
-                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants),
+                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants, ),
             }
         }
 
         MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
+            log_debug("Aplicando errores a mediciones multihaz.");
             // Los tres pings son simultáneos: calculamos los parámetros una sola vez
             // usando la longitud de la lista central (todas tienen la misma cantidad).
             let dp = calculate_disturbance_params(central_measurments.len(), params, path, matrix, constants);
+            log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
 
             // Para multihaz aplicamos los errores en conjunto ping a ping, para que
             // central, izquierda y derecha compartan el mismo ángulo inercial y marea.

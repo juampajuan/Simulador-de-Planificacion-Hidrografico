@@ -75,8 +75,8 @@ fn main() {
 
     println!("Listo: preview_coverage.png");
 
-    let difference_matrix = simulations::generate_difference_matrix(&matrix, student_interpolation);
-    let difference_img = simulations::generate_difference_png(&matrix, difference_matrix);
+    let difference_matrix = simulations::generate_difference_matrix(&matrix, student_interpolation, &log_debug);
+    let difference_img = simulations::generate_difference_png(&matrix, difference_matrix, &log_debug);
 
     difference_img.save("difference.png").expect("No se pudo guardar el PNG");
 
