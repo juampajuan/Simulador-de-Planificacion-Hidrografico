@@ -116,7 +116,7 @@ pub fn apply_disturbances(
             let dp = calculate_disturbance_params(measurements.len(), params, path, matrix, constants);
             log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
             MeasurementsTypeWithError::Monohaz {
-                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants, ),
+                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants),
             }
         }
 
