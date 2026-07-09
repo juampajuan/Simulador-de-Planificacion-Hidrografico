@@ -109,6 +109,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     let _ = map_image.write_to(&mut Cursor::new(&mut map_bytes), image::ImageFormat::Png);
     let _ = scale_image.write_to(&mut Cursor::new(&mut scale_bytes), image::ImageFormat::Png);
 
+    // TODO: Usar el wrapper, ver como hice el resto.
     let db_lock = db.lock().unwrap();
     let attempt_number = student_simulations::get_next_attempt_number(&db_lock, ctx.student_id).unwrap_or(1);
     drop(db_lock);

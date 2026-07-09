@@ -1,4 +1,6 @@
 use tiny_http::Request;
+use crate::helpers::files;
+use crate::structs::settings::{Settings};
 use crate::utils::helpers::generate_code;
 use crate::db::engine::DBEngine;
 use crate::db::queries::student::{NewStudent};
@@ -69,7 +71,7 @@ pub fn get_all_students(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
 /// Borra a un alumno dado, presente en la DB, para el profesor autenticado.
 /// Para eliminarlo, ademas, provee su id como profesor, para evitar que por algun error en el front
 /// Un profesor autenticado, pueda borrar alumnos que no le pertenecen.
-pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
 
     let Some(id_str) = request.url().rsplit('/').next() else {
         return string_response("Bad Request".to_string(), 400);
@@ -85,7 +87,15 @@ pub fn delete_a_student(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
         return string_response("ID inválido".to_string(), 400);
     };
 
-    match student::delete_student_locked(&db, id, professor_id) {
+    let result = student::delete_student_locked(&db, id, professor_id);
+
+    // TODO: Logearlo, pero NO respondemos error al endpoint.
+    match files::clean_unused_images(&db, &settings) {
+        Ok(()) => {}
+        Err(_) => {},
+    }
+
+    match result {
         Ok(true) => string_response("Estudiante eliminado".to_string(), 200),
         Ok(false) => string_response("Estudiante no encontrado.".to_string(), 404),
         Err(_) => server_error("Error al eliminar".to_string())
