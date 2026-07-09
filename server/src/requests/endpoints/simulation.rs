@@ -154,12 +154,14 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         );
     }
 
-    let response_data = SimulationBase64Response {
+     let response_data = SimulationBase64Response {
         min_depth,
         max_depth,
         map_base64: map_encoded,
         scale_base64: scale_encoded,
-        parameters: echo_parameters
+        simulation_image_path: map_saved,
+        coverage_image_path: coverage_saved,
+        difference_image_path: difference_saved,
     };
 
     let json_payload = match serde_json::to_string(&response_data) {

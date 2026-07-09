@@ -131,5 +131,7 @@ pub struct SimulationBase64Response {
     pub max_depth: f64,
     pub map_base64: String,
     pub scale_base64: String,
-    pub parameters: StudentMeasuringParameters,
+    pub simulation_image_path: Option<String>,
+    pub coverage_image_path: Option<String>,
+    pub difference_image_path: Option<String>,
 }
