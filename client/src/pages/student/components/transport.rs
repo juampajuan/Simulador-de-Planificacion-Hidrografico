@@ -13,12 +13,12 @@ pub struct TransportParamsProps {
 #[function_component(TransportParams)]
 pub fn transport_params(props: &TransportParamsProps) -> Html {
     let state = props.echo_state.clone();
-    let input_cls = "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white w-full";
+    let input_cls = "rounded p-2 text-sm bg-zinc-700 text-white w-full";
 
     let render_check = |label: &'static str, value: bool, id: &'static str| {
         let state = state.clone();
         html! {
-            <label class="flex items-center gap-2 cursor-pointer dark:text-white hover:text-cyan-200 transition-colors text-sm">
+            <label class="flex items-center gap-2 cursor-pointer text-white hover:text-cyan-200 transition-colors text-sm">
                 <input type="checkbox" class="w-4 h-4" checked={value} onchange={Callback::from(move |e: Event| {
                     let input: HtmlInputElement = e.target_unchecked_into();
                     let mut s = (*state).clone();

@@ -3,7 +3,6 @@ use crate::services::utils::get_local_storage;
 use crate::services::requests::trigger_logout;
 
 use super::title::Title;
-use super::darkmode_btn::DarkModeButton;
 use lucide_yew::{LogOut};
 use yew_router::prelude::*;
 
@@ -27,8 +26,7 @@ pub fn root(props: &RootProps) -> Html {
         <main class=" 
             h-screen
             w-full
-            bg-cyan-200
-            dark:bg-slate-900
+            bg-slate-900
             flex
             flex-col
             transition-colors
@@ -44,7 +42,6 @@ pub fn root(props: &RootProps) -> Html {
                         />
                     </div>
                     <div class="flex gap-2 items-center">
-                        <DarkModeButton />
                         <UserButton/>
                     </div>
                 </div>
@@ -75,7 +72,7 @@ pub fn user_button() -> Html {
         html! {}
     } else {
         html! {
-            <div class="flex pl-3 gap-3 p-1 items-center rounded-full dark:text-white bg-black/10 dark:bg-white/10">
+            <div class="flex pl-3 gap-3 p-1 items-center rounded-full text-white bg-white/10">
                 <p class="text-sm">{token}</p>
                 <button 
                     onclick={on_logout_click}

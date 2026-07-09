@@ -131,7 +131,7 @@ pub fn student_row(props: &StudentRowProps) -> Html {
                                 edit_name_input.set(input.value());
                                 row_mensaje_clear.set(String::new());
                             })}
-                            class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-400 text-white w-full box-border"
+                            class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-400 text-white w-auto box-border"
                         />
                         if !(*row_mensaje).is_empty() {
                             <span class={alert_cls}>{ (*row_mensaje).clone() }</span>
@@ -161,7 +161,7 @@ pub fn student_row(props: &StudentRowProps) -> Html {
                                 edit_project_select.set(val);
                             }
                         })}
-                        class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-cyan-400 cursor-pointer w-full box-border"
+                        class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-cyan-400 cursor-pointer w-auto box-border"
                     >
                         <option value="0" selected={current_project_id == 0}>{"-- Sin Asignar --"}</option>
                         {

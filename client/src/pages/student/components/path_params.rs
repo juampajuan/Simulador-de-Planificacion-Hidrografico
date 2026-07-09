@@ -19,7 +19,7 @@ pub struct PathProps {
 #[function_component(PathParams)]
 pub fn path_params(props: &PathProps) -> Html {
     let input_cls =
-        "rounded p-2 text-black text-sm dark:bg-zinc-700 dark:text-white disabled:dark:text-white/50 disabled:dark:bg-zinc-600";
+        "rounded p-2 text-white text-sm bg-zinc-700 disabled:text-white/50 disabled:bg-zinc-600";
 
     let ui_state_clone = props.ui_state.clone();
     let path_state_clone = props.path_state.clone();
