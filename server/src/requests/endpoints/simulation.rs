@@ -159,6 +159,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         max_depth,
         map_base64: map_encoded,
         scale_base64: scale_encoded,
+        parameters: echo_parameters
     };
 
     let json_payload = match serde_json::to_string(&response_data) {
