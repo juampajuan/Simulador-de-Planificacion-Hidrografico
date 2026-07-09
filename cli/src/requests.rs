@@ -94,3 +94,16 @@ pub fn close_all(
     let text = response.text()?;
     Ok(text)
 }
+
+pub fn clean_files(
+    client: &Client,
+    host: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+
+    let response = client
+        .post(format!("{}/api/v1/clean_files", host))
+        .send()?;
+
+    let text = response.text()?;
+    Ok(text)
+}
