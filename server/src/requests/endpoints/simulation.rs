@@ -26,22 +26,22 @@ use std::io::Cursor;
 /// Utiliza contenidos de la cache y la db, si los hay.
 pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> HandlerResult {
     
-    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
-    
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
     };
 
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx, &ctx.student.name);
+
     // reutilizamos la depthmatrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
-    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters, tx) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters, tx, &ctx.student.name) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -57,13 +57,15 @@ pub fn create_path(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<
 /// Revisa y compara la cantidad de intentos realizados. 
 pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>,tx: &Sender<ThreadMessage>) -> HandlerResult {
     
-    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
+    
 
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
     };
+
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx, &ctx.student.name);
 
     let limit = ctx.project.metadata.attempts_limit;
     if limit != -1 && ctx.student.attempts >= limit {
@@ -79,13 +81,13 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     };
 
     // reutilizamos la depth matrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path,tx) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path,tx, &ctx.student.name) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
-    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters,tx) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters,tx, &ctx.student.name) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -184,25 +186,25 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
 /// Sirve para ver de manera preliminar que areas cubre el recorrido. 
 pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>,tx: &Sender<ThreadMessage>) -> HandlerResult {
     
-    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
-    
     let ctx = match extract_request_context(request, &db, &settings) {
         Ok(context) => context,
         Err(response) => return response,
     };
+
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx, &ctx.student.name);
  
     let echo_parameters = match ctx.data.echo_parameters {
         Some(params) => params,
         None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
     };
  
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
  
-    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters,tx) {
+    let path = match lock_get_or_create_path(&cache, ctx.student_id, &matrix, &ctx.data.path_parameters,tx, &ctx.student.name) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
     };
@@ -319,14 +321,15 @@ fn save_simulation_images(
 /// Genera la matrix a partir del archivo
 /// Primero intenta obtenerla desde la cache, si no la encuentra, ejecuta el metodo para crearla.
 /// Una vez creada, si no existia, la agrega al cache, para futuros usos.
-fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str, tx: &Sender<ThreadMessage>) -> Result<DepthMatrix, String> {
-    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
+fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str, tx: &Sender<ThreadMessage>, student_name: &str) -> Result<DepthMatrix, String> {
 
     let mut lock = match cache.lock() {
         Ok(l) => l,
         Err(_) => return Err("Error interno: no se pudo acceder al cache".to_string()),
     };
+
+    //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx, student_name);
 
     // La nueva estructura busca mapas globalmente usando el file_path
     if let Some(m) = lock.get_map(file_path) {
@@ -358,9 +361,9 @@ fn lock_get_or_create_matrix(cache: &Arc<Mutex<FileCache>>, file_path: &str, tx:
 /// Genera el recorrido a partir de una matrix profesada
 /// Primero intenta obtenerlo desde la cache, si no lo encuentra, ejecuta el metodo para crearlo.
 /// Una vez creado, lo agrega al cache, para futuros usos.
-fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: i64, matrix: &DepthMatrix, path_params: &PathParameters, tx: &Sender<ThreadMessage>) -> Result<Vec<(usize, usize)>, String> {
+fn lock_get_or_create_path(cache: &Arc<Mutex<FileCache>>, cache_key: i64, matrix: &DepthMatrix, path_params: &PathParameters, tx: &Sender<ThreadMessage>, student_name: &str) -> Result<Vec<(usize, usize)>, String> {
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
+    let log_debug = debug_logger(tx, student_name);
 
     let mut lock = match cache.lock() {
         Ok(l) => l,

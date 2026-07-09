@@ -215,8 +215,7 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
 /// Esto lo hace en base a la cookie que recibe en la request.
 /// Con la cookie obtiene el id del mismo y con eso el proyecto
 pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> HandlerResult {
-    // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
+    
 
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -229,6 +228,9 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
         Ok(None) => return string_response("Estudiante no encontrado".to_string(), 404),
         Err(_) => return server_error("Error al obtener los datos del alumno".to_string()),
     };
+    // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+
+    let log_debug = debug_logger(tx, &student.name);
 
     let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {
         Ok(id_opt) => id_opt,

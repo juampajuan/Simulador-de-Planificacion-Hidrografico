@@ -78,6 +78,6 @@ pub fn send_message_to_logger(
 /// Arma el closure de debug logging atado a un `tx`
 /// El '_ indica que el closure tiene una vida útil atada a la vida del `tx` que se le pasa como parámetro.
 /// El move indica que el closure toma la propiedad de `tx` y lo mueve dentro del closure.
-pub fn debug_logger(tx: &Sender<ThreadMessage>) -> impl Fn(&str) + '_ {
-    move |msg: &str| send_message_to_logger(tx, msg.to_string(), LogType::Debug)
+pub fn debug_logger<'a>(tx: &'a Sender<ThreadMessage>, prefix: &'a str) -> impl Fn(&str) + 'a {
+    move |msg: &str| send_message_to_logger(tx, format!("{}: {}", prefix, msg), LogType::Debug)
 }
