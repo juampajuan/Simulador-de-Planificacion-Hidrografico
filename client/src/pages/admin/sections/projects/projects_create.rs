@@ -12,13 +12,14 @@ pub struct CreateProjectModalProps {
     pub projects_state: UseStateHandle<Vec<Project>>,
 }
 
-/// Modal de alta de proyecto: nombre, descripción, GeoTIFF y parámetros iniciales.
+/// Modal de alta de proyecto: nombre, descripción, GeoTIFF, Modo Entrega y parámetros iniciales.
 #[function_component(CreateProjectModal)]
 pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
     let name_input = use_state(String::new);
     let description_input = use_state(String::new);
     let selected_file = use_state(|| None::<web_sys::File>); 
     let exam_mode_input = use_state(|| false);
+    let due_date_input = use_state(String::new);
     
     let form_fields_state = use_state(ProjectFormFields::new_empty);
 
@@ -32,6 +33,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
         let name = (*name_input).clone();
         let description = (*description_input).clone();
         let is_exam = *exam_mode_input;
+        let due_date = (*due_date_input).clone();
         
         let fields = form_fields_state.clone();
         let error_msg = error_msg.clone();
@@ -48,6 +50,17 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                 error_msg.set("El nombre del proyecto es obligatorio".to_string()); 
                 return; 
             }
+
+            // Validación de la fecha límite solo si el Modo Entrega está activo
+            let due_date_opt = if is_exam {
+                if due_date.is_empty() {
+                    error_msg.set("La fecha límite de entrega es obligatoria para el modo examen".to_string());
+                    return;
+                }
+                Some(due_date.clone())
+            } else {
+                None
+            };
 
             let attempts = match fields.attempts_limit.parse::<i64>() {
                 Ok(n) => { 
@@ -85,6 +98,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                     file,
                     attempts_limit: attempts,
                     exam_mode: is_exam,
+                    due_date: due_date_opt,
                     weather: fields.weather.clone(),
                     seabed_hardness: fields.seabed_hardness.clone(),
                     budget: b,
@@ -103,6 +117,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
     let is_open_close = props.is_open.clone();
     let is_open_cancel = props.is_open.clone();
     let exam_mode_clone = exam_mode_input.clone();
+    let due_date_clone = due_date_input.clone();
 
     html! {
         <Modal 
@@ -140,22 +155,36 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                         oninput={Callback::from(move |e: InputEvent| description_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))} />
                 </div>
 
-                <div class="flex flex-col space-y-1 select-none">
-                    <label class="text-xs font-semibold text-white/80 mb-1">{"Modo de Trabajo"}</label>
-                    <div class="flex items-center gap-3 p-2 bg-slate-950 rounded-lg border border-white/10 focus-within:border-cyan-400 h-[38px] transition-colors">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-col space-y-1 select-none">
+                        <label class="text-xs font-semibold text-white/80 mb-1">{"Modo de Trabajo"}</label>
+                        <div class="flex items-center gap-3 p-2 bg-slate-950 rounded-lg border border-white/10 focus-within:border-cyan-400 h-[38px] transition-colors">
+                            <input 
+                                id="exam_mode_checkbox"
+                                type="checkbox" 
+                                checked={*exam_mode_input}
+                                onchange={Callback::from(move |e: Event| {
+                                    let target = e.target_unchecked_into::<web_sys::HtmlInputElement>();
+                                    exam_mode_clone.set(target.checked());
+                                    if !target.checked() { due_date_clone.set(String::new()); }
+                                })}
+                                class="w-4 h-4 rounded text-cyan-400 bg-slate-900 border-white/20 focus:ring-0 focus:ring-offset-0 accent-cyan-200 cursor-pointer ml-1"
+                            />
+                            <label for="exam_mode_checkbox" class="text-sm text-white/90 cursor-pointer pt-0.5">
+                                {"Habilitar Modo Entrega"}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col space-y-1">
+                        <label class="text-xs font-semibold text-white/80 mb-1">{"Fecha Límite de Entrega"}</label>
                         <input 
-                            id="exam_mode_checkbox"
-                            type="checkbox" 
-                            checked={*exam_mode_input}
-                            onchange={Callback::from(move |e: Event| {
-                                let target = e.target_unchecked_into::<web_sys::HtmlInputElement>();
-                                exam_mode_clone.set(target.checked());
-                            })}
-                            class="w-4 h-4 rounded text-cyan-400 bg-slate-900 border-white/20 focus:ring-0 focus:ring-offset-0 accent-cyan-200 cursor-pointer ml-1"
+                            type="date" 
+                            value={(*due_date_input).clone()}
+                            disabled={!*exam_mode_input}
+                            oninput={Callback::from(move |e: InputEvent| due_date_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))}
+                            class="bg-slate-950 text-sm p-2 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none text-white w-full h-[38px] font-mono scheme-dark disabled:opacity-40 disabled:cursor-not-allowed disabled:border-white/5 transition-all cursor-pointer"
                         />
-                        <label for="exam_mode_checkbox" class="text-sm text-white/90 cursor-pointer pt-0.5">
-                            {"Habilitar Modo Entrega"}
-                        </label>
                     </div>
                 </div>
 

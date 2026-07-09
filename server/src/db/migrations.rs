@@ -31,6 +31,7 @@ pub fn init(
             filename TEXT NOT NULL,
             
             exam_mode BOOLEAN NOT NULL DEFAULT FALSE,
+            due_date TEXT,
             attempts_limit INTEGER NOT NULL,
             weather TEXT NOT NULL,
             seabed_hardness TEXT NOT NULL,

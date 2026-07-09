@@ -2,7 +2,7 @@ use yew::prelude::*;
 use crate::structs::student::Student;
 use crate::structs::project::Project;
 use crate::services::requests::update_student;
-use lucide_yew::{Trash, Pencil, X, Save};
+use lucide_yew::{Trash, Pencil, X, Save, Eye};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 
 #[derive(Properties, PartialEq)]
@@ -11,6 +11,7 @@ pub struct StudentRowProps {
     pub proyectos: Vec<Project>,
     pub delete_target: UseStateHandle<Option<Student>>,
     pub students_state: UseStateHandle<Vec<Student>>,
+    pub on_view_attempts: Callback<(Student, Project)>, 
 }
 
 /// Fila de un alumno en la tabla.
@@ -103,6 +104,17 @@ pub fn student_row(props: &StudentRowProps) -> Html {
         None => (String::new(), String::new()),
     };
 
+    let on_view_click = {
+        let on_view_attempts = props.on_view_attempts.clone();
+        let usuario = props.usuario.clone();
+        let proyecto = proyecto_encontrado.cloned();
+        Callback::from(move |_| {
+            if let Some(proy) = &proyecto {
+                on_view_attempts.emit((usuario.clone(), proy.clone()));
+            }
+        })
+    };
+
     let alert_cls = if !(*row_mensaje).is_empty() {
         let msg = (*row_mensaje).to_lowercase();
         if msg.contains("guardando") || msg.contains("exito") {
@@ -189,6 +201,18 @@ pub fn student_row(props: &StudentRowProps) -> Html {
 
             <td class="p-3 rounded-r-lg">
                 <div class="flex justify-end gap-2 items-center w-full">
+                    if !*is_editing && proyecto_encontrado.is_some() {
+                        <button
+                            type="button"
+                            disabled={*row_loading}
+                            onclick={on_view_click}
+                            title="Ver intentos de simulación"
+                            class="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 p-2 rounded-full cursor-pointer transition-colors shrink-0 border border-cyan-500/20"
+                        >
+                            <Eye size={18}/>
+                        </button>
+                    }
+
                     if *is_editing {
                         <button 
                             disabled={*row_loading}

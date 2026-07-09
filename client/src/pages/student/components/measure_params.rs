@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::services::requests::{run_simulation, run_coverage};
+use crate::services::requests::{run_simulation, run_coverage, StudentSimulation};
 use crate::structs::state::{EchoState, PathState, SimulationUiState};
 use crate::pages::student::components::transport::TransportParams;
 use crate::pages::student::components::echosounder::EchosounderParams;
@@ -19,6 +19,8 @@ pub struct MeasuresProps {
     pub ui_state: SimulationUiState,
     pub limits: UseStateHandle<ConfigLimits>,
     pub attempts: UseStateHandle<AttemptsState>,
+    pub active_layers_sim: UseStateHandle<Option<StudentSimulation>>,
+    pub history_state: UseStateHandle<Vec<StudentSimulation>>,
 }
 
 // Muestra los parámetros de medición
@@ -44,14 +46,53 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
         ""
     };
 
+    {
+        let map_base64_state = props.ui_state.map_base64.clone();
+        let active_layers_sim = props.active_layers_sim.clone();
+        let min_depth = props.ui_state.min_depth.clone();
+        let max_depth = props.ui_state.max_depth.clone();
+        let history = props.history_state.clone(); // Necesitamos pasarle el historial o generar el ID aproximado
+
+        use_effect_with(map_base64_state.clone(), move |m_b64| {
+            if let Some(b64_str) = &**m_b64 {
+                if !b64_str.is_empty() {
+                    // Calculamos el número de intento basado en el historial existente + 1
+                    let next_attempt = (history.len() + 1) as i64;
+                    
+                    // Reconstruimos las rutas exactas que el backend crea físicamente en disco
+                    let live_sim = StudentSimulation {
+                        id: 0, 
+                        attempt_number: next_attempt,
+                        selected: false,
+                        result_min_depth: *min_depth,
+                        result_max_depth: *max_depth,
+                        student_id: 0,
+                        project_id: 0,
+                        // Asignamos los nombres de archivo estándar que el backend genera en /images/
+                        simulation_image_path: Some(format!("intento_{}_simulacion.png", next_attempt)), 
+                        coverage_image_path: Some(format!("intento_{}_cobertura.png", next_attempt)), 
+                        difference_image_path: Some(format!("intento_{}_diferencias.png", next_attempt)),
+                        path_parameters: Default::default(),
+                        transport_parameters: Default::default(),
+                        echosounder_parameters: Default::default(),
+                    };
+                    
+                    active_layers_sim.set(Some(live_sim));
+                }
+            }
+            || ()
+        });
+    }
+
     let echo_state_handle = state.clone();
     let path_state_handle = props.path_state.clone();
     let ui_state_handle = props.ui_state.clone();
     let limits_handle = props.limits.clone();
-    
     let attempts_handle = props.attempts.clone(); 
+    let active_layers_sim_btn = props.active_layers_sim.clone();
 
     let on_simulate_click = Callback::from(move |_| {
+        active_layers_sim_btn.set(None);
         run_simulation(
             &echo_state_handle, 
             &path_state_handle, 
@@ -65,8 +106,10 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     let path_state_handle_cov = props.path_state.clone();
     let ui_state_handle_cov = props.ui_state.clone();
     let limits_handle_cov = props.limits.clone();
+    let active_layers_sim_cov = props.active_layers_sim.clone();
 
     let on_coverage_click = Callback::from(move |_| {
+        active_layers_sim_cov.set(None);
         run_coverage(
             &echo_state_handle_cov,
             &path_state_handle_cov,
@@ -106,7 +149,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                     </div>
                     <button 
                         onclick={on_coverage_click}
-                        class="uppercase text-center disabled:opacity-30 bg-zinc-600 p-3 text-white font-bold w-full hover:bg-zinc-500 transition-all rounded shadow-xl disabled:bg-zinc-700 text-sm"
+                        class="uppercase text-center disabled:opacity-30 bg-zinc-600 p-3 text-white font-bold w-full hover:bg-zinc-500 transition-all rounded shadow-xl disabled:bg-zinc-700 text-sm cursor-pointer"
                     >
                         {"Ver Cobertura"}
                     </button>
@@ -115,9 +158,9 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                         onclick={on_simulate_click}
                         class={
                             if is_limit_reached {
-                                "uppercase text-center bg-zinc-800 p-3 text-zinc-500 font-bold w-full cursor-not-allowed rounded shadow-xl border border-zinc-700 text-sm"
+                                "uppercase text-center bg-zinc-800 p-3 text-zinc-500 font-bold w-full cursor-not-allowed rounded shadow-xl border border-zinc-700 text-sm select-none"
                             } else {
-                                "uppercase text-center disabled:opacity-30 bg-cyan-200 p-3 text-black font-bold w-full hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100 text-sm"
+                                "uppercase text-center disabled:opacity-30 bg-cyan-200 p-3 text-black font-bold w-full hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100 text-sm cursor-pointer"
                             }
                         }
                     >

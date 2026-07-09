@@ -2,13 +2,17 @@ use yew::prelude::*;
 use crate::services::requests::StudentSimulation;
 use crate::components::subtitle::Subtitle;
 use crate::services::requests::select_exam_delivery;
-use lucide_yew::{History, ChevronDown, ChevronUp, Check, Circle};
+use crate::structs::state::SimulationUiState;
+use lucide_yew::{History, ChevronDown, ChevronUp, Check, Circle, CalendarX}; 
 
 #[derive(Properties, PartialEq)]
 pub struct HistoryProps {
     pub history_state: UseStateHandle<Vec<StudentSimulation>>,
     pub ui_mensaje: UseStateHandle<String>,
     pub exam_mode: bool,
+    pub due_date: Option<String>,
+    pub ui_state: SimulationUiState, 
+    pub active_layers_sim: UseStateHandle<Option<StudentSimulation>>,
 }
 
 /// Pestaña "Historial": Muestra los intentos de simulación del estudiante utilizando la persistencia real de la DB.
@@ -20,12 +24,20 @@ pub fn history_params(props: &HistoryProps) -> Html {
     // Mantiene un registro de qué ID de intento está expandido (-1 significa ninguno)
     let expanded_id = use_state(|| -1i64);
 
+    let today_str = {
+        let date = js_sys::Date::new_0();
+        let year = date.get_full_year();
+        let month = date.get_month() + 1;
+        let day = date.get_date();
+        format!("{:04}-{:02}-{:02}", year, month, day)
+    };
+
     html! {
         <div class="flex flex-col w-full text-white divide-y divide-white/10">
             { if props.history_state.is_empty() {
                 html! {
                     <div class="text-center py-8 text-white/40 italic text-sm w-full">
-                        {"Las simulaciones que realices aparecerán aquí."}
+                        {"Las simulaciones realizadas aparecerán aquí."}
                     </div>
                 }
             } else {
@@ -38,24 +50,39 @@ pub fn history_params(props: &HistoryProps) -> Html {
                             
                             let toggle_expand = {
                                 let expanded_id = expanded_id.clone();
+                                let active_layers_sim = props.active_layers_sim.clone();
+                                let sim_clone = sim.clone();
                                 Callback::from(move |_| {
                                     if *expanded_id == sim_id {
                                         expanded_id.set(-1);
+                                        active_layers_sim.set(None); // Oculta la botonera flotante si se colapsa
                                     } else {
                                         expanded_id.set(sim_id);
+                                        active_layers_sim.set(Some(sim_clone.clone())); // Muestra las capas del intento expandido
                                     }
                                 })
                             };
 
                             let msg_for_this_btn = props.ui_mensaje.clone();
                             let history_state = props.history_state.clone();
+                            let due_date_clone = props.due_date.clone();
+                            let today_clone = today_str.clone();
+
+                            let is_expired = if props.exam_mode {
+                                if let Some(due) = &due_date_clone { today_clone > *due } else { false }
+                            } else {
+                                false // Si no es un examen/entrega, el plazo jamás puede vencer
+                            };
 
                             let on_select_delivery = Callback::from(move |e: MouseEvent| {
                                 e.stop_propagation(); 
+                                if is_expired && !is_selected {
+                                    msg_for_this_btn.set("Error: El plazo de entrega para este proyecto ha expirado.".to_string());
+                                    return;
+                                }
                                 
                                 let mut current_list = (*history_state).clone();
                                 let mut ya_estaba_entregado = false;
-                                
                                 if let Some(actual) = current_list.iter().find(|item| item.id == sim_id) {
                                     ya_estaba_entregado = actual.selected;
                                 }
@@ -65,13 +92,8 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                 let id_para_servidor = if ya_estaba_entregado { None } else { Some(sim_id) };
 
                                 for item in current_list.iter_mut() {
-                                    if item.id == sim_id {
-                                        item.selected = !ya_estaba_entregado;
-                                    } else {
-                                        item.selected = false;
-                                    }
+                                    if item.id == sim_id { item.selected = !ya_estaba_entregado; } else { item.selected = false; }
                                 }
-                                
                                 history_state.set(current_list);
                                 select_exam_delivery(id_para_servidor, msg_for_this_btn.clone());
                             });
@@ -79,37 +101,32 @@ pub fn history_params(props: &HistoryProps) -> Html {
                             // Botón adaptado al estado de la entrega.
                             let btn_cls = if is_selected {
                                 "flex items-center justify-center gap-2 w-full h-[28px] rounded text-xs font-bold transition-all bg-cyan-200 text-black hover:bg-cyan-300 shadow-lg shadow-cyan-500/10 border border-transparent shrink-0"
+                            } else if is_expired {
+                                "flex items-center justify-center gap-2 w-full h-[28px] rounded text-xs font-bold transition-all bg-zinc-800/30 text-red-400/40 border border-red-500/10 cursor-not-allowed shrink-0 select-none"
                             } else {
                                 "flex items-center justify-center gap-2 w-full h-[28px] rounded text-xs font-bold transition-all bg-zinc-800 text-white/50 border border-white/5 hover:bg-zinc-700/50 hover:text-white shrink-0"
                             };
 
                             html! {
                                 <div key={sim.id} class="p-3 first:pt-1 flex flex-col gap-2.5">
-                                    <div 
-                                        onclick={toggle_expand}
-                                        class="flex flex-col gap-2 cursor-pointer select-none"
-                                    >
+                                    <div onclick={toggle_expand} class="flex flex-col gap-2 cursor-pointer select-none">
                                         <div class="flex items-center justify-between w-full">
                                             <div class="flex items-center shrink-0">
-                                                <Subtitle
-                                                    text={format!("Intento #{}", sim.attempt_number)}
-                                                    icon={html! { <History size={16} /> }}
-                                                />
+                                                <Subtitle text={format!("Intento #{}", sim.attempt_number)} icon={html! { <History size={16} /> }} />
                                             </div>
-
                                             <div class="flex items-center gap-2">
                                                 {
-                                                    if !is_selected {
+                                                    if is_selected {
+                                                        html!{ <div class="text-center uppercase text-lime-400 font-bold text-xs mr-1 select-none">{"Entregado"}</div> }
+                                                    } else if is_expired {
+                                                        html!{ <div class="text-center uppercase text-red-400/60 font-bold text-xs mr-1 select-none">{"Plazo Vencido"}</div> }
+                                                    } else {
                                                         html!{
                                                             <div class="text-[11px] font-mono text-white/60 bg-zinc-800/40 px-2 py-0.5 rounded border border-white/5 flex gap-2 whitespace-nowrap">
                                                                 <div>{"Mín: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_min_depth)}</span></div>
                                                                 <div class="text-white/25">{"|"}</div>
                                                                 <div>{"Máx: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_max_depth)}</span></div>
                                                             </div>
-                                                        }
-                                                    } else {
-                                                        html!{
-                                                            <div class="text-center uppercase text-lime-400 font-bold">{"Entregado"}</div>
                                                         }
                                                     }
                                                 }
@@ -118,7 +135,6 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 </span>
                                             </div>
                                         </div>
-
                                     </div>
 
                                     { if is_expanded {
@@ -183,22 +199,18 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 <div class="col-span-2">
                                                     { if props.exam_mode {
                                                         html! {
-                                                            <div class="w-full pt-0.5">
-                                                                <button onclick={on_select_delivery} class={btn_cls}>
-                                                                    { if is_selected { html!{ <Check size={14} /> } } else { html!{ <Circle size={14} /> } } }
-                                                                    { if is_selected { "ENTREGADO" } else { "ENTREGAR" } }
+                                                            <div class="w-full pt-1">
+                                                                    <button onclick={on_select_delivery} class={btn_cls} disabled={is_expired && !is_selected}>
+                                                                    { if is_selected { html!{ <Check size={14} /> } } else if is_expired { html!{ <CalendarX size={14} /> } } else { html!{ <Circle size={14} /> } } }
+                                                                    { if is_selected { "ENTREGADO" } else if is_expired { "PLAZO VENCIDO" } else { "ENTREGAR" } }
                                                                 </button>
                                                             </div>
                                                         }
-                                                    } else {
-                                                        html! {}
-                                                    } }
+                                                    } else { html! {} } }
                                                 </div>
                                             </div>
                                         }
-                                    } else {
-                                        html!{}
-                                    } }
+                                    } else { html!{} } }
                                 </div>
                             }
                         }) }
