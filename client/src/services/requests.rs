@@ -39,6 +39,10 @@ pub struct StudentSimulation {
     pub path_parameters: PathParameters,
     pub transport_parameters: TransportParameters,
     pub echosounder_parameters: EchosounderParameters,
+
+    pub simulation_image_path: Option<String>,
+    pub coverage_image_path: Option<String>,
+    pub difference_image_path: Option<String>,
 }
 
 /// Obtiene el historial de simulaciones/intentos.
@@ -227,6 +231,7 @@ pub fn create_project(
         description,
         file,
         exam_mode,
+        due_date,
         attempts_limit,
         weather,
         seabed_hardness,
@@ -241,6 +246,7 @@ pub fn create_project(
         "description": if description.is_empty() { None } else { Some(description) },
         "filename": file.name(),
         "exam_mode": exam_mode,
+        "due_date": due_date,
         "attempts_limit": attempts_limit,
         "weather": weather,
         "seabed_hardness": seabed_hardness,

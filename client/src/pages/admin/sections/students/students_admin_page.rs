@@ -5,7 +5,7 @@ use crate::components::modal::Modal;
 use crate::services::requests::{get_all_students, get_all_projects, create_student, delete_student};
 use crate::structs::student::Student;
 use crate::structs::project::Project; 
-use lucide_yew::{Plus, Users};
+use lucide_yew::{Plus, Users, Search};
 
 use crate::pages::admin::sections::students::students_table::TablaUsuarios;
 
@@ -26,6 +26,7 @@ pub fn admin_students() -> Html {
     let form_error = use_state(String::new);
 
     let delete_target = use_state(|| None::<Student>);
+    let search_filter = use_state(|| String::new());
 
     {
         let students_state = students_state.clone();
@@ -54,7 +55,7 @@ pub fn admin_students() -> Html {
             show_modal.set(false);
             input_name.set(String::new());
             input_project_id.set(0); 
-            form_error.set(String::new()); // Limpiamos errores del form al cerrar
+            form_error.set(String::new());
         })
     };
 
@@ -112,6 +113,14 @@ pub fn admin_students() -> Html {
     let on_cancel_delete = {
         let delete_target = delete_target.clone();
         Callback::from(move |_| delete_target.set(None))
+    };
+
+    let on_search_input = {
+        let search_filter = search_filter.clone();
+        Callback::from(move |e: InputEvent| {
+            let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+            search_filter.set(input.value());
+        })
     };
 
     let add_student_modal_html = if *show_modal {
@@ -191,7 +200,7 @@ pub fn admin_students() -> Html {
 
     html! {
         <> 
-            <div class="text-white flex justify-between p-2 pr-1">
+            <div class="text-white flex justify-between p-2 pr-1 items-end">
                 <div class="space-y-1">
                     <Subtitle text={"Todos los estudiantes y grupos"} icon={html! { <Users size={24}/> }} />
                     <p class="text-white/70 text-xs">{"Aca podes administrar los distintos grupos y asignarles proyectos a realizar."}</p> 
@@ -199,10 +208,23 @@ pub fn admin_students() -> Html {
                         <p class="text-cyan-300 text-xs font-mono">{ &*ui_mensaje }</p>
                     }
                 </div>
-                <div>
-                    <button onclick={on_open_add_modal} class="flex items-center px-3 py-3 gap-2 bg-cyan-200 text-black/90 rounded-full cursor-pointer hover:bg-cyan-300 transition-colors">
-                        <Plus size={18}/>
-                        <p class="text-xs font-semibold pt-0.5">{"Agregar"}</p>
+                <div class="flex items-center gap-2">
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3 text-cyan-400/70 pointer-events-none">
+                            <Search size={14} />
+                        </span>
+                        <input 
+                            type="text"
+                            placeholder="Buscar por proyecto asignado..."
+                            value={(*search_filter).clone()}
+                            oninput={on_search_input}
+                            class="w-[260px] h-9 pl-8 pr-3 rounded-lg text-xs bg-slate-900 hover:bg-slate-850 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none transition-all font-medium shadow-inner"
+                        />
+                    </div>
+
+                    <button onclick={on_open_add_modal} class="flex items-center px-4 h-9 gap-1.5 bg-cyan-200 text-black/90 rounded-lg cursor-pointer hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-500/5">
+                        <Plus size={16}/>
+                        <span class="text-xs font-bold">{"Agregar"}</span>
                     </button>
                 </div>
             </div>
@@ -216,6 +238,7 @@ pub fn admin_students() -> Html {
                         proyectos={(*projects_state).clone()} 
                         delete_target={delete_target.clone()}
                         students_state={students_state.clone()}
+                        filter={(*search_filter).clone()}
                     />
                 }
             </div>

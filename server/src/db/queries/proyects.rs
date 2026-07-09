@@ -7,6 +7,7 @@ pub struct ProjectMetadata {
     pub description: Option<String>,
     pub attempts_limit: i64,
     pub exam_mode: bool,
+    pub due_date: Option<String>,
     pub weather: String,
     pub seabed_hardness: String,
     pub budget: f64,
@@ -39,6 +40,7 @@ pub fn create_project(
             filename,
             attempts_limit,
             exam_mode,
+            due_date,
             weather,
             seabed_hardness,
             budget,
@@ -46,7 +48,7 @@ pub fn create_project(
             geotiff_max_depth,
             professor_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
         "
     )?;
@@ -59,12 +61,16 @@ pub fn create_project(
     statement.bind((3, filename))?;
     statement.bind((4, metadata.attempts_limit))?;
     statement.bind((5, if metadata.exam_mode { 1 } else { 0 }))?;
-    statement.bind((6, metadata.weather.as_str()))?;
-    statement.bind((7, metadata.seabed_hardness.as_str()))?;
-    statement.bind((8, metadata.budget))?;
-    statement.bind((9, metadata.geotiff_min_depth))?;
-    statement.bind((10, metadata.geotiff_max_depth))?;
-    statement.bind((11, professor_id))?;
+    match &metadata.due_date {
+        Some(due_date) => statement.bind((6, due_date.as_str()))?,
+        None => statement.bind((6, ""))?,
+    }
+    statement.bind((7, metadata.weather.as_str()))?;
+    statement.bind((8, metadata.seabed_hardness.as_str()))?;
+    statement.bind((9, metadata.budget))?;
+    statement.bind((10, metadata.geotiff_min_depth))?;
+    statement.bind((11, metadata.geotiff_max_depth))?;
+    statement.bind((12, professor_id))?;
 
     if let sqlite::State::Row = statement.next()? {
         Ok(statement.read::<i64, _>("id")? as usize)
@@ -82,7 +88,7 @@ pub fn get_all_by_professor_id(
     let mut statement = db.run_query(
         "
         SELECT id, name, description, filename, professor_id,
-               attempts_limit, exam_mode, weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth
+               attempts_limit, exam_mode, due_date, weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth
         FROM projects
         WHERE professor_id = ?
         "
@@ -101,6 +107,7 @@ pub fn get_all_by_professor_id(
                 name: statement.read::<String, _>("name")?,
                 description: statement.read::<Option<String>, _>("description")?,
                 exam_mode: statement.read::<i64, _>("exam_mode")? != 0,
+                due_date: statement.read::<Option<String>, _>("due_date")?,
                 attempts_limit: statement.read::<i64, _>("attempts_limit")?,
                 weather: statement.read::<String, _>("weather")?,
                 seabed_hardness: statement.read::<String, _>("seabed_hardness")?,
@@ -123,7 +130,7 @@ pub fn get_project_by_id(
     let mut statement = db.run_query(
         "
         SELECT id, name, description, filename, professor_id,
-               attempts_limit, exam_mode, weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth
+               attempts_limit, exam_mode, due_date, weather, seabed_hardness, budget, geotiff_min_depth, geotiff_max_depth
         FROM projects
         WHERE id = ?
         "
@@ -140,6 +147,7 @@ pub fn get_project_by_id(
                 name: statement.read::<String, _>("name")?,
                 description: statement.read::<Option<String>, _>("description")?,
                 exam_mode: statement.read::<i64, _>("exam_mode")? != 0,
+                due_date: statement.read::<Option<String>, _>("due_date")?,
                 attempts_limit: statement.read::<i64, _>("attempts_limit")?,
                 weather: statement.read::<String, _>("weather")?,
                 seabed_hardness: statement.read::<String, _>("seabed_hardness")?,
