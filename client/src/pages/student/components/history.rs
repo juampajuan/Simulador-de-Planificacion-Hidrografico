@@ -109,7 +109,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                         }
                                                     } else {
                                                         html!{
-                                                            <div class="text-center uppercase text-red-500 font-bold">{"Entregado"}</div>
+                                                            <div class="text-center uppercase text-lime-400 font-bold">{"Entregado"}</div>
                                                         }
                                                     }
                                                 }
