@@ -35,8 +35,6 @@ pub fn student_page() -> Html {
     let image_url = use_state(|| None::<String>);
     let loading = use_state(|| true);
     
-    let map_base64 = use_state(|| None::<String>);
-    let scale_base64 = use_state(|| None::<String>);
     let min_depth = use_state(|| 0.0f64);
     let max_depth = use_state(|| 0.0f64);
     
@@ -108,8 +106,7 @@ pub fn student_page() -> Html {
         mensaje: mensaje.clone(),
         image_url: image_url.clone(),
         loading: loading.clone(),
-        map_base64: map_base64.clone(),
-        scale_base64: scale_base64.clone(),
+        show_legend: use_state(|| false),
         min_depth: min_depth.clone(),
         max_depth: max_depth.clone(),
         simulation_image_path: use_state(|| None::<String>),

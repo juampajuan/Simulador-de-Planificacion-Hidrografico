@@ -21,19 +21,20 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
         move |path_opt: Option<String>, err_msg: &str| {
             if let Some(path) = path_opt {
                 if !path.is_empty() {
-                    ui.map_base64.set(None);
-                    ui.scale_base64.set(None);
                     ui.image_url.set(Some(format!("/images/{}", path)));
                     ui.mensaje.set(String::new());
                     ui.min_depth.set(min_depth_val);
                     ui.max_depth.set(max_depth_val);
+                    ui.show_legend.set(true);
                     ui.loading.set(false);
                 } else {
                     ui.image_url.set(None);
+                    ui.show_legend.set(false);
                     ui.mensaje.set(err_msg.to_string());
                 }
             } else {
                 ui.image_url.set(None);
+                ui.show_legend.set(false);
                 ui.mensaje.set(err_msg.to_string());
             }
         }
@@ -42,6 +43,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
     let apply_selection = {
         let selected = selected.clone();
         let change = change_view_map.clone();
+        let sim = sim.clone();
 
         move |index: usize| {
             selected.set(index);
@@ -64,18 +66,15 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
         }
     };
 
-    // TODO2: Descomentar esto, cuando si se quita Base64
-    // Esto preselecciona la foto y la aplica.
-    // {
-    //     let apply = apply_selection.clone();
-    //     let sim = props.active_sim.clone();
-    //     // let selected = selected.clone();
+    {
+        let apply = apply_selection.clone();
+        let sim = props.active_sim.clone();
 
-    //     use_effect_with(sim, move |_| {
-    //         apply(1);
-    //         || ()
-    //     });
-    // }
+        use_effect_with(sim, move |_| {
+            apply(0);
+            || ()
+        });
+    }
 
     let on_click_sim = {
         let apply = apply_selection.clone();

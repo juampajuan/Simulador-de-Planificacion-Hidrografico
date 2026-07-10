@@ -4,7 +4,7 @@ use crate::structs::state::{PathState, EchoState, FullSimulationRequest, Simulat
 use crate::structs::limits::ConfigLimits;
 use crate::structs::student::{Student, NewStudent};
 use crate::structs::project::{AdminProjectView, NewProject, Project};
-use common::{StudentMeasuringParameters, SimulationBase64Response, PathParameters, TransportParameters, EchosounderParameters};
+use common::{StudentMeasuringParameters, SimulationResponse, PathParameters, TransportParameters, EchosounderParameters};
 use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
 use crate::services::api_utils::{process_local_login, process_local_logout};
 use crate::pages::student::components::measure_params::AttemptsState;
@@ -377,8 +377,6 @@ pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits:
         Ok(p) => p,
         Err(err_msg) => { ui.mensaje.set(err_msg); return; }
     };
-    ui.map_base64.set(None);
-    ui.scale_base64.set(None);
     ui.min_depth.set(0.0);
     ui.max_depth.set(0.0);
     ui.mensaje.set("Generando recorrido...".to_string());
@@ -417,10 +415,9 @@ pub fn run_simulation(
     };
     let request_body = serde_json::to_string(&simulation_params).unwrap_or_default();
 
-    let map_handle = ui.map_base64.clone();
-    let scale_handle = ui.scale_base64.clone();
     let min_handle = ui.min_depth.clone();
     let max_handle = ui.max_depth.clone();
+    let show_legend_handle = ui.show_legend.clone();
     let msg_handle_success = ui.mensaje.clone(); 
     let msg_handle_error = ui.mensaje.clone();
 
@@ -438,16 +435,28 @@ pub fn run_simulation(
         Some(ui.mensaje.clone()),
         Some(ui.loading.clone()),
         move |response_text| {
-            if let Ok(data) = serde_json::from_str::<SimulationBase64Response>(&response_text) {
-                map_handle.set(Some(data.map_base64));
-                scale_handle.set(Some(data.scale_base64));
-                min_handle.set(data.real_min_depth);
-                max_handle.set(data.real_max_depth);
+            if let Ok(data) = serde_json::from_str::<SimulationResponse>(&response_text) {
+                // Usamos las profundidades de interpolación para la escala visual del mapa renderizado
+                min_handle.set(data.interpolation_min_depth);
+                max_handle.set(data.interpolation_max_depth);
                 
+                // Guardamos los paths en los estados correspondientes
                 simulation_image_path.set(data.simulation_image_path.clone());
                 coverage_image_path.set(data.coverage_image_path);
                 difference_image_path.set(data.difference_image_path); 
-                image_url.set(Some(format!("/images/{}", data.simulation_image_path.unwrap_or("".to_string()))));
+
+                if let Some(path) = data.simulation_image_path {
+                    if !path.is_empty() {
+                        image_url.set(Some(format!("/images/{}", path)));
+                        show_legend_handle.set(true);
+                    } else {
+                        image_url.set(None);
+                        show_legend_handle.set(false);
+                    }
+                } else {
+                    image_url.set(None);
+                    show_legend_handle.set(false);
+                }
  
                 msg_handle_success.set(String::new());
 
@@ -484,10 +493,12 @@ pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: Simulati
         Ok(t) => t,
         Err(e) => { ui.mensaje.set(e); return; }
     };
-    ui.map_base64.set(None);
-    ui.scale_base64.set(None);
+    
+    // Al ser una cobertura preliminar, limpiamos los límites numéricos
     ui.min_depth.set(0.0);
     ui.max_depth.set(0.0);
+    ui.show_legend.set(false); 
+    
     ui.mensaje.set("Calculando cobertura...".to_string());
     ui.loading.set(true);
  
@@ -533,15 +544,23 @@ pub fn trigger_login(
     };
 
     ui_mensaje.set("Autenticando...".to_string());
+    
+    let msg_success = ui_mensaje.clone();
     let msg_err = ui_mensaje.clone();
     let redirection_clone = redirection.clone();
+    
     send_native_request(
         "/api/v1/auth/login",
         "POST",
         Some(&credentials.to_string()),
-        Some(ui_mensaje.clone()),
+        None,
         Some(ui_loading),
         move |response_text| { 
+            if response_text.contains("Invalid") || response_text.contains("Error") {
+                msg_success.set("Credenciales incorrectas. Intente nuevamente.".to_string());
+                return;
+            }
+
             let real_name = if !response_text.trim().is_empty() {
                 response_text.trim().to_string()
             } else {
@@ -555,14 +574,14 @@ pub fn trigger_login(
                     let _ = storage.set_item("group_or_user_name", &real_name);
                 }
             
-
-            process_local_login(&real_name, &redirection, ui_mensaje);
+            // Redirección manual únicamente si es un caso exitoso real
+            process_local_login(&real_name, &redirection, msg_success);
         },
         Some(move |status_code| {
-            if status_code == 401 {
-                msg_err.set("Error de conexión o credenciales inválidas".to_string());
+            if status_code == 401 || status_code == 403 {
+                msg_err.set("Usuario o contraseña incorrectos.".to_string());
             } else {
-                msg_err.set(format!("Error de autenticación: {}", status_code));
+                msg_err.set(format!("Error de autenticación: Código {}", status_code));
             }
         })
     );
