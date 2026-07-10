@@ -21,9 +21,6 @@ const API_V1: &str = "/api/v1";
 /// archivos de la página web. Finalmente delega el envío y el logging en `response_sender`.
 pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> RequestLog {
 
-    // TODO: Pasar el tx, ese a donde corresponda para enviar al logger
-    // Y usar el metodo send_message_to_logger
-
     let result = match request.url().strip_prefix(API_V1) {
         Some(api_path) => {
             let path_clean = api_path.split('?').next().unwrap_or(api_path);

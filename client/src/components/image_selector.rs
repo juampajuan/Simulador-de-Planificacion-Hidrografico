@@ -64,7 +64,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
         }
     };
 
-    // TODO: Descomentar esto, cuando se haya reemplazado los links en la simulacion.
+    // TODO2: Descomentar esto, cuando si se quita Base64
     // Esto preselecciona la foto y la aplica.
     // {
     //     let apply = apply_selection.clone();

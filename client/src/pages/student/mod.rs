@@ -112,6 +112,9 @@ pub fn student_page() -> Html {
         scale_base64: scale_base64.clone(),
         min_depth: min_depth.clone(),
         max_depth: max_depth.clone(),
+        simulation_image_path: use_state(|| None::<String>),
+        coverage_image_path: use_state(|| None::<String>),
+        difference_image_path: use_state(|| None::<String>),   
     };
 
     let set_tab_entorno = {

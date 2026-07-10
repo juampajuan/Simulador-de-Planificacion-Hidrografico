@@ -70,5 +70,9 @@ pub struct SimulationUiState {
     pub map_base64: UseStateHandle<Option<String>>,   
     pub scale_base64: UseStateHandle<Option<String>>, 
     pub min_depth: UseStateHandle<f64>,               
-    pub max_depth: UseStateHandle<f64>,               
+    pub max_depth: UseStateHandle<f64>,  
+
+    pub simulation_image_path: UseStateHandle<Option<String>>,
+    pub coverage_image_path: UseStateHandle<Option<String>>,
+    pub difference_image_path: UseStateHandle<Option<String>>,           
 }

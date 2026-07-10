@@ -423,7 +423,11 @@ pub fn run_simulation(
     let max_handle = ui.max_depth.clone();
     let msg_handle_success = ui.mensaje.clone(); 
     let msg_handle_error = ui.mensaje.clone();
-    // let image_url = ui.image_url.clone();
+
+    let simulation_image_path = ui.simulation_image_path.clone();
+    let coverage_image_path = ui.coverage_image_path.clone();
+    let difference_image_path = ui.difference_image_path.clone();
+    let image_url = ui.image_url.clone();
     
     let attempts_handle_success = attempts_handle.clone(); 
 
@@ -439,7 +443,12 @@ pub fn run_simulation(
                 scale_handle.set(Some(data.scale_base64));
                 min_handle.set(data.real_min_depth);
                 max_handle.set(data.real_max_depth);
-                // image_url.set(Some(format!("/images/{}", data.simulation_image_path.unwrap_or("".to_string()))));
+                
+                simulation_image_path.set(data.simulation_image_path.clone());
+                coverage_image_path.set(data.coverage_image_path);
+                difference_image_path.set(data.difference_image_path); 
+                image_url.set(Some(format!("/images/{}", data.simulation_image_path.unwrap_or("".to_string()))));
+ 
                 msg_handle_success.set(String::new());
 
                 let mut current_attempts = (*attempts_handle_success).clone();

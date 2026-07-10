@@ -22,6 +22,7 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                 {
                     // TODO: Usar la url siempre. Ya te la pasan en la response. Simplemente es hacerlo llegar.
                     // La clave puede ser una bool, que diga que es simulacion o algo, porquee esto va desaparecer y si no, no sabes cuando mostrar.
+                    // Ya que cuando empiezo a altenar entre las imagenes, me desaparece el DepthLengend.
                     if let (Some(m_b64), Some(_)) = (map_base64, scale_base64) { 
                         html! {
                             <div class="relative flex items-center justify-center h-full w-full">

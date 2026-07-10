@@ -29,6 +29,10 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
     let min_depth = use_state(|| 0.0f64);
     let max_depth = use_state(|| 0.0f64);
 
+    let simulation_image_path = use_state(|| None::<String>);
+    let coverage_image_path = use_state(|| None::<String>);
+    let difference_image_path = use_state(|| None::<String>);
+
     let ui_state = SimulationUiState {
         mensaje: mensaje.clone(),
         image_url: image_url.clone(),
@@ -37,6 +41,9 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
         scale_base64: scale_base64.clone(),
         min_depth: min_depth.clone(),
         max_depth: max_depth.clone(),
+        simulation_image_path: simulation_image_path.clone(),
+        coverage_image_path: coverage_image_path.clone(),
+        difference_image_path: difference_image_path.clone(),    
     };
 
     let history_state = use_state(Vec::<StudentSimulation>::new);
