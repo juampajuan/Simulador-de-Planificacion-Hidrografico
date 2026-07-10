@@ -95,7 +95,7 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     
     // aca cambia con respecto a las otras req que usan blob
     // los pixeles rgb se pasan a bytes png y luego a strings de base 64, para mandarlos en el struct
-    let (map_image, min_depth, max_depth, interpolation_min_depth, interpolation_max_depth) = simulations::create_simulation_image(&matrix, &interpolation, &log_debug);
+    let (map_image, real_min_depth, real_max_depth, interpolation_min_depth, interpolation_max_depth) = simulations::create_simulation_image(&matrix, &interpolation, &log_debug);
     let scale_image = simulations::create_scale_pure_image(&log_debug);
 
     let mut map_bytes = Vec::new();
@@ -150,8 +150,8 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     }
 
      let response_data = SimulationBase64Response {
-        min_depth,
-        max_depth,
+        real_min_depth,
+        real_max_depth,
         interpolation_min_depth,
         interpolation_max_depth,
         map_base64: map_encoded,
