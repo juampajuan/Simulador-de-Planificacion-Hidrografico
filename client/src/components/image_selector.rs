@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use lucide_yew::{Image, Layers, SlidersHorizontal};
+use lucide_yew::{EqualNot, Image, Layers};
 use crate::services::requests::StudentSimulation;
 use crate::structs::state::SimulationUiState;
 
@@ -11,9 +11,10 @@ pub struct ImageSelectorProps {
 
 #[function_component(ImageSelector)]
 pub fn image_selector(props: &ImageSelectorProps) -> Html {
-    let sim = &props.active_sim;
+    let sim = props.active_sim.clone();
     let min_depth_val = sim.result_min_depth;
     let max_depth_val = sim.result_max_depth;
+    let selected = use_state(|| 1);
 
     let change_view_map = {
         let ui = props.ui_state.clone();
@@ -38,52 +39,107 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
         }
     };
 
-    let on_click_sim = {
+    let apply_selection = {
+        let selected = selected.clone();
         let change = change_view_map.clone();
-        let path = sim.simulation_image_path.clone();
-        Callback::from(move |_| change(path.clone(), "No hay mapa de simulación disponible."))
+
+        move |index: usize| {
+            selected.set(index);
+
+            match index {
+                1 => change(
+                    sim.simulation_image_path.clone(),
+                    "No hay mapa de simulación disponible.",
+                ),
+                2 => change(
+                    sim.coverage_image_path.clone(),
+                    "No hay mapa de cobertura disponible.",
+                ),
+                3 => change(
+                    sim.difference_image_path.clone(),
+                    "No hay mapa de diferencias disponible.",
+                ),
+                _ => {}
+            }
+        }
+    };
+
+    // TODO: Descomentar esto, cuando se haya reemplazado los links en la simulacion.
+    // Esto preselecciona la foto y la aplica.
+    // {
+    //     let apply = apply_selection.clone();
+    //     let sim = props.active_sim.clone();
+    //     // let selected = selected.clone();
+
+    //     use_effect_with(sim, move |_| {
+    //         apply(1);
+    //         || ()
+    //     });
+    // }
+
+    let on_click_sim = {
+        let apply = apply_selection.clone();
+        Callback::from(move |_| apply(1))
     };
 
     let on_click_cov = {
-        let change = change_view_map.clone();
-        let path = sim.coverage_image_path.clone();
-        Callback::from(move |_| change(path.clone(), "No hay mapa de cobertura disponible."))
+        let apply = apply_selection.clone();
+        Callback::from(move |_| apply(2))
     };
 
     let on_click_diff = {
-        let change = change_view_map.clone();
-        let path = sim.difference_image_path.clone();
-        Callback::from(move |_| change(path.clone(), "No hay mapa de diferencias disponible."))
+        let apply = apply_selection.clone();
+        Callback::from(move |_| apply(3))
     };
 
     html! {
-        <div class="flex flex-col gap-1 w-[125px] p-2 bg-slate-950/60 backdrop-blur border border-white/20 rounded-lg shadow-xl select-none animate-fade-in">
-            
-            <div class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider px-1.5 py-0.5 select-none">
-                {"Resultados"}
-            </div>
-            
+        <div class="flex gap-2 p-2 bg-slate-950/60 backdrop-blur border border-white/20 rounded-lg shadow-xl select-none animate-fade-in">
+                        
             <button 
                 onclick={on_click_sim} 
-                class="w-full text-xs font-semibold rounded-sm transition-all cursor-pointer text-left flex items-center gap-2 h-7 px-1.5 text-white/40 hover:text-white/70 hover:bg-zinc-700/30"
+                class={classes!(
+                    "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
+                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-1.5",
+                    if *selected == 1 {
+                        Some("text-white bg-zinc-700/50")
+                    } else {
+                        Some("text-white/40 hover:text-white/70 hover:bg-zinc-700/30")
+                    }
+                )}
             >
-                <Image size={14} class="shrink-0" /> 
+                <Image size={20}/> 
                 <span class="truncate">{"Simulación"}</span>
             </button>
             
             <button 
                 onclick={on_click_cov} 
-                class="w-full text-xs font-semibold rounded-sm transition-all cursor-pointer text-left flex items-center gap-2 h-7 px-1.5 text-white/40 hover:text-white/70 hover:bg-zinc-700/30"
+                class={classes!(
+                    "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
+                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-1.5",
+                    if *selected == 2 {
+                        Some("text-white bg-zinc-700/50")
+                    } else {
+                        Some("text-white/40 hover:text-white/70 hover:bg-zinc-700/30")
+                    }
+                )}
             >
-                <Layers size={14} class="shrink-0" /> 
+                <Layers size={20}/> 
                 <span class="truncate">{"Cobertura"}</span>
             </button>
             
             <button 
                 onclick={on_click_diff} 
-                class="w-full text-xs font-semibold rounded-sm transition-all cursor-pointer text-left flex items-center gap-2 h-7 px-1.5 text-white/40 hover:text-white/70 hover:bg-zinc-700/30"
+                class={classes!(
+                    "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
+                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-1.5",
+                    if *selected == 3 {
+                        Some("text-white bg-zinc-700/50")
+                    } else {
+                        Some("text-white/40 hover:text-white/70 hover:bg-zinc-700/30")
+                    }
+                )}
             >
-                <SlidersHorizontal size={14} class="shrink-0" /> 
+                <EqualNot size={20}/> 
                 <span class="truncate">{"Diferencias"}</span>
             </button>
 

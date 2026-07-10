@@ -50,8 +50,7 @@ input[type="number"] {
 
 .loader2 {
   width: 48px;
-  height: 48px;
-  background: #000000a2;
+  height: 48px; 
   border-radius: 50%;
   display: inline-block;
   position: relative;
@@ -66,18 +65,10 @@ input[type="number"] {
   top: 10px;
   width: 12px;
   height: 12px;
-  color: #53acff;
+  color: #a5f3fc;
   background: currentColor;
   border-radius: 50%;
   box-shadow: 25px 2px, 10px 22px;
-}
-
-.dark .loader2{
-    background: #ffffff00;
-}
-
-.dark .loader2::after{
-    color: #a5f3fc;
 }
 
 @keyframes rotation {

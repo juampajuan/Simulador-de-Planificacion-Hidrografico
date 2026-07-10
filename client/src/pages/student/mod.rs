@@ -206,7 +206,7 @@ pub fn student_page() -> Html {
                         
                         { if let Some(sim) = &*active_layers_sim {
                             html! { 
-                                <div class="absolute top-0 left-3 z-50">
+                                <div class="absolute top-0 right-0 z-10">
                                     <ImageSelector ui_state={ui_state.clone()} active_sim={sim.clone()} /> 
                                 </div>
                             }

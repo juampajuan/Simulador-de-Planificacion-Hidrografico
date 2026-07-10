@@ -108,7 +108,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
 
     html! {
         <Modal
-            title={format!("{} — RESULTADOS DE: {}", props.project.name, props.student_code)}
+            title={format!("Intentos de {}, para el proyecto: {}", props.project.name, props.student_code)}
             subtitle=""
             on_close={on_close_callback}
             max_width_class={Some("max-w-[95vw] w-[1450px] h-[88vh] flex flex-col".to_string())}
@@ -141,7 +141,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
                     
                     { if let Some(sim) = &*active_layers_sim {
                         html! { 
-                            <div class="absolute top-0 left-3 z-50">
+                            <div class="absolute top-0 right-0 z-10">
                                 <ImageSelector ui_state={ui_state.clone()} active_sim={sim.clone()} /> 
                             </div>
                         }

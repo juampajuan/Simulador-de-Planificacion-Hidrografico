@@ -423,6 +423,7 @@ pub fn run_simulation(
     let max_handle = ui.max_depth.clone();
     let msg_handle_success = ui.mensaje.clone(); 
     let msg_handle_error = ui.mensaje.clone();
+    // let image_url = ui.image_url.clone();
     
     let attempts_handle_success = attempts_handle.clone(); 
 
@@ -436,8 +437,9 @@ pub fn run_simulation(
             if let Ok(data) = serde_json::from_str::<SimulationBase64Response>(&response_text) {
                 map_handle.set(Some(data.map_base64));
                 scale_handle.set(Some(data.scale_base64));
-                min_handle.set(data.min_depth);
-                max_handle.set(data.max_depth);
+                min_handle.set(data.real_min_depth);
+                max_handle.set(data.real_max_depth);
+                // image_url.set(Some(format!("/images/{}", data.simulation_image_path.unwrap_or("".to_string()))));
                 msg_handle_success.set(String::new());
 
                 let mut current_attempts = (*attempts_handle_success).clone();

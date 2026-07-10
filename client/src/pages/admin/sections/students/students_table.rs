@@ -32,7 +32,7 @@ pub fn tabla_usuarios(props: &TablaUsuariosProps) -> Html {
                 is_open={true} 
                 project={project.clone()} 
                 student_id={student.id} 
-                student_code={student.code.clone()}
+                student_code={student.name.clone()}
                 on_close={Callback::from(move |_| selected_target_close.set(None))} 
             />
         }

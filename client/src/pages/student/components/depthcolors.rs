@@ -10,13 +10,13 @@ pub struct DepthLegendProps {
 #[function_component(DepthLegend)]
 pub fn depth_legend(props: &DepthLegendProps) -> Html {
     html! {
-        <div class="flex items-center gap-3 h-full opacity-100 hover:opacity-100">
+        <div class="flex items-center gap-2 h-full opacity-100 hover:opacity-100">
             <div class="flex h-full flex-col justify-between text-xs text-white">
                 <div>
-                    <span class="px-3 py-1 border border-white/20 bg-slate-800 rounded-full shadow-lg">{ format!("{:.1}m", props.start_m) }</span>
+                    <span class="px-3 py-1 border border-white/20 bg-slate-900 rounded-full shadow-lg">{ format!("{:.1}m", props.start_m) }</span>
                 </div>
                 <div>
-                    <span class="px-3 py-1 border border-white/20 bg-slate-800 rounded-full shadow-lg">{ format!("{:.1}m", props.end_m) }</span>
+                    <span class="px-3 py-1 border border-white/20 bg-slate-900 rounded-full shadow-lg">{ format!("{:.1}m", props.end_m) }</span>
                 </div>
             </div>
             <div class="py-1.5 h-full">

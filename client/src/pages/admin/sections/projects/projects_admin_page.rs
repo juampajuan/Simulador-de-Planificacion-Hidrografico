@@ -31,7 +31,7 @@ pub fn admin_projects() -> Html {
     };
 
     html! {<> 
-        <div class="text-white flex justify-between p-2 pr-1">
+        <div class="text-white flex justify-between p-2 pr-1 items-end">
             <div class="space-y-1">
                 <Subtitle
                     text={"Todos los proyectos"}
@@ -44,7 +44,7 @@ pub fn admin_projects() -> Html {
             <div>
                 <button 
                     onclick={on_click_add}
-                    class="flex items-center px-3 py-3 gap-2 bg-cyan-200 text-black/90 rounded-full hover:bg-cyan-300 transition-colors cursor-pointer"
+                    class="flex items-center px-4 h-9 gap-1.5 bg-cyan-200 text-black/90 rounded-lg cursor-pointer hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-500/5"
                 >
                     <Plus size={18}/>
                     <p class="text-xs font-semibold pt-0.5">{"Agregar"}</p>

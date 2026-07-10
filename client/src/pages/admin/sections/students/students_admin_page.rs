@@ -210,7 +210,7 @@ pub fn admin_students() -> Html {
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="relative flex items-center">
-                        <span class="absolute left-3 text-cyan-400/70 pointer-events-none">
+                        <span class="absolute left-3 text-white pointer-events-none">
                             <Search size={14} />
                         </span>
                         <input 
