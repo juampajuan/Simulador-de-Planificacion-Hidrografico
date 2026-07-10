@@ -33,10 +33,10 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                     (Response::empty(200).boxed(), 200, None),
                 
                 (Method::Get, "/exams/my_simulations") =>
-                    exams::get_my_simulations(&mut request, db),
+                    exams::get_my_simulations(&mut request, db,tx),
 
                 (Method::Post, "/exams/select_delivery") =>
-                    exams::select_exam_simulation(&mut request, db),
+                    exams::select_exam_simulation(&mut request, db,tx),
 
                 (Method::Post, "/create_path") =>
                     simulation::create_path(&mut request, cache, db, settings, tx),
@@ -51,49 +51,49 @@ pub fn handle_request(mut request: Request, cache: Arc<Mutex<FileCache>>, db: Ar
                     limits::get_limits(settings),
 
                 (Method::Get, "/projects") =>
-                    projects::get_projects(&mut request, db), 
+                    projects::get_projects(&mut request, db,tx), 
 
                 (Method::Post, "/projects") =>
-                    projects::create(&mut request, db, settings), 
+                    projects::create(&mut request, db, settings, tx), 
 
                 (Method::Delete, url) if url.starts_with("/projects/") =>
-                    projects::delete_project(&mut request, db, settings),
+                    projects::delete_project(&mut request, db, settings, tx),
                 
                 (Method::Put, url) if url.starts_with("/projects/") =>
-                    projects::update_a_project(&mut request, db),
+                    projects::update_a_project(&mut request, db,tx),
 
                 (Method::Get, "/student_project") =>
                     projects::get_student_project(&mut request, db, settings, tx),  
 
                 (Method::Get, "/students") =>
-                    students::get_all_students(&mut request, db),
+                    students::get_all_students(&mut request, db,tx),
 
                 (Method::Post, "/students") =>
-                    students::create_new_student(&mut request, db),
+                    students::create_new_student(&mut request, db, tx),
                     
                 (Method::Delete, url) if url.starts_with("/students/") =>
-                    students::delete_a_student(&mut request, db, settings),
+                    students::delete_a_student(&mut request, db, settings,tx),
 
                 (Method::Put, url) if url.starts_with("/students/") => 
-                    students::update_an_student(&mut request, db),  
+                    students::update_an_student(&mut request, db,tx),  
 
                 (Method::Post, "/auth/create_professor_user") =>
-                    auth::create_professor(&mut request, db),
+                    auth::create_professor(&mut request, db,tx),
 
                 (Method::Post, "/auth/change_professor_pass") =>
-                    auth::change_pass(&mut request, db),
+                    auth::change_pass(&mut request, db, tx),
 
                 (Method::Post, "/auth/login") =>
-                    auth::login(&mut request, db),
+                    auth::login(&mut request, db, tx),
 
                 (Method::Post, "/auth/close_session") =>
-                    auth::close_session(&mut request, db),
+                    auth::close_session(&mut request, db,tx),
 
                 (Method::Post, "/auth/close_all") =>
-                    auth::close_all(&mut request, db),
+                    auth::close_all(&mut request, db,tx),
 
                 (Method::Post, "/clean_files") =>
-                    files::clean_temp_files(&mut request, db, &settings),
+                    files::clean_temp_files(&mut request, db, &settings,tx),
 
                 _ => generic::not_found(),
             }

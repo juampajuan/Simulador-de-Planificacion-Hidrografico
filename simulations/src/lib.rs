@@ -7,7 +7,7 @@ use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters}
 use processing::geotiff::GeotiffCoordinates;
 use processing::interpolation::handler::interpolate;
 use processing::measuring::{apply_disturbances, MeasureMode, get_measures}; 
-use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, COVERAGE_OVERLAY_COLOR, ImageType};
+use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, depth_range, COVERAGE_OVERLAY_COLOR, ImageType};
 use processing::routing::generate_route; 
 use structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic, simulation_constants::SimulationConstants};
 use image::{RgbaImage};
@@ -124,12 +124,17 @@ pub fn create_path_image(
 
 /// Devuelve el PNG de la matriz interpolada con la escala de colores correspondiente
 /// Utiliza processing::images
-pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>], log_debug: &dyn Fn(&str)) -> (RgbaImage, f64, f64) {
+pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>], log_debug: &dyn Fn(&str)) -> (RgbaImage, f64, f64, f64, f64) {
 
     log_debug("Generando PNG de simulacion...");
-    let result = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage, &log_debug);
+    let (image, tiff_min, tiff_max)  = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage, &log_debug);
     log_debug("PNG de simulacion generado.");
-    result
+
+    let (interpolation_min, interpolation_max) = depth_range(student_interpolation, matrix.no_data);
+    log_debug(&format!("Extremos de la interpolación calculados: {interpolation_min}, {interpolation_max}."));
+ 
+    log_debug("PNG de simulacion generado.");
+    (image, tiff_min, tiff_max, interpolation_min, interpolation_max)
 }
 
 pub fn create_scale_pure_image(log_debug: &dyn Fn(&str)) -> RgbaImage {

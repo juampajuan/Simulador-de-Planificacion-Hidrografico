@@ -132,6 +132,8 @@ pub struct StudentMeasuringParameters {
 pub struct SimulationBase64Response {
     pub min_depth: f64,
     pub max_depth: f64,
+    pub interpolation_min_depth: f64,
+    pub interpolation_max_depth: f64,
     pub map_base64: String,
     pub scale_base64: String,
     pub simulation_image_path: Option<String>,

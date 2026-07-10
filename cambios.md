@@ -19,6 +19,16 @@
 	2. __TODO: Pongan aca donde lo fueron agregando, asi ya esta__.
 		simulation.rs: cache hit/miss de matrix y de path, calculo de recorrido nuevo (Debug), simulacion completada (Info), error al registrar el intento en la DB (Error), imagen de cobertura generada (Debug).
 	3. simulations (lib.rs), Cubre: create_depth_matrix, create_path, run_simulation (puntos de medicion, mediciones tomadas, si se aplicaron errores, interpolacion completada), create_path_image, create_simulation_image, create_scale_pure_image, create_path_with_coverage, create_simulation_with_coverage, get_geotiff_corners.
+	4. auth.rs: create_professor, change_pass, login, close_all, close_session.
+	5. students.rs: create_new_student, get_all_students, delete_a_student, update_an_student.
+	6. projects.rs: create, get_projects, delete_project, update_a_project.
+	7. exams.rs: get_my_simulations, select_exam_simulation.
+	8. files.rs: clean_temp_files. helpers/files.rs: clean_unused_images.
+	9. handler.rs: se le paso el tx a todos los endpoints de arriba
+
+Criterio que usamos para elegir nivel: 
+- si se dejo un rastro afuera del endpoint (DB/archivo/sesion) -> Info. Si no -> Debug. 
+- si el pedido fallo por algo esperado del lado del cliente (permisos, datos invalidos, limite alcanzado) -> Warn. Si el server no pudo hacer algo que en condiciones normales deberia poder -> Error.
 
 ## Modo Examen
 - [x] Generar nueva tabla que guarde todos los parametros de simulacion + Fk alumno + Fk proyecto + Booleano de "Entrego este" + Valores estadisticos (maximos, desvios, etc)

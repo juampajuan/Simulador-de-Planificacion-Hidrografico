@@ -12,3 +12,4 @@ pub use images_helpers::draw_covered_points;
 pub use images_helpers::draw_path;
 pub use images_helpers::COVERAGE_OVERLAY_COLOR;
 pub use images_helpers::ImageType;
+pub use images_helpers::depth_range;

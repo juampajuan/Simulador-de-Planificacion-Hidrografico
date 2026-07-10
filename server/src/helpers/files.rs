@@ -9,9 +9,12 @@ use std::{
 use crate::{db::{engine::DBEngine, queries_interface::student_simulations::get_all_simulation_images_locked}, structs::settings::Settings};
 
 use tiny_http::{Header, Response};
-use crate::structs::request::HandlerResult;
 use std::fs::File;
+use std::sync::mpsc::Sender;
+use crate::structs::request::HandlerResult;
 use crate::requests::endpoints::generic::{not_found, server_error};
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::send_message_to_logger;
 
 ///Selecciona el tipo de contenido/archivo basandose en el path.
 pub fn content_type(ext: &str) -> &'static str {
@@ -78,7 +81,9 @@ pub fn get_relative_path(url: &str) -> Option<&Path> {
 pub fn clean_unused_images(
     db: &Arc<Mutex<DBEngine>>,
     settings: &Settings,
+    tx: &Sender<ThreadMessage>
 ) -> Result<(), Box<dyn Error>> {
+    send_message_to_logger(tx, "Iniciando limpieza de imágenes sin uso".to_string(), LogType::Debug);
     let images: HashSet<String> = get_all_simulation_images_locked(db)?;
 
     let images_dir = PathBuf::from(&settings.storage_path).join("images");
@@ -100,8 +105,7 @@ pub fn clean_unused_images(
         };
 
         if !images.contains(filename) {
-            // TODO: Logear como debug.
-            println!("Deleting unused image: {}", filename);
+            send_message_to_logger(tx, format!("Eliminando imagen sin uso: {}", filename), LogType::Debug);
             fs::remove_file(&path)?;
         }
     }

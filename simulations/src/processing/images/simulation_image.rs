@@ -24,10 +24,7 @@ pub fn makepng_with_matrix_and_interpolation(
         DepthImage => {depth_range(&geotiff.data, geotiff.no_data)}
         DifferenceImage => {depth_range(matrix, geotiff.no_data)}
     };
-    log_debug("Extremos de la matriz calculados: {min_val}, {max_val}.");
-
-    //Si se quiere hacer lo que dijo Julen que se retorne l min y max de cada interpolacion, se tiene que usar la linea de abajo
-    //let (min_val, max_val) = depth_range(matrix, geotiff.no_data);
+    log_debug(&format!("Extremos de la matriz calculados: {min_val}, {max_val}."));
 
     let range = if (max_val - min_val).abs() < 1e-10 { 1.0 } else { max_val - min_val };
  

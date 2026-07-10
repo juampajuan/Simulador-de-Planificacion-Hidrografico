@@ -1,14 +1,18 @@
 use tiny_http::Request;
 use crate::db::engine::DBEngine;
 use crate::helpers::files;
-use crate::requests::endpoints::auth::is_admin_request;
 use crate::requests::endpoints::generic::string_response;
 use crate::structs::{request::HandlerResult, settings::Settings};
 use std::sync::Mutex;
 use std::sync::Arc;
 use std::path::{PathBuf};
+use std::sync::mpsc::Sender;
 use super::generic::{not_found, server_error};
+use crate::helpers::auth::is_admin_request;
 use crate::helpers::files::{get_relative_path, serve_file};
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::send_message_to_logger;
+
 
 
 /// Dada una url retorna imagen o geotiff con el nombre.
@@ -52,16 +56,23 @@ pub fn get_page_file(request: &Request) -> HandlerResult {
 
 /// Limpia los archivos (imagenes), creados en cada simulacion.
 // Los mismos se mantienen para las entregas y una vez borrado el proyecto o alumno, se pueden eliminar.
-pub fn clean_temp_files(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> HandlerResult {
+pub fn clean_temp_files(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: &Arc<Settings>,tx: &Sender<ThreadMessage> ) -> HandlerResult {
+    send_message_to_logger(tx, "Intentando limpiar imágenes temporales de simulaciones".to_string(), LogType::Debug);
 
     match is_admin_request(request, &db) {
         Ok(true) => {}
-        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Ok(false) => {
+            send_message_to_logger(tx, "Intento de limpieza de imágenes sin permisos de administrador.".to_string(), LogType::Warn);
+            return string_response("Solo permitido para administradores.".to_string(),403)
+        }
         Err(_err) => return server_error("Error autenticando".into()),
     }
  
-    match files::clean_unused_images(&db, settings) {
-        Ok(()) => string_response("Imagenes borradas correctamente".into(), 200),
+    match files::clean_unused_images(&db, settings,tx) {
+        Ok(()) => {
+            send_message_to_logger(tx, "Se limpiaron las imágenes temporales correctamente.".to_string(), LogType::Info);
+            string_response("Imagenes borradas correctamente".into(), 200)
+        }
         Err(_) => return server_error("No se pudo borrar las imagenes".to_string()),
     }
 

@@ -19,7 +19,7 @@ pub fn interpolate(
     log_debug: &dyn Fn(&str),
 ) -> Result<Vec<Vec<f64>>, String> {
 
-    log_debug("se utilizo el metodo de interpolacion: {method:?}.");
+    log_debug(format!("Se utilizó el método de interpolación: {method:?}.").as_str());
 
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
