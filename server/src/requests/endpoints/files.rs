@@ -1,29 +1,19 @@
-use tiny_http::{Header, Response, Request};
+use tiny_http::Request;
 use crate::db::engine::DBEngine;
 use crate::helpers::files;
-use crate::requests::endpoints::auth::is_admin_request;
 use crate::requests::endpoints::generic::string_response;
 use crate::structs::{request::HandlerResult, settings::Settings};
 use std::sync::Mutex;
-use std::{fs::File, sync::Arc};
-use std::path::{PathBuf, Component, Path};
+use std::sync::Arc;
+use std::path::{PathBuf};
+use std::sync::mpsc::Sender;
 use super::generic::{not_found, server_error};
+use crate::helpers::auth::is_admin_request;
+use crate::helpers::files::{get_relative_path, serve_file};
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::send_message_to_logger;
 
-///Selecciona el tipo de contenido/archivo basandose en el path.
-fn content_type(ext: &str) -> &'static str {
-    match ext {
-        "html" => "text/html",
-        "js" => "text/javascript",
-        "css" => "text/css",
-        "wasm" => "application/wasm",
-        "png" => "image/png",
-        "jpg" | "jpeg" => "image/jpeg",
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        "tif" | "tiff" => "image/tiff",
-        _ => "application/octet-stream",
-    }
-}
+
 
 /// Dada una url retorna imagen o geotiff con el nombre.
 /// SOLO busca archivos en la carpeta establecida como /storage en las settings.
@@ -64,66 +54,25 @@ pub fn get_page_file(request: &Request) -> HandlerResult {
     serve_file(path)
 }
 
-
-/// Es el metodo encargado de buscar, leer y entregar el archivo.
-/// Usado por los 2 pseudowrappers de arriba.
-fn serve_file(path: PathBuf) -> HandlerResult {
-    match File::open(&path) {
-        Ok(file) => {
-            let mime = content_type(
-                path.extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or(""),
-            );
-
-            let header = match Header::from_bytes(
-                &b"Content-Type"[..],
-                mime.as_bytes(),
-            ) {
-                Ok(header) => header,
-                Err(_) => return server_error("Internal Error".to_string()),
-            };
-
-            let response = Response::from_file(file)
-                .with_header(header)
-                .boxed();
-
-            (response, 200, None)
-        }
-
-        Err(_) => not_found(),
-    }
-}
-
-/// Obtiene el path relativo
-/// Evita que se pueda acceder a archivos fuera del dict root.
-    /// Es decir: No podra hacer root/../../archivo_secreto.txt
-fn get_relative_path(url: &str) -> Option<&Path> {
-    let relative = Path::new(url.trim_start_matches('/'));
-
-    if relative
-        .components()
-        .any(|c| matches!(c, Component::ParentDir))
-    {
-        None
-    } else {
-        Some(relative)
-    }
-}
-
-
 /// Limpia los archivos (imagenes), creados en cada simulacion.
 // Los mismos se mantienen para las entregas y una vez borrado el proyecto o alumno, se pueden eliminar.
-pub fn clean_temp_files(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: &Arc<Settings>) -> HandlerResult {
+pub fn clean_temp_files(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: &Arc<Settings>,tx: &Sender<ThreadMessage> ) -> HandlerResult {
+    send_message_to_logger(tx, "Intentando limpiar imágenes temporales de simulaciones".to_string(), LogType::Debug);
 
     match is_admin_request(request, &db) {
         Ok(true) => {}
-        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Ok(false) => {
+            send_message_to_logger(tx, "Intento de limpieza de imágenes sin permisos de administrador.".to_string(), LogType::Warn);
+            return string_response("Solo permitido para administradores.".to_string(),403)
+        }
         Err(_err) => return server_error("Error autenticando".into()),
     }
  
-    match files::clean_unused_images(&db, settings) {
-        Ok(()) => string_response("Imagenes borradas correctamente".into(), 200),
+    match files::clean_unused_images(&db, settings,tx) {
+        Ok(()) => {
+            send_message_to_logger(tx, "Se limpiaron las imágenes temporales correctamente.".to_string(), LogType::Info);
+            string_response("Imagenes borradas correctamente".into(), 200)
+        }
         Err(_) => return server_error("No se pudo borrar las imagenes".to_string()),
     }
 

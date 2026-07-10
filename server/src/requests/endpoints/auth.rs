@@ -1,16 +1,19 @@
-use tiny_http::{Header, Response, Request};
+use tiny_http::{Response, Request};
 use crate::utils::helpers::{check_password, get_cookie};
 use crate::db::queries::auth::{TokenOwner};
 use crate::structs::request::{HandlerResult};
 use crate::requests::http_helper::{parse_json_body};
-use crate::utils::helpers_endpoints::check_profesor_auth;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Sender;
 use crate::db::encrypt::{hash_password};
 use crate::db::queries_interface::{auth, professor, student};
 use super::generic::{server_error, string_response};
 use crate::db::engine::DBEngine;
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::send_message_to_logger;
+
+use crate::helpers::auth::{generate_token, create_auth_cookie, is_admin_request};
 use serde_json::Value;
-use rand::Rng;
 use std::str::FromStr;
 
 #[derive(serde::Deserialize)]
@@ -28,11 +31,15 @@ pub struct StudentAuthData {
 
 /// Endpoint para la creacion de profesores. 
 /// Antes de crearlo, comprueba si el CLI esta autenticado, datos de la request y los atributos que tendra el nuevo usuario.
-pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    send_message_to_logger(tx, "Iniciando la creación de un nuevo profesor.".to_string(), LogType::Debug);
 
     match is_admin_request(request, &db) {
         Ok(true) => {}
-        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Ok(false) => {
+            send_message_to_logger(tx, "Intento de creación de profesor sin permisos de administrador.".to_string(), LogType::Warn);
+            return string_response("Solo permitido para administradores.".to_string(),403)
+        },
         Err(_err) => return server_error("Error autenticando".into()),
     }
 
@@ -53,21 +60,27 @@ pub fn create_professor(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Hand
     let _ = match professor::create_professor_locked(&db, &data.user, &password_hash) {
         Ok(id) => id,
         Err(e) if e.message.as_deref() == Some("Cannot lock db") => {
+            send_message_to_logger(tx, format!("Intento de crear profesor con username duplicado: '{}'.", data.user), LogType::Warn);
             return server_error("Error interno: no se pudo acceder a la base de datos.".to_string())
         }
         Err(_) => return string_response("Ya existe un profesor con ese username.".to_string(), 409),
     };
 
+    send_message_to_logger(tx, format!("Profesor '{}' creado correctamente.", data.user), LogType::Info);
     string_response("Usuario creado correctamente".to_string(), 200)
 }
 
 /// Endpoint para el cambio de contrasena de un usuario de profesor.
 /// Previamente comprueba si el CLI esta autenticado
-pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    send_message_to_logger(tx, "se solicito el cambio de contraseña.".to_string(), LogType::Debug);
 
     match is_admin_request(request, &db) {
         Ok(true) => {}
-        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Ok(false) => {
+            send_message_to_logger(tx, "Intento de cambio de contraseña sin permisos de administrador.".to_string(), LogType::Warn);
+            return string_response("Solo permitido para administradores.".to_string(),403)
+        },
         Err(_err) => return server_error("Error autenticando".into()),
     }
 
@@ -75,6 +88,8 @@ pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerRe
         Ok(d) => d,
         Err(err) => return server_error(format!("Bad Request: {}", err)),
     };
+
+    send_message_to_logger(tx, format!("Iniciando el cambio de contraseña para {}.", data.user), LogType::Debug);
 
     if !check_password(&data.pass){
         return string_response("La contraseña debe contener 8 caracteres y al menos 1 numero y una mayuscula.".to_string(), 400)
@@ -87,7 +102,9 @@ pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerRe
 
 
     match professor::change_password_by_username_locked(&db, &data.user, &password_hash) {
-        Ok(_) => string_response("Contraseña cambiada correctamente".to_string(), 200),
+        Ok(_) => {
+            send_message_to_logger(tx, format!("Contraseña de '{}' actualizada.", data.user), LogType::Info);
+            string_response("Contraseña cambiada correctamente".to_string(), 200)},
         Err(_) => server_error("No se pudo cambiar la contraseña.".to_string())
     }
 
@@ -95,7 +112,8 @@ pub fn change_pass(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerRe
 
 /// Endpoint del login de la pagina y el CLI.
 /// Genera un token, el cual se introduce en la response como una Cookie.
-pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    send_message_to_logger(tx, "Se esta iniciando el login.".to_string(), LogType::Debug);
 
     let data: Value = match parse_json_body(request) {
         Ok(d) => d,
@@ -110,7 +128,10 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
 
         let (student_id, student_name) = match student::verify_code_locked(&db, &data.code) {
             Ok(Some((id, name))) => (id, name),
-            Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
+            Ok(None) =>{
+                send_message_to_logger(tx, "Intento de login fallido de alumno (código incorrecto).".to_string(), LogType::Warn);
+                return string_response("Datos incorrectos.".to_string(), 401);
+            } 
             Err(_) => return server_error("Internal error.".to_string()),
         };
 
@@ -128,7 +149,9 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
             &data.pass,
         ) {
             Ok(Some(id)) => id,
-            Ok(None) => return string_response("Datos incorrectos.".to_string(), 401),
+            Ok(None) => {
+                send_message_to_logger(tx, format!("Intento de login fallido para el usuario '{}'.", data.user), LogType::Warn);
+                return string_response("Datos incorrectos.".to_string(), 401)},
             Err(_) => return server_error("Internal error.".to_string()),
         };
 
@@ -146,16 +169,22 @@ pub fn login(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
         Err(_) => return server_error("Internal error.".to_string()),
     };
 
+    send_message_to_logger(tx, format!("Login exitoso: '{}'.", username), LogType::Info);
+
     let re = Response::from_string(username).with_header(cookie);
     (re.boxed(), 200, None)
 }
 
 /// Elimina todos los token de la DB, efectimante cerrando la sesion de todos. 
-pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    send_message_to_logger(tx, "Se esta intentando cerrar todas las sesiones.".to_string(), LogType::Debug);
 
     match is_admin_request(request, &db) {
         Ok(true) => {}
-        Ok(false) => return string_response("Solo permitido para administradores.".to_string(),403),
+        Ok(false) =>{ 
+            send_message_to_logger(tx, "Intento de cierre masivo de sesiones sin permisos de administrador.".to_string(), LogType::Warn);
+            return string_response("Solo permitido para administradores.".to_string(),403);
+        }
         Err(_err) => return server_error("Error autenticando".into()),
     }
 
@@ -168,7 +197,8 @@ pub fn close_all(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResu
 
 /// Cierra la sesion de un solo usuario, sea alumno o profesor.
 /// Ademas reemplaza la cookie en la response, para que el navegador rediriga al login. 
-pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
+pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+    send_message_to_logger(tx, "Se esta intentando cerrar la sesion.".to_string(), LogType::Debug);
 
     let auth_token = match get_cookie(request, "auth_token") {
         Some(token) => token,
@@ -184,6 +214,8 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
         return server_error("Internal error.".to_string());
     }
 
+    send_message_to_logger(tx, format!("Sesión cerrada por el usuario {}.", auth_token), LogType::Info);
+
     let mut response = string_response(
         "Sesión cerrada.".to_string(),
         200
@@ -198,60 +230,7 @@ pub fn close_session(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> Handler
     response
 } 
 
-/// TODO: Mover a un lugar generico.
-/// Valida si la request fue realizada por alguien con permisos de administrador.
-/// Autenticandolo en consecuencia.
-pub fn is_admin_request(
-    request: &Request,
-    db: &Arc<Mutex<DBEngine>>,
-) -> Result<bool, String> {
-    if is_local_request(request) {
-        return Ok(true);
-    }
 
-    let professor_id = match check_profesor_auth(request, db) {
-        Ok(id) => id,
-        Err(_err) => return Err("No se pudo obtener credenciales para validar.".to_string())
-    };
 
-    let admin_id = match professor::get_professor_id_by_username_locked(
-        db,
-        "admin",
-    ) {
-        Ok(id) => id,
-        Err(_err) => return Err("Error obteniendo informacion del admin.".to_string())
-    };
 
-    Ok(professor_id == admin_id)
-}
 
-/// TODO: Mover a un lugar generico.
-/// Determina si una request fue formada en el sistema local.
-fn is_local_request(request: &Request) -> bool {
-    match request.remote_addr() {
-        Some(addr) => addr.ip().is_loopback(),
-        None => false,
-    }
-}
-
-/// TODO: Mover a un lugar generico.
-/// Genera la cookie usada para la sesion
-/// mediante el token previamente generado.
-fn create_auth_cookie(
-    token: &str,
-) -> Result<Header, ()> {
-
-    let cookie = format!(
-        "auth_token={}; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax",
-        token
-    );
-
-    Header::from_bytes("Set-Cookie", cookie)
-        .map_err(|_| ())
-}
-
-/// Genera un token random.
-fn generate_token() -> String {
-    let bytes: [u8; 32] = rand :: rng().random();
-    hex::encode(bytes)
-}

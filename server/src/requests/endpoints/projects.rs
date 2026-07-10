@@ -10,8 +10,8 @@ use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
 use crate::structs::strudent_project_response::{StudentProjectResponse,GeoCorners};
 use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
-use crate::logging::structs::{ThreadMessage};
-use crate::logging::logger::{debug_logger};
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::{debug_logger, send_message_to_logger};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::path::Path;
@@ -60,13 +60,18 @@ pub fn create(
     request: &mut Request,
     db: Arc<Mutex<DBEngine>>,
     settings: Arc<Settings>,
+    tx: &Sender<ThreadMessage>,
 ) -> HandlerResult {
+
+    send_message_to_logger(tx, "Iniciando creacion de un nuevo proyecto.".to_string(), LogType::Debug);
 
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
         Ok(None) => return string_response("Sin autorizar".to_string(), 401),
         Err(err) => return server_error(err),
     };
+
+    send_message_to_logger(tx, format!("Iniciando creacion de un nuevo proyecto por parte del profesor con ID: {}", professor_id), LogType::Info);
 
     let boundary = match get_boundary(request) {
         Ok(b) => b,
@@ -161,6 +166,7 @@ pub fn create(
     }
 
     if invalid_extension {
+        send_message_to_logger(tx, format!("Profesor {} intentó subir un archivo con extensión inválida.", professor_id), LogType::Warn);
         return string_response(
             "El archivo debe ser un GeoTIFF (.tif o .tiff).".to_string(),
             400,
@@ -182,25 +188,34 @@ pub fn create(
         None => return server_error("No se recibió ningún archivo.".to_string()),
     };
 
-    match projects::create_project_locked(&db, &filename, professor_id, &meta) {
-        Ok(_) => string_response("ok".into(), 200),
+
+    let project = match projects::create_project_locked(&db, &filename, professor_id, &meta) {
+        Ok(_) => {
+            send_message_to_logger(tx, format!("Concluye correctamente la revision de datos para creacion de proyecto '{}' creado por el profesor {}.", filename, professor_id), LogType::Info);
+            string_response("ok".into(), 200)},
         Err(_) => server_error("NO pudo".into())
-    }
-    
+    };
+
+    send_message_to_logger(tx, format!("Proyecto para profesor con ID: {} creado.", professor_id), LogType::Debug);
+
+    project
 }
 
 /// Retorna todos los proyectos almacenados en la db
 /// Para el profesor autenticado.
-pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerResult {
-  
+pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>, tx: &Sender<ThreadMessage>) -> HandlerResult {
+
+    send_message_to_logger(tx, format!("Intentando obtener un proyecto"), LogType::Debug);
+
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
         Ok(None) => return string_response("Sin autorizar".to_string(), 401),
         Err(err) => return server_error(err),
     };
 
-    let Ok(projects) = projects::get_all_by_professor_id_locked(&db, professor_id) else {
-        return server_error("Error al obtener los proyectos".to_string());
+    let projects = match projects::get_all_by_professor_id_locked(&db, professor_id) {
+        Ok(projects) => projects,
+        Err(e) => return server_error(format!("Error al obtener los proyectos del profesor {}: {}", professor_id, e)),
     };
 
     let response = match serde_json::to_string(&projects) {
@@ -215,8 +230,7 @@ pub fn get_projects(request: &mut Request, db: Arc<Mutex<DBEngine>>) -> HandlerR
 /// Esto lo hace en base a la cookie que recibe en la request.
 /// Con la cookie obtiene el id del mismo y con eso el proyecto
 pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>) -> HandlerResult {
-    // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx);
+    send_message_to_logger(tx, "Intentando obtener un proyecto asociado a un estudiante.".to_string(), LogType::Debug);
 
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -230,9 +244,14 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
         Err(_) => return server_error("Error al obtener los datos del alumno".to_string()),
     };
 
+    send_message_to_logger(tx, format!("Intentando obtener el proyecto del grupo/estudiante {}.", student.name), LogType::Debug);
+
+    // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
+    let log_debug = debug_logger(tx, &student.name);
+
     let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {
         Ok(id_opt) => id_opt,
-        Err(_) => return server_error("Error al obtener la relación del alumno".to_string()),
+        Err(e) => return server_error(format!("Error al obtener el proyecto del grupo/estudiante {}: {}", student_id, e)),
     };
 
     let Some(project_id_real) = project_id_opt else {
@@ -272,7 +291,9 @@ pub fn get_student_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, sett
 
 /// Elimina un proyecto de la base de datos
 /// Comprobando primero que el profesor este autenticado.
-pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>) -> HandlerResult {
+pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings: Arc<Settings>, tx: &Sender<ThreadMessage>,) -> HandlerResult {
+
+    send_message_to_logger(tx, "Iniciando el borrado de un proyecto.".to_string(), LogType::Debug);
 
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -299,26 +320,25 @@ pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings:
     let filename = project.filename;
     let result = projects::delete_project_by_id_locked(&db, id, professor_id);
 
-    // TODO: Logearlo, pero NO respondemos error al endpoint.
-    // Es irrelevante si logro o no y ademas, tenemos un endpoint en el CLI.
-    match files::clean_unused_images(&db, &settings) {
-        Ok(()) => {}
-        Err(_) => {},
+    
+    if let Err(e) = files::clean_unused_images(&db, &settings,tx) {
+        send_message_to_logger(tx, format!("No se pudieron limpiar las imagenes sin uso tras borrar el proyecto {}: {}", id, e), LogType::Error);
     }
+
+    send_message_to_logger(tx, format!("Iniciando el borrado del proyecto: {} por parte del profesor {}.", project.metadata.name, professor_id), LogType::Info);
 
     match result {
         Ok(true) => {
             let path = format!("{}/geotiffs/{}", settings.storage_path, filename);
             let _ = std::fs::remove_file(&path);
+            send_message_to_logger(tx, format!("Proyecto {} ('{}') eliminado por el profesor {}.", id, project.metadata.name, professor_id), LogType::Info);
             string_response("Proyecto eliminado.".to_string(), 200)
         }
         Ok(false) => string_response(
                 "Proyecto no encontrado".to_string(),
                 404,
         ),
-        Err(_) => server_error(
-                "Error al eliminar el proyecto".to_string(),
-            )
+        Err(e) => server_error(format!("Error al eliminar el proyecto {}: {}", id, e)),
     }
 
 }
@@ -327,9 +347,11 @@ pub fn delete_project(request: &mut Request, db: Arc<Mutex<DBEngine>>, settings:
 /// Comprobando primero que el profesor este autenticado.
 pub fn update_a_project(
     request: &mut Request,
-    db: Arc<Mutex<DBEngine>>
+    db: Arc<Mutex<DBEngine>>,
+    tx: &Sender<ThreadMessage>
 ) -> HandlerResult {
 
+    send_message_to_logger(tx, "Iniciando la actualización de un proyecto.".to_string(), LogType::Debug);
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
         Ok(None) => return string_response("Sin autorizar".to_string(), 401),
@@ -352,8 +374,10 @@ pub fn update_a_project(
     };
 
     match projects::update_project_locked(&db, id, professor_id, &meta) {
-        Ok(true) => string_response("Proyecto actualizado.".to_string(), 200),
+        Ok(true) => {
+            send_message_to_logger(tx, format!("Proyecto {} actualizado por el profesor {}.", id, professor_id), LogType::Info);
+            string_response("Proyecto actualizado.".to_string(), 200)},
         Ok(false) => string_response("Proyecto no encontrado.".to_string(), 404),
-        Err(_) => server_error("Error al actualizar el proyecto.".to_string()),
+        Err(e) => server_error(format!("Error al actualizar el proyecto {}: {}", id, e)),
     }
 }

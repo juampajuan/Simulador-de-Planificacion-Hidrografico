@@ -2,16 +2,88 @@ use std::{
     collections::HashSet,
     error::Error,
     fs,
-    path::PathBuf,
+    path::{PathBuf,Component,Path},
     sync::{Arc, Mutex},
 };
 
 use crate::{db::{engine::DBEngine, queries_interface::student_simulations::get_all_simulation_images_locked}, structs::settings::Settings};
 
+use tiny_http::{Header, Response};
+use std::fs::File;
+use std::sync::mpsc::Sender;
+use crate::structs::request::HandlerResult;
+use crate::requests::endpoints::generic::{not_found, server_error};
+use crate::logging::structs::{ThreadMessage, LogType};
+use crate::logging::logger::send_message_to_logger;
+
+///Selecciona el tipo de contenido/archivo basandose en el path.
+pub fn content_type(ext: &str) -> &'static str {
+    match ext {
+        "html" => "text/html",
+        "js" => "text/javascript",
+        "css" => "text/css",
+        "wasm" => "application/wasm",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "tif" | "tiff" => "image/tiff",
+        _ => "application/octet-stream",
+    }
+}
+
+/// Es el metodo encargado de buscar, leer y entregar el archivo.
+/// Usado por los 2 pseudowrappers de arriba.
+pub fn serve_file(path: PathBuf) -> HandlerResult {
+    match File::open(&path) {
+        Ok(file) => {
+            let mime = content_type(
+                path.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or(""),
+            );
+
+            let header = match Header::from_bytes(
+                &b"Content-Type"[..],
+                mime.as_bytes(),
+            ) {
+                Ok(header) => header,
+                Err(_) => return server_error("Internal Error".to_string()),
+            };
+
+            let response = Response::from_file(file)
+                .with_header(header)
+                .boxed();
+
+            (response, 200, None)
+        }
+
+        Err(_) => not_found(),
+    }
+}
+
+/// Obtiene el path relativo
+/// Evita que se pueda acceder a archivos fuera del dict root.
+    /// Es decir: No podra hacer root/../../archivo_secreto.txt
+pub fn get_relative_path(url: &str) -> Option<&Path> {
+    let relative = Path::new(url.trim_start_matches('/'));
+
+    if relative
+        .components()
+        .any(|c| matches!(c, Component::ParentDir))
+    {
+        None
+    } else {
+        Some(relative)
+    }
+}
+
 pub fn clean_unused_images(
     db: &Arc<Mutex<DBEngine>>,
     settings: &Settings,
+    tx: &Sender<ThreadMessage>
 ) -> Result<(), Box<dyn Error>> {
+    send_message_to_logger(tx, "Iniciando limpieza de imágenes sin uso".to_string(), LogType::Debug);
     let images: HashSet<String> = get_all_simulation_images_locked(db)?;
 
     let images_dir = PathBuf::from(&settings.storage_path).join("images");
@@ -33,8 +105,7 @@ pub fn clean_unused_images(
         };
 
         if !images.contains(filename) {
-            // TODO: Logear como debug.
-            println!("Deleting unused image: {}", filename);
+            send_message_to_logger(tx, format!("Eliminando imagen sin uso: {}", filename), LogType::Debug);
             fs::remove_file(&path)?;
         }
     }

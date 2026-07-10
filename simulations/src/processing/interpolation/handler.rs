@@ -16,7 +16,10 @@ pub fn interpolate(
     method: InterpolationMethod,
     measuring_points: MeasurementsTypeWithError,
     geotiff: &DepthMatrix,
+    log_debug: &dyn Fn(&str),
 ) -> Result<Vec<Vec<f64>>, String> {
+
+    log_debug(format!("Se utilizó el método de interpolación: {method:?}.").as_str());
 
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
@@ -52,7 +55,7 @@ pub fn interpolate(
         InterpolationMethod::Idw     => Ok(interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff)),
         InterpolationMethod::Kriging => Ok(interpolation_kriging(&new_points, &new_matrix, geotiff)),
         InterpolationMethod::Tin     => Ok(interpolation_tin(&new_points, &new_matrix, geotiff)),
-        InterpolationMethod::GdalTin => interpolation_gdal_tin(&new_points, &new_matrix, geotiff),
+        InterpolationMethod::GdalTin => interpolation_gdal_tin(&new_points, &new_matrix, geotiff, log_debug),
     }
     
 }

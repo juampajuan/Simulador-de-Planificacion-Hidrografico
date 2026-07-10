@@ -7,7 +7,7 @@ use common::{EcosondaMode, GnssType, PathParameters, StudentMeasuringParameters}
 use processing::geotiff::GeotiffCoordinates;
 use processing::interpolation::handler::interpolate;
 use processing::measuring::{apply_disturbances, MeasureMode, get_measures}; 
-use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, COVERAGE_OVERLAY_COLOR, ImageType};
+use processing::images::{makepng_transparent_with_path, makepng_with_matrix_and_interpolation, make_shaded_png, create_scale_image, draw_covered_points, draw_path, depth_range, COVERAGE_OVERLAY_COLOR, ImageType};
 use processing::routing::generate_route; 
 use structs::{interpolation_type::InterpolationMethod, measurement_type::MeasurementsType, student_measuring_parameters::EchosounderLogic, simulation_constants::SimulationConstants};
 use image::{RgbaImage};
@@ -19,7 +19,7 @@ pub fn create_depth_matrix(file_path :&str, log_debug: &dyn Fn(&str)) -> Result<
  
     log_debug("Generando depth_matrix...");
  
-    match processing::geotiff::processing_geotiff(file_path) {
+    match processing::geotiff::processing_geotiff(file_path,log_debug) {
         Ok(matrix) => {
             log_debug("depth_matrix generada.");
             Ok(matrix)},
@@ -39,6 +39,9 @@ pub fn create_path(matrix: &DepthMatrix, azimuth_deg: f64, separation_meters :f6
         separacion: separation_meters,
         gnss_type,
     };
+
+    log_debug(&format!("Se genera recorrido con los siguientes parametros - Azimut: {}, Separacion: {}, Tipo de GNSS: {:?}", path_params.azimut, path_params.separacion, path_params.gnss_type));
+
 
     let max_offset = match path_params.gnss_type {
         GnssType::NoCorrection => {20.0},
@@ -62,13 +65,16 @@ pub fn run_simulation(
     mut params: StudentMeasuringParameters,
     constants: SimulationConstants,
     log_debug: &dyn Fn(&str),
-    
 ) -> Result<Vec<Vec<f64>>, String> {
 
-    log_debug("Simulando...");
+    params.echo_sounder_parameters.create_echosounder(&constants);
+
+    log_debug(&format!("Simulando con los siguientes parametros - {:?}", params));
 
     let boat_speed = params.transport_parameters.speed;
     let distance_between_points = boat_speed * params.echo_sounder_parameters.pulse_repetition_interval.recip();
+
+    log_debug(&format!("Se toma una medicion cada {:?} metros. Con velocidad del barco {:?} m/s y el intervalo de repeticion del sonar {:?} Hz.", distance_between_points, boat_speed, params.echo_sounder_parameters.pulse_repetition_interval));
 
     let points_to_measure = processing::measuring::find_measuring_points(
         students_path,
@@ -77,9 +83,7 @@ pub fn run_simulation(
     );
 
     log_debug(&format!("Puntos de medicion calculados ({}).", points_to_measure.len()));
-
-    params.echo_sounder_parameters.create_echosounder(&constants);
-
+   
     let measurements_points: MeasurementsType = match params.echo_sounder_parameters.mode {
         EcosondaMode::Monohaz => {
             get_measures(MeasureMode::Circular { angle: params.echo_sounder_parameters.angle }, matrix, &points_to_measure)
@@ -89,13 +93,13 @@ pub fn run_simulation(
         },
     };
 
-    log_debug("Mediciones tomadas.");
+    log_debug("Se tomaron las Mediciones.");
 
-    let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix, &constants);
+    let mediciones_observadas = apply_disturbances(measurements_points, students_path, &params, matrix, &constants, log_debug);
 
-    log_debug("Errores aplicados a las mediciones.");
+    log_debug("Se aplicaron errores a las mediciones.");
 
-    let resultado = interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix);
+    let resultado = interpolate(InterpolationMethod::GdalTin, mediciones_observadas, matrix, log_debug);
 
     if resultado.is_ok() {
         log_debug("Interpolacion completada.");
@@ -120,12 +124,17 @@ pub fn create_path_image(
 
 /// Devuelve el PNG de la matriz interpolada con la escala de colores correspondiente
 /// Utiliza processing::images
-pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>], log_debug: &dyn Fn(&str)) -> (RgbaImage, f64, f64) {
+pub fn create_simulation_image(matrix: &DepthMatrix, student_interpolation: &[Vec<f64>], log_debug: &dyn Fn(&str)) -> (RgbaImage, f64, f64, f64, f64) {
 
     log_debug("Generando PNG de simulacion...");
-    let result = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage);
+    let (image, tiff_min, tiff_max)  = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage, &log_debug);
     log_debug("PNG de simulacion generado.");
-    result
+
+    let (interpolation_min, interpolation_max) = depth_range(student_interpolation, matrix.no_data);
+    log_debug(&format!("Extremos de la interpolación calculados: {interpolation_min}, {interpolation_max}."));
+ 
+    log_debug("PNG de simulacion generado.");
+    (image, tiff_min, tiff_max, interpolation_min, interpolation_max)
 }
 
 pub fn create_scale_pure_image(log_debug: &dyn Fn(&str)) -> RgbaImage {
@@ -166,7 +175,7 @@ pub fn create_simulation_with_coverage(
 
     log_debug("Generando PNG de simulacion con cobertura...");
  
-    let (mut img, min_val, max_val) = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage);
+    let (mut img, min_val, max_val) = makepng_with_matrix_and_interpolation(student_interpolation, matrix, ImageType::DepthImage, &log_debug);
     // true = radio real por punto, el resultado ya esta a la vista igual
     let covered_points = lib_helpers::get_covered_points(matrix, path, &mut params, true, constants);
     log_debug("Cobertura calculada.");
@@ -186,6 +195,7 @@ pub fn get_geotiff_corners(
     log_debug: &dyn Fn(&str),
 ) -> GeotiffCoordinates {
     log_debug(&format!("Calculando coordenadas del geotiff {file_path}..."));
+
     // (sup_izq, sup_der, inf_izq, inf_der, centro), cada uno (lat, lon)
     let coordinates = match processing::geotiff::get_geotiff_coordinates(file_path) {
         Ok(coordinates) => coordinates,
@@ -199,8 +209,10 @@ pub fn get_geotiff_corners(
     Ok(coordinates)
 }
 
-pub fn generate_difference_matrix(matrix: &DepthMatrix, student_matrix: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+pub fn generate_difference_matrix(matrix: &DepthMatrix, student_matrix: Vec<Vec<f64>>, log_debug: &dyn Fn(&str)) -> Vec<Vec<f64>> {
     
+    log_debug("Iniciando generacion de matriz de diferencias.");
+
     let no_data = matrix.no_data.unwrap_or(f64::MAX);
 
     let mut difference_matrix = vec![vec![0.0; matrix.width]; matrix.height];
@@ -214,11 +226,13 @@ pub fn generate_difference_matrix(matrix: &DepthMatrix, student_matrix: Vec<Vec<
             }
         }
     }
+
+    log_debug("Matriz de diferencias generada");
     
     difference_matrix
 }
 
-pub fn generate_difference_png(matrix: &DepthMatrix, difference_matrix: Vec<Vec<f64>>) -> RgbaImage {
-    let (res,_,_)= makepng_with_matrix_and_interpolation(&difference_matrix, matrix, ImageType::DifferenceImage);
+pub fn create_difference_png(matrix: &DepthMatrix, difference_matrix: Vec<Vec<f64>>, log_debug: &dyn Fn(&str)) -> RgbaImage {
+    let (res,_,_)= makepng_with_matrix_and_interpolation(&difference_matrix, matrix, ImageType::DifferenceImage, &log_debug);
     res
 }

@@ -95,6 +95,24 @@ fn calculate_disturbance_params(
     }
 }
 
+fn print_debug_log( params: &StudentMeasuringParameters,log_debug: &dyn Fn(&str)){
+    if params.transport_parameters.uses_inertial_sensor {
+        log_debug("Sensor inercial: usado por el alumno, no se aplica error de inclinacion.");
+    } else {
+        log_debug("Sensor inercial: no usado, se aplica error de inclinacion.");
+    }
+    if params.transport_parameters.uses_sound_profiler {
+        log_debug("Perfilador de sonido: usado por el alumno, no se aplica error de velocidad del sonido.");
+    } else {
+        log_debug("Perfilador de sonido: no usado, se aplica error de velocidad del sonido.");
+    }
+    if params.transport_parameters.uses_mareograph {
+        log_debug("Mareografo: usado por el alumno, no se aplica error de marea.");
+    } else {
+        log_debug("Mareografo: no usado, se aplica error de marea.");
+    }
+}
+
 // ------------------------------------------------------------
 //  Aplicación de errores
 // ------------------------------------------------------------
@@ -106,19 +124,28 @@ pub fn apply_disturbances(
     params: &StudentMeasuringParameters,
     matrix: &DepthMatrix,
     constants: &SimulationConstants,
+    log_debug: &dyn Fn(&str),
 ) -> MeasurementsTypeWithError {
+
+    print_debug_log(params, log_debug);
+    
     match mediciones {
+
         MeasurementsType::Monohaz { measurements } => {
+            log_debug("Aplicando errores a mediciones monohaz.");
             let dp = calculate_disturbance_params(measurements.len(), params, path, matrix, constants);
+            log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
             MeasurementsTypeWithError::Monohaz {
                 measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants),
             }
         }
 
         MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
+            log_debug("Aplicando errores a mediciones multihaz.");
             // Los tres pings son simultáneos: calculamos los parámetros una sola vez
             // usando la longitud de la lista central (todas tienen la misma cantidad).
             let dp = calculate_disturbance_params(central_measurments.len(), params, path, matrix, constants);
+            log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
 
             // Para multihaz aplicamos los errores en conjunto ping a ping, para que
             // central, izquierda y derecha compartan el mismo ángulo inercial y marea.

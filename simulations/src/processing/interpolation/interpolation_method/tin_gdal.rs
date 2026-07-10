@@ -73,13 +73,16 @@ pub fn interpolation_gdal_tin(
     measuring_points: &[(usize, usize)],
     matrix: &[Vec<f64>],
     geotiff: &DepthMatrix,
+    log_debug: &dyn Fn(&str),
 ) -> Result<Vec<Vec<f64>>, String> {
     // nombre unico por llamada, por las simulaciones concurrentes
     let tmp_id = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|e| e.to_string())?
         .as_nanos();
- 
+    
+
+    log_debug(&format!("Interpolando con gdal_grid (GdalTin), generando archivos temporales con id {tmp_id}."));
     let tmp_dir = std::env::temp_dir();
     let csv_path = tmp_dir.join(format!("sim_points_{tmp_id}.csv"));
     let vrt_path = tmp_dir.join(format!("sim_points_{tmp_id}.vrt"));
@@ -149,8 +152,9 @@ pub fn interpolation_gdal_tin(
                 .map_err(|e| format!("Error seteando projection al tiff temporal: {e}"))?;
         }
     }
- 
-    let result_matrix_struct = processing_geotiff(tif_path_str)
+    
+    log_debug(&format!("Procesando nuevo GeoTIFF generado por gdal_grid (GdalTin) con id {tmp_id}."));
+    let result_matrix_struct = processing_geotiff(tif_path_str, log_debug)
         .map_err(|e| format!("Error leyendo resultado de la tiff temporal al interpolar con gdal_grid: {e}"))?;
  
  
