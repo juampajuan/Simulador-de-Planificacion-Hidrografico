@@ -123,7 +123,7 @@ pub fn map_background(props: &MapBackgroundProps) -> Html {
             
         </div>
         <div class="absolute bottom-2 text-xs right-3 italic text-white/70">
-                {"La zona a relevar puede ser mas grande que la representada en el mapa."}
+                {"La zona a relevar puede ser más grande que la representada en el mapa."}
         </div>
     </>}
 }

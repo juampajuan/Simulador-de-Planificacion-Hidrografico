@@ -112,6 +112,9 @@ pub fn student_page() -> Html {
         scale_base64: scale_base64.clone(),
         min_depth: min_depth.clone(),
         max_depth: max_depth.clone(),
+        simulation_image_path: use_state(|| None::<String>),
+        coverage_image_path: use_state(|| None::<String>),
+        difference_image_path: use_state(|| None::<String>),   
     };
 
     let set_tab_entorno = {
@@ -206,7 +209,7 @@ pub fn student_page() -> Html {
                         
                         { if let Some(sim) = &*active_layers_sim {
                             html! { 
-                                <div class="absolute top-0 left-3 z-50">
+                                <div class="absolute top-0 right-0 z-10">
                                     <ImageSelector ui_state={ui_state.clone()} active_sim={sim.clone()} /> 
                                 </div>
                             }

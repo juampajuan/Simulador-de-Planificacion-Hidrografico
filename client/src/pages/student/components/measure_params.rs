@@ -53,6 +53,10 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
         let max_depth = props.ui_state.max_depth.clone();
         let history = props.history_state.clone(); // Necesitamos pasarle el historial o generar el ID aproximado
 
+        let simulation_image_path = (*props.ui_state.simulation_image_path).clone();
+        let coverage_image_path = (*props.ui_state.coverage_image_path).clone();
+        let difference_image_path = (*props.ui_state.difference_image_path).clone();
+
         use_effect_with(map_base64_state.clone(), move |m_b64| {
             if let Some(b64_str) = &**m_b64 {
                 if !b64_str.is_empty() {
@@ -69,9 +73,9 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                         student_id: 0,
                         project_id: 0,
                         // Asignamos los nombres de archivo estándar que el backend genera en /images/
-                        simulation_image_path: Some(format!("intento_{}_simulacion.png", next_attempt)), 
-                        coverage_image_path: Some(format!("intento_{}_cobertura.png", next_attempt)), 
-                        difference_image_path: Some(format!("intento_{}_diferencias.png", next_attempt)),
+                        simulation_image_path: simulation_image_path, 
+                        coverage_image_path: coverage_image_path,
+                        difference_image_path: difference_image_path,
                         path_parameters: Default::default(),
                         transport_parameters: Default::default(),
                         echosounder_parameters: Default::default(),
@@ -151,7 +155,7 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                         onclick={on_coverage_click}
                         class="uppercase text-center disabled:opacity-30 bg-zinc-600 p-3 text-white font-bold w-full hover:bg-zinc-500 transition-all rounded shadow-xl disabled:bg-zinc-700 text-sm cursor-pointer"
                     >
-                        {"Ver Cobertura"}
+                        {"Ver Cobertura Aproximada"}
                     </button>
                     <button 
                         disabled={is_simulation_disabled}

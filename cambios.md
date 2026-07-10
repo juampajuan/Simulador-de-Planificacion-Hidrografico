@@ -16,8 +16,7 @@
 - [x] Generar la logica de thread
 - [] Agregarlo en todos lados
 	1. Ya agregado en la respuesta del las requests.
-	2. __TODO: Pongan aca donde lo fueron agregando, asi ya esta__.
-		simulation.rs: cache hit/miss de matrix y de path, calculo de recorrido nuevo (Debug), simulacion completada (Info), error al registrar el intento en la DB (Error), imagen de cobertura generada (Debug).
+	2. simulation.rs: cache hit/miss de matrix y de path, calculo de recorrido nuevo (Debug), simulacion completada (Info), error al registrar el intento en la DB (Error), imagen de cobertura generada (Debug).
 	3. simulations (lib.rs), Cubre: create_depth_matrix, create_path, run_simulation (puntos de medicion, mediciones tomadas, si se aplicaron errores, interpolacion completada), create_path_image, create_simulation_image, create_scale_pure_image, create_path_with_coverage, create_simulation_with_coverage, get_geotiff_corners.
 	4. auth.rs: create_professor, change_pass, login, close_all, close_session.
 	5. students.rs: create_new_student, get_all_students, delete_a_student, update_an_student.
@@ -36,9 +35,9 @@ Criterio que usamos para elegir nivel:
 - [x] Enpoints para obtenerlos
 - [x] Que se guarde cada vez que tocas simular.
 - [x] Enpoint de alumno para seleccionar y modififcar el bool.
-- [] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
+- [x] Api que entregue el **mapa de diferencias** o ya devolverlo en la simulacion normal.
 - [x] Agregar el BOOLEAN al proyecto que indique si es examen o no. (Modificar la Api y el front, para enviar ese dato)
-- [] Fecha limite? se pone cuando se crea, pasado, no se puede entregar.
+- [x] Fecha limite? se pone cuando se crea, pasado, no se puede entregar.
 
 ## Backend
 - [x] Api que entrega images, de carpeta de storage.
@@ -46,19 +45,17 @@ Criterio que usamos para elegir nivel:
 
 ## Front
 - [x] Info primero al entrar a la simulacion.
-- [] Mover en login desface de textos.
+- [x] Mover en login desface de textos.
 - [x] Detalles de modales
 - [x] Interfaz de historial de intentos para el alumno, junto a su selección para entregar.
-- [] Interfaz de entregas obtenidas para el docente.
-- [] Toggle, para ver o **mapa de diferencias**. Osea que muestre o una foto o la otra, alterna.
-- [] Login NO debe redifirigir si pones mal la contrasenia, solo mostrar el mensaje.
-- [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar por slack o algo.
+- [x] Interfaz de entregas obtenidas para el docente.
+- [x] Toggle, para ver o **mapa de diferencias**. Osea que muestre o una foto o la otra, alterna.
 - [x] Agregar el MODO EXAMEN o no al crear un proyecto.
 - [x] Consistencias de borders
 - [x] Consistencia de colores
-- [] Modificar el texto ese feo de image viewver en el medio. Cuando hay error. Copiar la ventana de loader, pero ponerla roja(?)
-- [] Que no se escriba el mensaje debajo del loader.
+- [x] Modificar el texto ese feo de image viewver en el medio. Cuando hay error. Copiar la ventana de loader, pero ponerla roja(?)
 - [x] Mapa se expande.
+
 
 ## Cache
 - [x] Separarlo
@@ -67,7 +64,7 @@ Criterio que usamos para elegir nivel:
 - [x] Generar el compose.yaml
 
 ## Otros detalles
-- [] Mover metodos auxiales fuera de los archivos de endpoints.
+- [x] Mover metodos auxiales fuera de los archivos de endpoints.
 	Hay que pensar a donde, para charlar
 - [] Yo moveria los archivos de structs dentro server/structs a cada disciplana a la que pertenecnen
 	Por ejemplo, para las settings, creo un carpeta.
@@ -91,6 +88,20 @@ No lo discutimos, pero no lo veo complicado, asi que lo haria.
 
 
 ## Usar la carpeta de Helpers
-- [] Mover funciones de los endpoints ahi
-- [] Moer funciones de las queries
+- [x] Mover funciones de los endpoints ahi
+- [] Mover funciones de las queries
 - [] Mover otros helpers.
+
+
+# Important Juanjo Front
+- [] Quitar Base64.
+- [] TODO1 en `IMGviewer` linea 24. (Habla de incorporar un booleano, para saber si simulamos, para mostrar la barra de colores, una var extra en ui_state?)
+- [] OPTIONAL: (Evitar si es de alta complejidad) Hacer que el modal de los profes de los intentos, NO proceseleccione la imagen de simulacion.
+- [] TODO3 descomentarlo, eso es quien se encarga de elegir la imagen a mostrar. Porque una vez borrado Base64, nada te va a mostrar al simular.
+
+- [] Login *****NO***** debe redirigir si pones mal la contrasenia, solo mostrar el mensaje. Porque ahora te la recarga. 
+	
+	Osea el 403/401 en otras paginas llevan al login, pero en el login, no lo llevas.
+
+Este es un chiche.
+- [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar por slack o algo.

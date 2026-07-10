@@ -55,7 +55,7 @@ pub fn no_responsive() -> Html {
 
 
     html! {
-        <div class="bg-slate-900/50 backdrop-blur h-screen w-screen p-3 dark absolute top-0 left-0 z-2000">
+        <div class="bg-slate-900/50 backdrop-blur h-screen w-screen p-3 dark absolute top-0 left-0 z-50">
             <div class="h-full dot-grid text-white flex flex-col items-center justify-center">
                 <Smartphone size={64} stroke_width={1usize}/>
                 <h1 class="text-2xl font-semibold pt-5 text-center px-12">

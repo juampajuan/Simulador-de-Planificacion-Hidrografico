@@ -1,5 +1,6 @@
 use yew::prelude::*;
-use crate::{pages::student::components::{depthcolors::DepthLegend}, structs::state::SimulationUiState};
+use crate::{pages::student::components::depthcolors::DepthLegend, structs::state::SimulationUiState};
+use lucide_yew::TriangleAlert;
 
 #[derive(Properties, PartialEq)]
 pub struct IMGviewerProps {
@@ -14,13 +15,14 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
     let image_url = (*props.ui_state.image_url).as_ref();
     let map_base64 = (*props.ui_state.map_base64).as_ref();
     let scale_base64 = (*props.ui_state.scale_base64).as_ref();
-    let min_depth = *props.ui_state.min_depth;
-    let max_depth = *props.ui_state.max_depth;
 
     html! {
         <div class="flex-1 relative flex items-center justify-center overflow-hidden rounded-lg">
-            <div class="flex items-center justify-center h-full w-full overflow-hidden p-8 relative">
+            <div class="flex items-center justify-center h-full w-full overflow-hidden py-8 px-4 relative">
                 {
+                    // TODO: Usar la url siempre. Ya te la pasan en la response. Simplemente es hacerlo llegar.
+                    // La clave puede ser una bool, que diga que es simulacion o algo, porquee esto va desaparecer y si no, no sabes cuando mostrar.
+                    // Ya que cuando empiezo a altenar entre las imagenes, me desaparece el DepthLengend.
                     if let (Some(m_b64), Some(_)) = (map_base64, scale_base64) { 
                         html! {
                             <div class="relative flex items-center justify-center h-full w-full">
@@ -28,8 +30,8 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                                     src={format!("data:image/png;base64,{}", m_b64)}
                                     class="h-full object-contain rounded-lg"
                                 />
-                                <div class="absolute right-0 h-full top-1/2 -translate-y-1/2 flex flex-col items-center z-5">
-                                    <DepthLegend start_m={min_depth} end_m={max_depth} />
+                                <div class="absolute right-0 h-full top-1/2 -translate-y-1/2 flex flex-col items-center z-5 pt-16 pb-8">
+                                    <DepthLegend start_m={*props.ui_state.min_depth} end_m={*props.ui_state.max_depth} />
                                 </div>
                             </div>
                         }
@@ -37,8 +39,15 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                         html! {
                             <img key={url.to_string()} src={url.clone()} class="h-full object-contain rounded-lg" />
                         }
-                    } else {
-                        html! { <h2 class="text-2xl font-bold text-white text-center p-8">{ mensaje }</h2> }
+                    } else if !mensaje.is_empty()  {
+                        html! {  <div class="flex flex-col absolute top-0 z-[100] left-0 w-full h-full justify-center items-center">
+                            <div class="flex flex-col gap-5 text-cyan-200 rounded-lg px-12 py-5 items-center bg-slate-950/60 backdrop-blur border border-white/15">
+                                <TriangleAlert size={42} />
+                                <h2 class="text-cyan-200 font-bold text-center">{ mensaje }</h2>
+                            </div>
+                        </div>  }
+                    }  else {
+                        Html::default()
                     }
                 }
                 

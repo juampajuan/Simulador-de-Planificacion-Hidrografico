@@ -29,6 +29,10 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
     let min_depth = use_state(|| 0.0f64);
     let max_depth = use_state(|| 0.0f64);
 
+    let simulation_image_path = use_state(|| None::<String>);
+    let coverage_image_path = use_state(|| None::<String>);
+    let difference_image_path = use_state(|| None::<String>);
+
     let ui_state = SimulationUiState {
         mensaje: mensaje.clone(),
         image_url: image_url.clone(),
@@ -37,6 +41,9 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
         scale_base64: scale_base64.clone(),
         min_depth: min_depth.clone(),
         max_depth: max_depth.clone(),
+        simulation_image_path: simulation_image_path.clone(),
+        coverage_image_path: coverage_image_path.clone(),
+        difference_image_path: difference_image_path.clone(),    
     };
 
     let history_state = use_state(Vec::<StudentSimulation>::new);
@@ -108,7 +115,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
 
     html! {
         <Modal
-            title={format!("{} — RESULTADOS DE: {}", props.project.name, props.student_code)}
+            title={format!("Intentos de {}, para el proyecto: {}", props.project.name, props.student_code)}
             subtitle=""
             on_close={on_close_callback}
             max_width_class={Some("max-w-[95vw] w-[1450px] h-[88vh] flex flex-col".to_string())}
@@ -141,7 +148,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
                     
                     { if let Some(sim) = &*active_layers_sim {
                         html! { 
-                            <div class="absolute top-0 left-3 z-50">
+                            <div class="absolute top-0 right-0 z-10">
                                 <ImageSelector ui_state={ui_state.clone()} active_sim={sim.clone()} /> 
                             </div>
                         }
