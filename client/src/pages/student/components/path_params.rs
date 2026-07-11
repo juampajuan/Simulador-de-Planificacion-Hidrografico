@@ -1,12 +1,12 @@
-use yew::prelude::*;
+use crate::structs::limits::ConfigLimits;
 use crate::{
     components::subtitle::Subtitle,
     services::requests::trigger_path_generation,
     structs::state::{PathState, SimulationUiState},
 };
-use crate::structs::limits::ConfigLimits;
-use web_sys::{HtmlInputElement, HtmlSelectElement};
 use lucide_yew::Route;
+use web_sys::{HtmlInputElement, HtmlSelectElement};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct PathProps {
@@ -125,12 +125,12 @@ pub fn path_params(props: &PathProps) -> Html {
                     }
                 </select>
             </div>
- 
+
             <div class="flex justify-end">
                 <button
                     disabled={*props.ui_state.loading}
                     class="text-center w-48 disabled:opacity-30 bg-cyan-200 p-2 px-6 text-black text-sm font-bold hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100"
-                    onclick={on_visualize_click} 
+                    onclick={on_visualize_click}
                 >
                     {"Visualizar recorrido"}
                 </button>

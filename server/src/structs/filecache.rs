@@ -1,6 +1,6 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-pub use simulations::structs::depth_matrix::DepthMatrix;
 use common::PathParameters;
+pub use simulations::structs::depth_matrix::DepthMatrix;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Recorrido cacheado: las coordenadas calculadas junto con los parámetros con los que
 /// se generaron, para poder reutilizarlo solo si el alumno vuelve a pedir lo mismo.
@@ -55,56 +55,99 @@ impl FileCache {
         let now = self.get_now();
 
         // Buscamos si el archivo ya fue cargado por otro alumno previamente
-        if let Some(pos) = self.maps.iter().position(|(it, _)| it.geotiff_path == geotiff_path) {
+        if let Some(pos) = self
+            .maps
+            .iter()
+            .position(|(it, _)| it.geotiff_path == geotiff_path)
+        {
             self.maps[pos].0.matrix = matrix;
             self.maps[pos].1 = now;
         } else {
             // Si la caché de mapas se llenó, desalojamos el mapa más viejo en desuso
-            if self.maps.len() >= self.limit {
-                if let Some((index, _)) = self.maps.iter().enumerate().min_by_key(|(_, (_, f))| *f) {
-                    self.maps.remove(index);
-                }
+            if self.maps.len() >= self.limit
+                && let Some((index, _)) = self.maps.iter().enumerate().min_by_key(|(_, (_, f))| *f)
+            {
+                self.maps.remove(index);
             }
-            self.maps.push((MapCacheItem { geotiff_path, matrix }, now));
+            self.maps.push((
+                MapCacheItem {
+                    geotiff_path,
+                    matrix,
+                },
+                now,
+            ));
         }
     }
 
     /// Obtiene la matriz compartida usando únicamente la ruta física del GeoTIFF.
     pub fn get_map(&mut self, geotiff_path: &str) -> Option<&DepthMatrix> {
         let now = self.get_now();
-        if let Some(pos) = self.maps.iter().position(|(it, _)| it.geotiff_path == geotiff_path) {
+        if let Some(pos) = self
+            .maps
+            .iter()
+            .position(|(it, _)| it.geotiff_path == geotiff_path)
+        {
             self.maps[pos].1 = now; // Actualiza último acceso global
             return Some(&self.maps[pos].0.matrix);
         }
         None
     }
 
-
     /// Guarda o actualiza el recorrido específico de un alumno y sus parametros.
-    pub fn update_path(&mut self, student_key: i64, coordinates: Vec<(usize, usize)>, params: PathParameters) {
+    pub fn update_path(
+        &mut self,
+        student_key: i64,
+        coordinates: Vec<(usize, usize)>,
+        params: PathParameters,
+    ) {
         let now = self.get_now();
-        let path_data = PathData { coordinates, parameters: params };
+        let path_data = PathData {
+            coordinates,
+            parameters: params,
+        };
 
-        if let Some(pos) = self.user_paths.iter().position(|(it, _)| it.student_key == student_key) {
+        if let Some(pos) = self
+            .user_paths
+            .iter()
+            .position(|(it, _)| it.student_key == student_key)
+        {
             self.user_paths[pos].0.last_path = path_data;
             self.user_paths[pos].1 = now;
         } else {
             // Si se llena la caché de caminos, remueve el recorrido más viejo
-            if self.user_paths.len() >= self.limit {
-                if let Some((index, _)) = self.user_paths.iter().enumerate().min_by_key(|(_, (_, f))| *f) {
-                    self.user_paths.remove(index);
-                }
+            if self.user_paths.len() >= self.limit
+                && let Some((index, _)) = self
+                    .user_paths
+                    .iter()
+                    .enumerate()
+                    .min_by_key(|(_, (_, f))| *f)
+            {
+                self.user_paths.remove(index);
             }
-            self.user_paths.push((PathCacheItem { student_key, last_path: path_data }, now));
+            self.user_paths.push((
+                PathCacheItem {
+                    student_key,
+                    last_path: path_data,
+                },
+                now,
+            ));
         }
     }
 
     /// Devuelve el camino del alumno sólo si coincide con sus parámetros de simulación actuales.
-    pub fn get_path_if_valid(&mut self, student_key: i64, current_params: &PathParameters) -> Option<Vec<(usize, usize)>> {
+    pub fn get_path_if_valid(
+        &mut self,
+        student_key: i64,
+        current_params: &PathParameters,
+    ) -> Option<Vec<(usize, usize)>> {
         let now = self.get_now();
-        if let Some(pos) = self.user_paths.iter().position(|(it, _)| it.student_key == student_key) {
+        if let Some(pos) = self
+            .user_paths
+            .iter()
+            .position(|(it, _)| it.student_key == student_key)
+        {
             self.user_paths[pos].1 = now;
-            
+
             let path_data = &self.user_paths[pos].0.last_path;
             if path_data.parameters == *current_params {
                 return Some(path_data.coordinates.clone());

@@ -1,11 +1,11 @@
-use yew::prelude::*;
-use crate::services::requests::StudentSimulation;
 use crate::components::subtitle::Subtitle;
+use crate::services::requests::StudentSimulation;
 use crate::services::requests::select_exam_delivery;
 use crate::structs::state::SimulationUiState;
-use common::GnssType;
 use common::EcosondaMode;
-use lucide_yew::{History, ChevronDown, ChevronUp, Check, Circle, CalendarX}; 
+use common::GnssType;
+use lucide_yew::{CalendarX, Check, ChevronDown, ChevronUp, Circle, History};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct HistoryProps {
@@ -13,14 +13,15 @@ pub struct HistoryProps {
     pub ui_mensaje: UseStateHandle<String>,
     pub exam_mode: bool,
     pub due_date: Option<String>,
-    pub ui_state: SimulationUiState, 
+    pub ui_state: SimulationUiState,
     pub active_layers_sim: UseStateHandle<Option<StudentSimulation>>,
 }
 
 /// Pestaña "Historial": Muestra los intentos de simulación del estudiante utilizando la persistencia real de la DB.
 #[function_component(HistoryParams)]
 pub fn history_params(props: &HistoryProps) -> Html {
-    let input_cls = "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full font-mono";
+    let input_cls =
+        "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full font-mono";
     let label_cls = "text-xs font-semibold text-white/40 ml-1";
 
     // Mantiene un registro de qué ID de intento está expandido (-1 significa ninguno)
@@ -49,7 +50,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
                             let sim_id = sim.id;
                             let is_expanded = *expanded_id == sim_id;
                             let is_selected = sim.selected;
-                            
+
                             let toggle_expand = {
                                 let expanded_id = expanded_id.clone();
                                 let active_layers_sim = props.active_layers_sim.clone();
@@ -77,19 +78,19 @@ pub fn history_params(props: &HistoryProps) -> Html {
                             };
 
                             let on_select_delivery = Callback::from(move |e: MouseEvent| {
-                                e.stop_propagation(); 
+                                e.stop_propagation();
                                 if is_expired && !is_selected {
                                     msg_for_this_btn.set("Error: El plazo de entrega para este proyecto ha expirado.".to_string());
                                     return;
                                 }
-                                
+
                                 let mut current_list = (*history_state).clone();
                                 let mut ya_estaba_entregado = false;
                                 if let Some(actual) = current_list.iter().find(|item| item.id == sim_id) {
                                     ya_estaba_entregado = actual.selected;
                                 }
 
-                                // como estoy enviando none en el caso de que haya elegido para entregar uno que ya estaba entregado, 
+                                // como estoy enviando none en el caso de que haya elegido para entregar uno que ya estaba entregado,
                                 // el backend lo interpretará como "quitar la entrega" y no como "entregar otro" -> clear_all_selected
                                 let id_para_servidor = if ya_estaba_entregado { None } else { Some(sim_id) };
 
@@ -162,18 +163,18 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                     <span class={label_cls}>{"Azimut"}</span>
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}°", sim.path_parameters.azimut)} />
                                                 </div>
-                                                
+
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"GNSS"}</span>
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={gnss_str} />
                                                 </div>
-                                                
+
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-2 mb-0.5">{"Parámetros de Transporte"}</div>
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Velocidad"}</span>
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m/s", sim.transport_parameters.speed)} />
                                                 </div>
-                                                
+
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-1 mb-0.5">{"Sensores Activos"}</div>
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Mareógrafo"}</span>
@@ -189,7 +190,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 </div>
 
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-2 mb-0.5">{"Configuración de Ecosonda"}</div>
-                                                
+
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Tipo de Ecosonda"}</span>
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={echosounder_mode_str} />

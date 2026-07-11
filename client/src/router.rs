@@ -3,17 +3,16 @@ use yew_router::prelude::*;
 
 // las vistas
 use crate::pages::{
-    admin::sections::{
-        projects::projects_admin_page::AdminProjects,
-        students::students_admin_page::AdminStudents,
-        config::AdminConfig
-    },
     admin::AdminLayout,
+    admin::sections::{
+        config::AdminConfig, projects::projects_admin_page::AdminProjects,
+        students::students_admin_page::AdminStudents,
+    },
     login::LoginPage,
     not_found::NotFound,
     student::StudentPage,
 };
-use crate::protected_route::{ProtectedRoute, Role}; 
+use crate::protected_route::{ProtectedRoute, Role};
 
 /// Enum con todas las rutas, que ofrece el front.
 #[derive(Clone, Routable, PartialEq)]

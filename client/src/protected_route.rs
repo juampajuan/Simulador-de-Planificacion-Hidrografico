@@ -1,6 +1,6 @@
+use crate::router::Route;
 use yew::prelude::*;
 use yew_router::prelude::use_navigator;
-use crate::router::Route;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum Role {
@@ -20,13 +20,13 @@ pub struct ProtectedProps {
 #[function_component(ProtectedRoute)]
 pub fn protected_route(props: &ProtectedProps) -> Html {
     let navigator = use_navigator().unwrap();
-    
+
     let window = web_sys::window().unwrap();
     let storage = window.local_storage().unwrap().unwrap();
-    
+
     let session = storage.get_item("group_or_user_name").unwrap_or(None);
     let role_saved = storage.get_item("user_role").unwrap_or(None);
-    
+
     let is_admin = role_saved.as_deref() == Some("admin");
 
     if session.is_none() {

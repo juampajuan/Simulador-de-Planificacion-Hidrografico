@@ -1,5 +1,5 @@
-use crate::structs::depth_matrix::DepthMatrix;
 use super::gnss::apply_gnss_noise_segmented;
+use crate::structs::depth_matrix::DepthMatrix;
 
 pub fn generate_route(
     matrix: &DepthMatrix,
@@ -75,8 +75,12 @@ fn build_path(
 
     for leg in -geo.legs / 2..=geo.legs / 2 {
         let mut line = build_leg(matrix, geo, leg);
-        if line.is_empty() { continue; }
-        if leg % 2 != 0 { line.reverse(); }
+        if line.is_empty() {
+            continue;
+        }
+        if leg % 2 != 0 {
+            line.reverse();
+        }
 
         if let Some(prev) = previous_end {
             let seg_start = path.len();
@@ -88,7 +92,10 @@ fn build_path(
         }
 
         let seg_start = path.len();
-        path.extend(line.iter().map(|(x, y)| (x.round() as usize, y.round() as usize)));
+        path.extend(
+            line.iter()
+                .map(|(x, y)| (x.round() as usize, y.round() as usize)),
+        );
         let seg_end = path.len();
         if seg_end > seg_start {
             segments.push(seg_start..seg_end);
@@ -138,7 +145,9 @@ fn connect(
     let dy = y1 - y0;
     let steps = dx.abs().max(dy.abs()).ceil() as i32;
 
-    if steps == 0 { return; }
+    if steps == 0 {
+        return;
+    }
 
     for current_step in 1..=steps {
         let t = current_step as f64 / steps as f64;
@@ -154,7 +163,8 @@ fn connect(
 fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
     let xi = x.round() as isize;
     let yi = y.round() as isize;
-    xi >= 0 && yi >= 0
+    xi >= 0
+        && yi >= 0
         && xi < matrix.width as isize
         && yi < matrix.height as isize
         && Some(matrix.data[yi as usize][xi as usize]) != matrix.no_data

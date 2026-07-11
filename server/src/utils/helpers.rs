@@ -1,6 +1,6 @@
-use std::path::Path;
-use std::fs;
 use rand::Rng;
+use std::fs;
+use std::path::Path;
 
 // Utilidades generales transversales: creación de carpetas, validación de contraseñas,
 // generación de códigos de alumno y lectura de cookies.
@@ -40,23 +40,16 @@ pub fn generate_code() -> String {
 /// Extrae la cookie del header de la request, con el nombre introducido en la firma.
 /// Devuelve su valor si existe, o `None` si no está la cookie o el header.
 pub fn get_cookie(request: &tiny_http::Request, name: &str) -> Option<String> {
-    let cookie_header = request
-        .headers()
-        .iter()
-        .find(|h| h.field.equiv("Cookie"))?;
+    let cookie_header = request.headers().iter().find(|h| h.field.equiv("Cookie"))?;
 
-    cookie_header
-        .value
-        .as_str()
-        .split(';')
-        .find_map(|cookie| {
-            let (key, value) = cookie.trim().split_once('=')?;
-            if key == name {
-                Some(value.to_string())
-            } else {
-                None
-            }
-        })
+    cookie_header.value.as_str().split(';').find_map(|cookie| {
+        let (key, value) = cookie.trim().split_once('=')?;
+        if key == name {
+            Some(value.to_string())
+        } else {
+            None
+        }
+    })
 }
 
 // Genera 5 letras random para el guardado de imagenes

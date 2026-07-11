@@ -1,13 +1,13 @@
-use yew::prelude::*;
-use crate::structs::student::Student;
-use crate::structs::project::Project;
-use crate::pages::admin::sections::students::students_row::StudentRow;
 use crate::components::attempts_modal::AttemptsModal;
+use crate::pages::admin::sections::students::students_row::StudentRow;
+use crate::structs::project::Project;
+use crate::structs::student::Student;
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct TablaUsuariosProps {
     pub usuarios: Vec<Student>,
-    pub proyectos: Vec<Project>, 
+    pub proyectos: Vec<Project>,
     pub delete_target: UseStateHandle<Option<Student>>,
     pub students_state: UseStateHandle<Vec<Student>>,
     pub filter: String,
@@ -28,12 +28,12 @@ pub fn tabla_usuarios(props: &TablaUsuariosProps) -> Html {
     let attempts_modal_html = if let Some((student, project)) = &*selected_target {
         let selected_target_close = selected_target.clone();
         html! {
-            <AttemptsModal 
-                is_open={true} 
-                project={project.clone()} 
-                student_id={student.id} 
+            <AttemptsModal
+                is_open={true}
+                project={project.clone()}
+                student_id={student.id}
                 student_code={student.name.clone()}
-                on_close={Callback::from(move |_| selected_target_close.set(None))} 
+                on_close={Callback::from(move |_| selected_target_close.set(None))}
             />
         }
     } else {
@@ -68,7 +68,7 @@ pub fn tabla_usuarios(props: &TablaUsuariosProps) -> Html {
                         })
                         .map(|usuario| {
                             html! {
-                                <StudentRow 
+                                <StudentRow
                                     key={usuario.id}
                                     usuario={usuario.clone()}
                                     proyectos={props.proyectos.clone()}

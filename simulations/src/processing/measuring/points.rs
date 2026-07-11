@@ -6,7 +6,6 @@ pub fn find_measuring_points(
     distance_between_points: f64,
     matrix: &DepthMatrix,
 ) -> Vec<(usize, usize)> {
-
     let mut measuring_points: Vec<(usize, usize)> = Vec::new();
     let mut current_point = &path[0];
     let mut distance_progress: f64 = 0.0;
@@ -57,7 +56,7 @@ fn calculate_effective_measurement_distance(
 #[cfg(test)]
 mod tests {
     use super::*;
- 
+
     fn matriz_simple(width: usize, height: usize) -> DepthMatrix {
         // size_x=size_y=1.0 -> cada pixel equivale a 1 metro, asi las
         // distancias en los tests son faciles de calcular a mano.
@@ -72,20 +71,20 @@ mod tests {
             projection: String::new(),
         }
     }
- 
+
     #[test]
     fn toma_un_punto_cada_distancia_pedida() {
         let matrix = matriz_simple(20, 5);
 
         // linea recta de (0,0) a (10,0): un punto por pixel
         let path: Vec<(usize, usize)> = (0..=10).map(|x| (x, 0)).collect();
- 
+
         let puntos = find_measuring_points(&path, 5.0, &matrix);
- 
+
         // primer punto siempre entra, despues cada 5 metros: 0, 5, 10
         assert_eq!(puntos, vec![(0, 0), (5, 0), (10, 0)]);
     }
- 
+
     #[test]
     fn no_duplica_puntos_consecutivos_iguales() {
         let matrix = matriz_simple(20, 5);
@@ -93,15 +92,19 @@ mod tests {
         // el barco se queda "frenado" en el mismo pixel varias veces seguidas
         let mut path = vec![(0, 0), (0, 0), (0, 0)];
         path.extend((1..=5).map(|x| (x, 0)));
- 
+
         let puntos = find_measuring_points(&path, 1.0, &matrix);
- 
+
         // no debe haber dos elementos consecutivos iguales
         for ventana in puntos.windows(2) {
-            assert_ne!(ventana[0], ventana[1], "se colaron puntos duplicados: {:?}", puntos);
+            assert_ne!(
+                ventana[0], ventana[1],
+                "se colaron puntos duplicados: {:?}",
+                puntos
+            );
         }
     }
- 
+
     #[test]
     fn distancia_entre_puntos_es_la_euclidea_en_metros() {
         let matrix = matriz_simple(20, 20);

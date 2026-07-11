@@ -4,11 +4,11 @@ use std::thread::JoinHandle;
 mod utils;
 use utils::{config_loader::load_settings, helpers::create_dirs};
 mod requests;
-use requests::handler::{create_server};
+use requests::handler::create_server;
 mod threads;
-use threads::creators::{create_request_thread, create_cli_thread, create_logger_thread};
+use threads::creators::{create_cli_thread, create_logger_thread, create_request_thread};
 mod structs;
-use structs::filecache::{FileCache};
+use structs::filecache::FileCache;
 mod db;
 use db::{engine::DBEngine, queries::professor};
 mod helpers;
@@ -19,7 +19,6 @@ use crate::logging::structs::ThreadMessage;
 /// (base de datos y cache detrás de `Arc<Mutex>`), levanta el servidor HTTP y atiende cada
 /// request entrante en su propio hilo, además de un hilo para el CLI.
 fn main() {
-
     // Intentamos cargar la config y transformamos en un recurso compartido.
     let settings = match load_settings() {
         Ok(config) => Arc::new(config),
@@ -39,7 +38,7 @@ fn main() {
 
     // Genero el thread que se encarga de loggear.
     let (tx, rx) = mpsc::channel::<ThreadMessage>();
-    threads.push(create_logger_thread(rx,  Arc::clone(&settings)));
+    threads.push(create_logger_thread(rx, Arc::clone(&settings)));
 
     // Levantamos la DB y aplicamos el schema
     // Ademas, si corresponde, actualizamos la pass del Admin
@@ -77,14 +76,20 @@ fn main() {
     threads.push(create_cli_thread(settings.port));
 
     // Escuchamos conexiones nuevas y ante cada una
-        // Clonamos las estrucutas a ompartir
-        // Levamantamos un hilo de ejecucion.
+    // Clonamos las estrucutas a ompartir
+    // Levamantamos un hilo de ejecucion.
     for request in server.incoming_requests() {
         let settings_clone = Arc::clone(&settings);
         let cache_clone = Arc::clone(&cache);
         let db_clone = Arc::clone(&db_mutex);
         let tx_clone = tx.clone();
-        threads.push(create_request_thread(request, cache_clone, settings_clone, db_clone, tx_clone));
+        threads.push(create_request_thread(
+            request,
+            cache_clone,
+            settings_clone,
+            db_clone,
+            tx_clone,
+        ));
     }
 
     // Esperamos a que hagan JOIN todos los hilos en ejecuion.

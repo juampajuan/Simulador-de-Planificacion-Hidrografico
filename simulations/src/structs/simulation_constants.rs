@@ -3,7 +3,6 @@
 /// `echosounder` (propiedades del instrumento) y `environment` (propiedades
 /// del ambiente/agua, como la marea, que no tienen que ver con la sonda).
 
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SimulationConstants {
     pub echosounder: EchosounderConstants,

@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 // Centraliza acá los parámetros y respuestas que viajan entre procesos para no
 // duplicar las mismas estructuras en cada crate.
 
-
 /// Tipo de corrección GNSS aplicada al posicionamiento del recorrido:
 /// sin corrección, DGPS (submétrica) o por fase (la más precisa).
 #[repr(i64)]
@@ -55,14 +54,13 @@ impl TryFrom<i64> for Transport {
     }
 }
 
-
 /// Modo de la ecosonda: monohaz mide un punto por pulso, multihaz mide una franja.
 #[repr(i64)]
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Default)]
 pub enum EcosondaMode {
     #[default]
     Monohaz = 0,
-    Multihaz = 1,      
+    Multihaz = 1,
 }
 
 // Metodo para obtenerlo del INTEGER de la DB.
@@ -72,7 +70,7 @@ impl TryFrom<i64> for EcosondaMode {
     fn try_from(value: i64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(EcosondaMode::Monohaz),
-            1 => Ok(EcosondaMode::Multihaz), 
+            1 => Ok(EcosondaMode::Multihaz),
             _ => Err(()),
         }
     }
@@ -90,7 +88,7 @@ pub struct PathParameters {
 /// Configuración completa de la ecosonda: modo, apertura, rango de profundidad,
 /// intervalo de pulso, frecuencia, potencia, ganancia, umbral de detección y
 /// velocidad del sonido. Son las perillas que ajusta el alumno antes de medir.
-#[derive(Debug, Serialize, Deserialize, Clone,Copy, PartialEq, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Default)]
 pub struct EchosounderParameters {
     pub mode: EcosondaMode,
     pub angle: f64,
@@ -125,7 +123,7 @@ pub struct StudentMeasuringParameters {
 }
 
 /// Resultado de una simulación listo para mostrar en el front.
-/// Almacena los metadatos de las profundidades calculadas y las rutas 
+/// Almacena los metadatos de las profundidades calculadas y las rutas
 /// relativas a los archivos de imágenes físicas guardados en el servidor.
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct SimulationResponse {

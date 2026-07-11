@@ -1,6 +1,6 @@
-use sqlite::State;
 use crate::db::engine::DBEngine;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use sqlite::State;
 
 // Esto se podria mover a los structs. Y va a haber para cada tipo
 #[derive(Serialize, Clone)] // Agregamos Clone por comodidad
@@ -26,12 +26,11 @@ pub(crate) fn create_student(
     project_id: i64,
     professor_id: i64,
 ) -> Result<(), sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         INSERT INTO students(code, name, project_id, professor_id)
         VALUES(?, ?, ?, ?)
-        "
+        ",
     )?;
 
     statement.bind((1, code))?;
@@ -48,14 +47,13 @@ pub(crate) fn create_student(
 pub(crate) fn delete_student(
     db: &DBEngine,
     id: i64,
-    professor_id: i64
+    professor_id: i64,
 ) -> Result<bool, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         DELETE FROM students
         WHERE id = ? and professor_id = ?;
-        "
+        ",
     )?;
 
     statement.bind((1, id))?;
@@ -71,13 +69,12 @@ pub(crate) fn verify_code(
     db: &DBEngine,
     code: &str,
 ) -> Result<Option<(i64, String)>, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         SELECT id, name
         FROM students
         WHERE code = ?
-        "
+        ",
     )?;
 
     statement.bind((1, code))?;
@@ -130,13 +127,12 @@ pub(crate) fn update_student(
     project_id: i64,
     professor_id: i64,
 ) -> Result<bool, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         UPDATE students
         SET name = ?, project_id = ?
         WHERE id = ? AND professor_id = ?
-        "
+        ",
     )?;
 
     statement.bind((1, name))?;
@@ -174,14 +170,11 @@ pub(crate) fn get_student_by_id(
 
 /// Suma uno al contador de intentos de un alumno (se llama al correr una simulación).
 /// Devuelve `true` si actualizó alguna fila.
-pub fn increment_attempts(
-    db: &DBEngine,
-    student_id: i64,
-) -> Result<bool, sqlite::Error> {
+pub fn increment_attempts(db: &DBEngine, student_id: i64) -> Result<bool, sqlite::Error> {
     let query = "UPDATE students SET attempts = attempts + 1 WHERE id = ?";
     let mut statement = db.run_query(query)?;
     statement.bind((1, student_id))?;
-    
+
     statement.next()?;
     Ok(db.connection.change_count() > 0)
 }

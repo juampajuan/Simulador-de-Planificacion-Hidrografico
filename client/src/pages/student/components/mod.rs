@@ -1,10 +1,10 @@
+pub mod depthcolors;
+pub mod echosounder;
+pub mod history;
 pub mod img_viewer;
+pub mod info;
+pub mod mapback;
+pub mod measure_params;
 pub mod parameters_cont;
 pub mod path_params;
-pub mod measure_params;
 pub mod transport;
-pub mod echosounder;
-pub mod info;
-pub mod depthcolors;
-pub mod mapback;
-pub mod history;

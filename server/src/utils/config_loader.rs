@@ -1,7 +1,7 @@
+use crate::structs::settings::{ConfigValue, Settings};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::structs::settings::{Settings, ConfigValue};
 
 /// Carga la configuración desde `config.toml`: abre el archivo, lo parsea y construye
 /// los `Settings`. Devuelve Err si no se puede abrir o si la config es inválida.
@@ -17,7 +17,6 @@ pub fn load_settings() -> Result<Settings, String> {
 
 /// Lee el archivo línea por línea y arma el mapa de claves/valores de configuración.
 fn file_parser(file: File) -> Result<HashMap<String, ConfigValue>, String> {
-
     let mut config: HashMap<String, ConfigValue> = HashMap::new();
     let reader = BufReader::new(file);
 
@@ -36,8 +35,7 @@ fn file_parser(file: File) -> Result<HashMap<String, ConfigValue>, String> {
 /// Parsea una línea de config con formato `clave = valor`. Ignora líneas vacías y comentarios
 /// (`#`), recorta comentarios al final de línea, e infiere el tipo del valor: string, int o float.
 /// Devuelve Err si la línea no tiene formato válido.
-fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<(), String> {
-
+fn parse_line(line: String, config: &mut HashMap<String, ConfigValue>) -> Result<(), String> {
     let line = line.trim();
 
     if line.is_empty() || line.starts_with('#') {
@@ -51,42 +49,28 @@ fn parse_line(line:String, config: &mut HashMap<String, ConfigValue>) -> Result<
 
     let (key, value) = match line.split_once('=') {
         Some(parts) => parts,
-        None =>  return Err("Archivo corrupto".to_string())
+        None => return Err("Archivo corrupto".to_string()),
     };
 
     let key = key.trim().to_string();
     let value = value.trim();
 
     if value.starts_with('"') && value.ends_with('"') {
+        let value = value.trim_matches('"').to_string();
 
-        let value = value
-            .trim_matches('"')
-            .to_string();
-
-        config.insert(
-            key,
-            ConfigValue::String(value)
-        );
+        config.insert(key, ConfigValue::String(value));
 
         return Ok(());
     }
- 
-    if let Ok(number) = value.parse::<i32>() {
 
-        config.insert(
-            key,
-            ConfigValue::Int(number)
-        );
+    if let Ok(number) = value.parse::<i32>() {
+        config.insert(key, ConfigValue::Int(number));
 
         return Ok(());
     }
 
     if let Ok(number) = value.parse::<f64>() {
-
-        config.insert(
-            key,
-            ConfigValue::Float(number)
-        );
+        config.insert(key, ConfigValue::Float(number));
 
         return Ok(());
     }

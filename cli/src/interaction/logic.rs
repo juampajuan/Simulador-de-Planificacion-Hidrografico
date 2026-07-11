@@ -1,12 +1,11 @@
-use reqwest::blocking::Client;
-use crate::requests;
 use super::print;
+use crate::requests;
+use reqwest::blocking::Client;
 use std::env;
 
 /// Realiza el manejo logico del menu
 // Toma un input y ejecuta el metodo que corresponde.
-pub fn menu(host:&str, client: &Client) {
-
+pub fn menu(host: &str, client: &Client) {
     let input = match print::input("> ") {
         Ok(input) => input,
         Err(err) => {
@@ -18,33 +17,25 @@ pub fn menu(host:&str, client: &Client) {
     let args: Vec<&str> = input.split_whitespace().collect();
 
     match args.as_slice() {
-        ["create", user, pass] => {
-            match requests::create_user(client, host, user, pass) {
-                Ok(response) => println!("{}", response),
-                Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
-            }
-        }
+        ["create", user, pass] => match requests::create_user(client, host, user, pass) {
+            Ok(response) => println!("{}", response),
+            Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err),
+        },
 
-        ["newpass", user, pass] => {
-            match requests::change_pass(client, host, user, pass) {
-                Ok(response) => println!("{}", response),
-                Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
-            }
-        }
+        ["newpass", user, pass] => match requests::change_pass(client, host, user, pass) {
+            Ok(response) => println!("{}", response),
+            Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err),
+        },
 
-        ["closeall"] => {
-            match requests::close_all(client, host) {
-                Ok(response) => println!("{}", response),
-                Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
-            }
-        }
+        ["closeall"] => match requests::close_all(client, host) {
+            Ok(response) => println!("{}", response),
+            Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err),
+        },
 
-        ["cleanfiles"] => {
-            match requests::clean_files(client, host) {
-                Ok(response) => println!("{}", response),
-                Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err)
-            }
-        }
+        ["cleanfiles"] => match requests::clean_files(client, host) {
+            Ok(response) => println!("{}", response),
+            Err(err) => eprintln!("\x1b[31mError:\x1b[37m {}\x1b[0m", err),
+        },
 
         ["help"] | ["h"] | ["HELP"] | ["H"] => {
             print::print_help();
@@ -54,10 +45,9 @@ pub fn menu(host:&str, client: &Client) {
             print::unknown_command();
         }
     }
-    
 }
 
-/// Recibe y procesa los argumentos que recibe al ejecutarlo standalone 
+/// Recibe y procesa los argumentos que recibe al ejecutarlo standalone
 pub fn get_args() -> Option<(String, String)> {
     let mut args = env::args().skip(1);
 

@@ -18,7 +18,9 @@ pub fn print_banner() {
         |___/___|_|  |_|\\___/|____/_/ \\_\\___/ \\___/|_|_\\ |_||_|___|___/|_|_\\\\___/ \\___|_|_\\/_/ \\_\\_| |___\\___\\___/   \\___|____|___|\n\
         {RESET}"
     );
-    println!("Bienvenido al CLI del simulador. Este permite añadir docentes y restaurar contraseñas.");
+    println!(
+        "Bienvenido al CLI del simulador. Este permite añadir docentes y restaurar contraseñas."
+    );
 }
 
 /// Mensaje para comando desconocido
@@ -34,25 +36,17 @@ pub fn unknown_command() {
 /// Imprime una guia/ayuda memoria de los metodos disponibles.
 pub fn print_help() {
     let commands = vec![
-        (
-            "Crear un nuevo usuario.",
-            "create",
-            "<username> <pass>"
-        ),
+        ("Crear un nuevo usuario.", "create", "<username> <pass>"),
         (
             "Cambiar contraseña de usuario.",
             "newpass",
-            "<username> <newpass>"
+            "<username> <newpass>",
         ),
-        (
-            "Cerrar todas las sesiones.",
-            "closeall",
-            ""
-        ),
+        ("Cerrar todas las sesiones.", "closeall", ""),
         (
             "Borra las imagenes que ya no esten asociadas a ningun proyecto o alumno.",
             "cleanfiles",
-            ""
+            "",
         ),
     ];
 
@@ -67,9 +61,7 @@ fn print_command(description: &str, command: &str, params: &str) {
     println!(
         "{BLUE}{}{RESET}\n\
          └─ {CYAN}{}{RESET} {MAGENTA}{}{RESET}\n",
-        description,
-        command,
-        params
+        description, command, params
     );
 }
 

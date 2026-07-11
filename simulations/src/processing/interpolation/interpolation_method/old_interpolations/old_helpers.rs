@@ -1,6 +1,5 @@
-use kiddo::KdTree;
 use crate::structs::depth_matrix::DepthMatrix;
-
+use kiddo::KdTree;
 
 // ------------------------------------------------------------
 //  Viejos helpers para las interpolaciones viejas, no se usa
@@ -54,7 +53,6 @@ pub fn representative_point_for_segment(
 
     let (middle_x, middle_y) = segment[chosen_index];
 
-
     (middle_x, middle_y, matrix[middle_y][middle_x])
 }
 
@@ -66,8 +64,8 @@ pub fn reduce_measuring_points(
     cell_size: usize,
 ) -> (Vec<(usize, usize)>, Vec<Vec<f64>>) {
     let no_data = geotiff.no_data.unwrap_or(f64::MAX);
-    let height  = geotiff.height;
-    let width   = geotiff.width;
+    let height = geotiff.height;
+    let width = geotiff.width;
 
     let mut new_matrix: Vec<Vec<f64>> = vec![vec![0.0; width]; height];
     let mut new_points: Vec<(usize, usize)> = Vec::new();
@@ -76,7 +74,7 @@ pub fn reduce_measuring_points(
     // si dos puntos consecutivos dentro de una celda están más de 3×
     // la mediana del espaciado global, son pasadas distintas.
     let median_spacing = median_consecutive_spacing(measuring_points);
-    let gap_threshold  = median_spacing * 3.0;
+    let gap_threshold = median_spacing * 3.0;
 
     let n_cells_y = height.div_ceil(cell_size);
     let n_cells_x = width.div_ceil(cell_size);
@@ -91,7 +89,10 @@ pub fn reduce_measuring_points(
             let points_in_cell: Vec<(usize, usize)> = measuring_points
                 .iter()
                 .filter(|&&(px, py)| {
-                    px >= x0 && px < x1 && py >= y0 && py < y1
+                    px >= x0
+                        && px < x1
+                        && py >= y0
+                        && py < y1
                         && matrix[py][px] != 0.0
                         && matrix[py][px] != no_data
                 })
@@ -109,13 +110,17 @@ pub fn reduce_measuring_points(
                 let (prev_x, prev_y) = consecutive_pair[0];
                 let (next_x, next_y) = consecutive_pair[1];
 
-                let dx           = next_x as f64 - prev_x as f64;
-                let dy           = next_y as f64 - prev_y as f64;
+                let dx = next_x as f64 - prev_x as f64;
+                let dy = next_y as f64 - prev_y as f64;
                 let gap_distance = (dx * dx + dy * dy).sqrt();
 
                 if gap_distance > gap_threshold {
                     let (rep_x, rep_y, rep_depth) = representative_point_for_segment(
-                        &current_segment, matrix, cell_row, cell_col, segment_index,
+                        &current_segment,
+                        matrix,
+                        cell_row,
+                        cell_col,
+                        segment_index,
                     );
                     new_matrix[rep_y][rep_x] = rep_depth;
                     new_points.push((rep_x, rep_y));
@@ -129,7 +134,11 @@ pub fn reduce_measuring_points(
 
             // Último tramo
             let (rep_x, rep_y, rep_depth) = representative_point_for_segment(
-                &current_segment, matrix, cell_row, cell_col, segment_index,
+                &current_segment,
+                matrix,
+                cell_row,
+                cell_col,
+                segment_index,
             );
             new_matrix[rep_y][rep_x] = rep_depth;
             new_points.push((rep_x, rep_y));
@@ -152,9 +161,9 @@ pub fn build_kdtree(
     matrix: &[Vec<f64>],
     no_data: f64,
 ) -> (KdTree<f64, 2>, Vec<f64>, Vec<usize>) {
-    let mut kdtree:  KdTree<f64, 2> = KdTree::new();
-    let mut values:  Vec<f64>       = Vec::new();
-    let mut indices: Vec<usize>     = Vec::new();
+    let mut kdtree: KdTree<f64, 2> = KdTree::new();
+    let mut values: Vec<f64> = Vec::new();
+    let mut indices: Vec<usize> = Vec::new();
 
     for (idx, point) in measuring_points.iter().enumerate() {
         let depth = matrix[point.1][point.0];

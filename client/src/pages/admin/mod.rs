@@ -1,8 +1,8 @@
+use crate::components::root::Root;
+use crate::router::Route;
+use lucide_yew::{FolderOpen, Users};
 use yew::prelude::*;
 use yew_router::prelude::*;
-use crate::router::Route;
-use crate::components::root::{Root};
-use lucide_yew::{FolderOpen, Users};
 pub mod sections;
 
 #[derive(Properties, PartialEq)]
@@ -13,7 +13,6 @@ pub struct LayoutProps {
 /// Layout del panel de admin: sidebar de navegación + el contenido de la sección activa.
 #[function_component(AdminLayout)]
 pub fn admin_layout(props: &LayoutProps) -> Html {
-     
     html! {
         <Root title={"Panel del simulador"}>
             <div class="
@@ -29,12 +28,11 @@ pub fn admin_layout(props: &LayoutProps) -> Html {
 
                 <div class="w-full p-2 h-full space-y-2">
                     { for props.children.iter() }
-                </div>               
+                </div>
             </div>
         </Root>
     }
 }
-
 
 /// Barra lateral con los links a las secciones (Proyectos, Estudiantes)
 #[function_component(Sidebar)]

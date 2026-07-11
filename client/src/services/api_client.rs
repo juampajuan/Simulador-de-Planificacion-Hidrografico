@@ -1,12 +1,12 @@
-use yew::prelude::UseStateHandle;
-use web_sys::{RequestInit, RequestMode, Response, Url, Blob};
-use js_sys::{Function, Reflect, Uint8Array, Array};
-use wasm_bindgen::prelude::*;
+use js_sys::{Array, Function, Reflect, Uint8Array};
 use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
+use web_sys::{Blob, RequestInit, RequestMode, Response, Url};
+use yew::prelude::UseStateHandle;
 
 pub fn get_window_fetch(
-    mensaje: Option<&UseStateHandle<String>>, 
-    loading: Option<&UseStateHandle<bool>>
+    mensaje: Option<&UseStateHandle<String>>,
+    loading: Option<&UseStateHandle<bool>>,
 ) -> Option<web_sys::Window> {
     match web_sys::window() {
         Some(w) => Some(w),
@@ -40,12 +40,12 @@ pub fn send_native_request(
     if let Some(ref load) = loading {
         load.set(true);
     }
-    
+
     let opts = RequestInit::new();
     opts.set_method(method);
     opts.set_credentials(web_sys::RequestCredentials::Include);
     opts.set_mode(RequestMode::Cors);
-    
+
     if let Some(body) = body_json {
         let headers = web_sys::Headers::new().unwrap();
         headers.append("Content-Type", "application/json").unwrap();
@@ -63,10 +63,12 @@ pub fn send_native_request(
     let msg_err = mensaje.clone();
     let load_err = loading.clone();
     let on_error = Closure::wrap(Box::new(move |_err: JsValue| {
-        if let Some(ref msg) = msg_err { 
-            msg.set("Error de conexión o datos inválidos".to_string()); 
+        if let Some(ref msg) = msg_err {
+            msg.set("Error de conexión o datos inválidos".to_string());
         }
-        if let Some(ref load) = load_err { load.set(false); }
+        if let Some(ref load) = load_err {
+            load.set(false);
+        }
     }) as Box<dyn FnMut(JsValue)>);
 
     let msg_resp = mensaje.clone();
@@ -79,34 +81,41 @@ pub fn send_native_request(
         let msg = msg_resp.clone();
         let load = load_resp.clone();
         let status = response.status();
-        
+
         if status == 200 {
             let mut cb_container = on_success_opt.take();
             let text_promise = response.text().unwrap();
-            
+
             let on_text_ready = Closure::wrap(Box::new(move |text: JsValue| {
-                if let Some(ref l) = load { l.set(false); }
-                if let Some(txt_str) = text.as_string() 
-                    && let Some(cb) = cb_container.take() {
-                        cb(txt_str); 
+                if let Some(ref l) = load {
+                    l.set(false);
+                }
+                if let Some(txt_str) = text.as_string()
+                    && let Some(cb) = cb_container.take()
+                {
+                    cb(txt_str);
                 }
             }) as Box<dyn FnMut(JsValue)>);
 
-            let then_fn: Function = Reflect::get(&text_promise, &JsValue::from_str("then")).unwrap().dyn_into().unwrap();
+            let then_fn: Function = Reflect::get(&text_promise, &JsValue::from_str("then"))
+                .unwrap()
+                .dyn_into()
+                .unwrap();
             let _ = then_fn.call1(&text_promise, on_text_ready.as_ref());
             on_text_ready.forget();
         } else {
-            if let Some(ref l) = load { l.set(false); }
+            if let Some(ref l) = load {
+                l.set(false);
+            }
 
             if (status == 401 || status == 403)
                 && let Some(win) = web_sys::window()
+                && let Ok(Some(storage)) = win.local_storage()
             {
-                if let Ok(Some(storage)) = win.local_storage() {
-                    let _ = storage.remove_item("group_or_user_name");
-                    let _ = storage.remove_item("user_role");
-                }
+                let _ = storage.remove_item("group_or_user_name");
+                let _ = storage.remove_item("user_role");
             }
-            
+
             if let Some(cb_err) = on_error_opt.take() {
                 // Delegamos el estado al callback para que tu LoginPage muestre el mensaje correspondiente
                 cb_err(status);
@@ -117,9 +126,17 @@ pub fn send_native_request(
     }) as Box<dyn FnMut(JsValue)>);
 
     // function y reflect, para manejar callbacks y .then
-    let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then")).unwrap().dyn_into().unwrap();
-    let promise_2 = then_fn.call1(&request_promise, on_success.as_ref()).unwrap();
-    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch")).unwrap().dyn_into().unwrap();
+    let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then"))
+        .unwrap()
+        .dyn_into()
+        .unwrap();
+    let promise_2 = then_fn
+        .call1(&request_promise, on_success.as_ref())
+        .unwrap();
+    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch"))
+        .unwrap()
+        .dyn_into()
+        .unwrap();
     let _ = catch_fn.call1(&promise_2, on_error.as_ref());
 
     on_success.forget();
@@ -169,9 +186,17 @@ pub fn send_native_formdata_request(
         }
     }) as Box<dyn FnMut(JsValue)>);
 
-    let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then")).unwrap().dyn_into().unwrap();
-    let promise_2 = then_fn.call1(&request_promise, on_success.as_ref()).unwrap();
-    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch")).unwrap().dyn_into().unwrap();
+    let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then"))
+        .unwrap()
+        .dyn_into()
+        .unwrap();
+    let promise_2 = then_fn
+        .call1(&request_promise, on_success.as_ref())
+        .unwrap();
+    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch"))
+        .unwrap()
+        .dyn_into()
+        .unwrap();
     let _ = catch_fn.call1(&promise_2, on_error.as_ref());
 
     on_success.forget();
@@ -191,7 +216,7 @@ pub fn send_native_blob_request(
     opts.set_method("POST");
     opts.set_credentials(web_sys::RequestCredentials::Include);
     opts.set_mode(RequestMode::Cors);
-    
+
     let headers = web_sys::Headers::new().unwrap();
     headers.append("Content-Type", "application/json").unwrap();
     opts.set_headers(&headers);
@@ -224,20 +249,24 @@ pub fn send_native_blob_request(
             let on_buffer_ready = Closure::wrap(Box::new(move |buffer: JsValue| {
                 let uint8_array = Uint8Array::new(&buffer);
                 let array = Array::of1(&uint8_array.buffer());
-                
-                if let Ok(blob) = Blob::new_with_u8_array_sequence(&array) 
-                    && let Ok(url) = Url::create_object_url_with_blob(&blob) {
-                        if let Some(old_url) = (*img).clone() {
-                            let _ = Url::revoke_object_url(&old_url);
-                        }
-                        img.set(Some(url));
-                        msg.set(String::new());
+
+                if let Ok(blob) = Blob::new_with_u8_array_sequence(&array)
+                    && let Ok(url) = Url::create_object_url_with_blob(&blob)
+                {
+                    if let Some(old_url) = (*img).clone() {
+                        let _ = Url::revoke_object_url(&old_url);
+                    }
+                    img.set(Some(url));
+                    msg.set(String::new());
                 }
-                
+
                 load.set(false);
             }) as Box<dyn FnMut(JsValue)>);
 
-            let then_fn: Function = Reflect::get(&buffer_promise, &JsValue::from_str("then")).unwrap().dyn_into().unwrap();
+            let then_fn: Function = Reflect::get(&buffer_promise, &JsValue::from_str("then"))
+                .unwrap()
+                .dyn_into()
+                .unwrap();
             let _ = then_fn.call1(&buffer_promise, on_buffer_ready.as_ref());
             on_buffer_ready.forget();
         } else {
@@ -246,9 +275,17 @@ pub fn send_native_blob_request(
         }
     }) as Box<dyn FnMut(JsValue)>);
 
-    let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then")).unwrap().dyn_into().unwrap();
-    let promise_2 = then_fn.call1(&request_promise, on_success.as_ref()).unwrap();
-    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch")).unwrap().dyn_into().unwrap();
+    let then_fn: Function = Reflect::get(&request_promise, &JsValue::from_str("then"))
+        .unwrap()
+        .dyn_into()
+        .unwrap();
+    let promise_2 = then_fn
+        .call1(&request_promise, on_success.as_ref())
+        .unwrap();
+    let catch_fn: Function = Reflect::get(&promise_2, &JsValue::from_str("catch"))
+        .unwrap()
+        .dyn_into()
+        .unwrap();
     let _ = catch_fn.call1(&promise_2, on_error.as_ref());
 
     on_success.forget();

@@ -1,6 +1,6 @@
-use kiddo::{NearestNeighbour, SquaredEuclidean};
 use crate::processing::interpolation::interpolation_method::old_interpolations::old_helpers::build_kdtree;
-use crate::{structs::depth_matrix::DepthMatrix};
+use crate::structs::depth_matrix::DepthMatrix;
+use kiddo::{NearestNeighbour, SquaredEuclidean};
 
 // ------------------------------------------------------------
 //  Implementacion Vieja de Kriging, no se usa
@@ -38,7 +38,9 @@ fn gaussian_elimination(mat_a: &[Vec<f64>], vec_b: &[f64]) -> Option<Vec<f64>> {
         }
 
         for row in 0..n {
-            if row == col { continue; }
+            if row == col {
+                continue;
+            }
             let factor = aug[row][col];
             #[allow(clippy::needless_range_loop)]
             for j in col..=n {
@@ -69,7 +71,7 @@ fn build_semivariogram_system(
     let mut vec_b = vec![1.0f64; n + 1];
 
     for row in 0..n {
-        let p_row      = measuring_points[indices[neighbours[row].item as usize]];
+        let p_row = measuring_points[indices[neighbours[row].item as usize]];
         let coords_row = [p_row.0 as f64, p_row.1 as f64];
 
         vec_b[row] = semivariograma(neighbours[row].distance);
@@ -78,9 +80,9 @@ fn build_semivariogram_system(
             mat_a[row][col] = if row == col {
                 0.0
             } else {
-                let p_col   = measuring_points[indices[neighbours[col].item as usize]];
+                let p_col = measuring_points[indices[neighbours[col].item as usize]];
                 let dist_sq = (coords_row[0] - p_col.0 as f64).powi(2)
-                            + (coords_row[1] - p_col.1 as f64).powi(2);
+                    + (coords_row[1] - p_col.1 as f64).powi(2);
                 semivariograma(dist_sq)
             };
         }
@@ -103,9 +105,7 @@ fn compute_kriging(
             .map(|k| weights[k] * values[neighbours[k].item as usize])
             .sum()
     } else {
-        let sum: f64 = (0..n)
-            .map(|k| values[neighbours[k].item as usize])
-            .sum();
+        let sum: f64 = (0..n).map(|k| values[neighbours[k].item as usize]).sum();
         sum / n as f64
     }
 }
@@ -135,10 +135,7 @@ pub fn interpolation_kriging(
                 continue;
             }
 
-            let neighbours = kdtree.nearest_n::<SquaredEuclidean>(
-                &[i as f64, j as f64],
-                12,
-            );
+            let neighbours = kdtree.nearest_n::<SquaredEuclidean>(&[i as f64, j as f64], 12);
 
             if neighbours[0].distance == 0.0 {
                 result[j][i] = values[neighbours[0].item as usize];

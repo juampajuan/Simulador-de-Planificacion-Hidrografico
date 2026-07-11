@@ -1,21 +1,18 @@
-use kiddo::{NearestNeighbour, SquaredEuclidean};
 use crate::processing::interpolation::interpolation_method::old_interpolations::old_helpers::build_kdtree;
-use crate::{structs::depth_matrix::DepthMatrix};
+use crate::structs::depth_matrix::DepthMatrix;
+use kiddo::{NearestNeighbour, SquaredEuclidean};
 
 // ------------------------------------------------------------
 //  Implementacion Vieja de IDW, no se usa
 // ------------------------------------------------------------
 
-fn compute_idw(
-    neighbours: &Vec<NearestNeighbour<f64, u64>>,
-    values: &[f64],
-) -> f64 {
+fn compute_idw(neighbours: &Vec<NearestNeighbour<f64, u64>>, values: &[f64]) -> f64 {
     let mut weighted_sum = 0.0;
     let mut weight_total = 0.0;
 
     for neighbour in neighbours {
         let dist = neighbour.distance.sqrt();
-        let val  = values[neighbour.item as usize];
+        let val = values[neighbour.item as usize];
 
         if dist == 0.0 {
             return val;
@@ -26,7 +23,11 @@ fn compute_idw(
         weight_total += weight;
     }
 
-    if weight_total > 0.0 { weighted_sum / weight_total } else { 0.0 }
+    if weight_total > 0.0 {
+        weighted_sum / weight_total
+    } else {
+        0.0
+    }
 }
 
 pub fn interpolation_idw_kdtrees(
@@ -54,10 +55,7 @@ pub fn interpolation_idw_kdtrees(
                 continue;
             }
 
-            let neighbours = kdtree.nearest_n::<SquaredEuclidean>(
-                &[i as f64, j as f64],
-                8,
-            );
+            let neighbours = kdtree.nearest_n::<SquaredEuclidean>(&[i as f64, j as f64], 8);
 
             result[j][i] = compute_idw(&neighbours, &values);
         }

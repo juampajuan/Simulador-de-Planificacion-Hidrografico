@@ -1,11 +1,11 @@
-mod router;
-mod pages;
 mod components;
+mod pages;
+mod router;
 use crate::components::no_responsive::NoResponsive;
-mod services;
 mod parser;
-mod structs;
 mod protected_route;
+mod services;
+mod structs;
 use yew::prelude::*;
 
 #[function_component(App)]

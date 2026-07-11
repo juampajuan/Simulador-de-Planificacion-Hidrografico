@@ -1,4 +1,3 @@
-
 /// Posibles tipos de LOG
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LogType {
@@ -12,8 +11,8 @@ impl LogType {
     pub fn level(&self) -> i32 {
         match self {
             LogType::Debug => 0,
-            LogType::Info  => 1,
-            LogType::Warn  => 2,
+            LogType::Info => 1,
+            LogType::Warn => 2,
             LogType::Error => 3,
         }
     }
@@ -21,8 +20,8 @@ impl LogType {
     pub fn to_string(&self) -> &str {
         match self {
             LogType::Debug => "DEBUG",
-            LogType::Info  => "INFO",
-            LogType::Warn  => "WARN",
+            LogType::Info => "INFO",
+            LogType::Warn => "WARN",
             LogType::Error => "ERROR",
         }
     }
@@ -34,5 +33,5 @@ impl LogType {
 #[derive(Debug)]
 pub struct ThreadMessage {
     pub log_type: LogType,
-    pub msg: String
+    pub msg: String,
 }

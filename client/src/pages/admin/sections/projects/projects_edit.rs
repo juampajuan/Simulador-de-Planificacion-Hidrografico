@@ -1,14 +1,13 @@
-use yew::prelude::*;
-use crate::structs::project::Project;
-use lucide_yew::Save;
 use crate::pages::admin::sections::projects::projects_fields::ProjectFormFields;
 use crate::pages::admin::sections::projects::projects_params_form::ProjectParamsForm;
-
+use crate::structs::project::Project;
+use lucide_yew::Save;
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct ProjectEditProps {
     pub project_state: Project,
-    pub projects_state: UseStateHandle<Vec<Project>>, 
+    pub projects_state: UseStateHandle<Vec<Project>>,
     pub on_save: Callback<Project>,
 }
 
@@ -18,7 +17,7 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
     let form_state = use_state(|| ProjectFormFields::from_project(&props.project_state));
     let error_msg = use_state(String::new);
 
-    let is_exam = props.project_state.exam_mode; 
+    let is_exam = props.project_state.exam_mode;
 
     let on_submit = {
         let on_save = props.on_save.clone();
@@ -27,20 +26,44 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
         let error_msg = error_msg.clone();
 
         Callback::from(move |_| {
-            let b = match fields.budget.parse::<f64>() { Ok(n) => n, Err(_) => { error_msg.set("Presupuesto inválido".into()); return; }};
-            let mind = match fields.min_depth.parse::<f64>() { Ok(n) => n, Err(_) => { error_msg.set("Prof. mínima inválida".into()); return; }};
-            let maxd = match fields.max_depth.parse::<f64>() { Ok(n) => n, Err(_) => { error_msg.set("Prof. máxima inválida".into()); return; }};
-            if mind >= maxd { error_msg.set("La profundidad máxima debe ser mayor a la mínima".to_string()); return; }
-            
-            let attempts = match fields.attempts_limit.parse::<i64>() { 
+            let b = match fields.budget.parse::<f64>() {
+                Ok(n) => n,
+                Err(_) => {
+                    error_msg.set("Presupuesto inválido".into());
+                    return;
+                }
+            };
+            let mind = match fields.min_depth.parse::<f64>() {
+                Ok(n) => n,
+                Err(_) => {
+                    error_msg.set("Prof. mínima inválida".into());
+                    return;
+                }
+            };
+            let maxd = match fields.max_depth.parse::<f64>() {
+                Ok(n) => n,
+                Err(_) => {
+                    error_msg.set("Prof. máxima inválida".into());
+                    return;
+                }
+            };
+            if mind >= maxd {
+                error_msg.set("La profundidad máxima debe ser mayor a la mínima".to_string());
+                return;
+            }
+
+            let attempts = match fields.attempts_limit.parse::<i64>() {
                 Ok(n) => {
                     if n <= 0 {
                         error_msg.set("El límite de intentos debe ser mayor a cero".to_string());
                         return;
                     }
                     n
-                } 
-                Err(_) => { error_msg.set("Intentos inválidos".into()); return; }
+                }
+                Err(_) => {
+                    error_msg.set("Intentos inválidos".into());
+                    return;
+                }
             };
 
             error_msg.set(String::new());
@@ -54,7 +77,7 @@ pub fn project_edit(props: &ProjectEditProps) -> Html {
                 geotiff_max_depth: maxd,
                 ..project_base.clone()
             };
-            updated_project.exam_mode = is_exam; 
+            updated_project.exam_mode = is_exam;
             on_save.emit(updated_project);
         })
     };

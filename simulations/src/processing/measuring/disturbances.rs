@@ -1,17 +1,22 @@
+use common::StudentMeasuringParameters;
 use common::Transport;
 use rand_distr::{Distribution, Normal};
-use common::StudentMeasuringParameters;
 
-use crate::{processing::measuring::calculate_distance_between_points, structs::{depth_matrix::DepthMatrix, measurement_type::{MeasurementsType, MeasurementsTypeWithError}, simulation_constants::{SimulationConstants, EnvironmentConstants}}};
+use crate::{
+    processing::measuring::calculate_distance_between_points,
+    structs::{
+        depth_matrix::DepthMatrix,
+        measurement_type::{MeasurementsType, MeasurementsTypeWithError},
+        simulation_constants::{EnvironmentConstants, SimulationConstants},
+    },
+};
 
 // ------------------------------------------------------------
 //  Tipos de respuesta
 // ------------------------------------------------------------
 
-
 type Point = (usize, usize);
 type MeasuredBeam = Vec<(Point, Option<f64>)>;
-
 
 // ------------------------------------------------------------
 //  Parámetros de perturbación pre-calculados
@@ -51,8 +56,15 @@ fn calculate_tide_levels(
 
     let levels = (0..n)
         .map(|i| {
-            let t = if n > 1 { (i as f64 / (n - 1) as f64) * duration_hours } else { 0.0 };
-            environment.tide_amplitude * (2.0 * std::f64::consts::PI * t / environment.tide_period_h + environment.tide_phase).sin()
+            let t = if n > 1 {
+                (i as f64 / (n - 1) as f64) * duration_hours
+            } else {
+                0.0
+            };
+            environment.tide_amplitude
+                * (2.0 * std::f64::consts::PI * t / environment.tide_period_h
+                    + environment.tide_phase)
+                    .sin()
         })
         .collect();
 
@@ -62,8 +74,8 @@ fn calculate_tide_levels(
 ///calcula un angulo de inclinacion basados en la velocidad y tipo de embarcacion
 fn get_inertial_angle_std(transport: Transport, speed: f64) -> f64 {
     let base_std = match transport {
-        Transport::Ship   => 1.0,
-        Transport::Boat   => 3.0,
+        Transport::Ship => 1.0,
+        Transport::Boat => 3.0,
         Transport::Launch => 5.0,
     };
     let speed_factor = 1.0 + (speed / 6.17);
@@ -80,12 +92,18 @@ fn calculate_disturbance_params(
     constants: &SimulationConstants,
 ) -> DisturbanceParams {
     DisturbanceParams {
-        tide_levels: calculate_tide_levels(mediciones_len, params, path, matrix, &constants.environment),
+        tide_levels: calculate_tide_levels(
+            mediciones_len,
+            params,
+            path,
+            matrix,
+            &constants.environment,
+        ),
         potency_value: match params.echo_sounder_parameters.transmited_potency as u32 {
-            25  => 150.0,
-            50  => 200.0,
+            25 => 150.0,
+            50 => 200.0,
             100 => 250.0,
-            _   => 200.0,
+            _ => 200.0,
         },
         gain_value: params.echo_sounder_parameters.gain,
         angle_std: get_inertial_angle_std(
@@ -95,14 +113,16 @@ fn calculate_disturbance_params(
     }
 }
 
-fn print_debug_log( params: &StudentMeasuringParameters,log_debug: &dyn Fn(&str)){
+fn print_debug_log(params: &StudentMeasuringParameters, log_debug: &dyn Fn(&str)) {
     if params.transport_parameters.uses_inertial_sensor {
         log_debug("Sensor inercial: usado por el alumno, no se aplica error de inclinacion.");
     } else {
         log_debug("Sensor inercial: no usado, se aplica error de inclinacion.");
     }
     if params.transport_parameters.uses_sound_profiler {
-        log_debug("Perfilador de sonido: usado por el alumno, no se aplica error de velocidad del sonido.");
+        log_debug(
+            "Perfilador de sonido: usado por el alumno, no se aplica error de velocidad del sonido.",
+        );
     } else {
         log_debug("Perfilador de sonido: no usado, se aplica error de velocidad del sonido.");
     }
@@ -126,26 +146,47 @@ pub fn apply_disturbances(
     constants: &SimulationConstants,
     log_debug: &dyn Fn(&str),
 ) -> MeasurementsTypeWithError {
-
     print_debug_log(params, log_debug);
-    
-    match mediciones {
 
+    match mediciones {
         MeasurementsType::Monohaz { measurements } => {
             log_debug("Aplicando errores a mediciones monohaz.");
-            let dp = calculate_disturbance_params(measurements.len(), params, path, matrix, constants);
-            log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
+            let dp =
+                calculate_disturbance_params(measurements.len(), params, path, matrix, constants);
+            log_debug(&format!(
+                "Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}",
+                dp.potency_value, dp.gain_value, dp.angle_std
+            ));
             MeasurementsTypeWithError::Monohaz {
-                measurements: apply_disturbances_monohaz(measurements, params, matrix, &dp, constants),
+                measurements: apply_disturbances_monohaz(
+                    measurements,
+                    params,
+                    matrix,
+                    &dp,
+                    constants,
+                ),
             }
         }
 
-        MeasurementsType::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
+        MeasurementsType::Multihaz {
+            central_measurments,
+            paralel_measurment_1,
+            paralel_measurment_2,
+        } => {
             log_debug("Aplicando errores a mediciones multihaz.");
             // Los tres pings son simultáneos: calculamos los parámetros una sola vez
             // usando la longitud de la lista central (todas tienen la misma cantidad).
-            let dp = calculate_disturbance_params(central_measurments.len(), params, path, matrix, constants);
-            log_debug(&format!("Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}", dp.potency_value, dp.gain_value, dp.angle_std));
+            let dp = calculate_disturbance_params(
+                central_measurments.len(),
+                params,
+                path,
+                matrix,
+                constants,
+            );
+            log_debug(&format!(
+                "Parametros de perturbacion calculados: potency_value={}, gain_value={}, angle_std (desviacion para sensor inercial)={}",
+                dp.potency_value, dp.gain_value, dp.angle_std
+            ));
 
             // Para multihaz aplicamos los errores en conjunto ping a ping, para que
             // central, izquierda y derecha compartan el mismo ángulo inercial y marea.
@@ -179,18 +220,22 @@ fn apply_disturbances_monohaz(
     dp: &DisturbanceParams,
     constants: &SimulationConstants,
 ) -> Vec<((usize, usize), Option<f64>)> {
+    mediciones
+        .into_iter()
+        .enumerate()
+        .map(|(i, (punto, p_ideal))| {
+            // 1. Sensor inercial
+            let (punto, p_ideal) = if params.transport_parameters.uses_inertial_sensor {
+                (punto, p_ideal)
+            } else {
+                apply_inertial_sensor_error(punto, matrix, dp.angle_std)
+            };
 
-    mediciones.into_iter().enumerate().map(|(i, (punto, p_ideal))| {
-        // 1. Sensor inercial
-        let (punto, p_ideal) = if params.transport_parameters.uses_inertial_sensor {
-            (punto, p_ideal)
-        } else {
-            apply_inertial_sensor_error(punto, matrix, dp.angle_std)
-        };
-
-        let optional_p = apply_single_measurement(i, punto, p_ideal, params, matrix, dp, constants);
-        (punto, optional_p)
-    }).collect()
+            let optional_p =
+                apply_single_measurement(i, punto, p_ideal, params, matrix, dp, constants);
+            (punto, optional_p)
+        })
+        .collect()
 }
 
 // ------------------------------------------------------------
@@ -207,17 +252,13 @@ fn apply_disturbances_multihaz(
     matrix: &DepthMatrix,
     dp: &DisturbanceParams,
     constants: &SimulationConstants,
-) -> (
-    MeasuredBeam,
-    MeasuredBeam,
-    MeasuredBeam,
-) {
+) -> (MeasuredBeam, MeasuredBeam, MeasuredBeam) {
     let mut result_central = Vec::with_capacity(central.len());
-    let mut result_izq     = Vec::with_capacity(izquierda.len());
-    let mut result_der     = Vec::with_capacity(derecha.len());
+    let mut result_izq = Vec::with_capacity(izquierda.len());
+    let mut result_der = Vec::with_capacity(derecha.len());
 
     for i in 0..central.len() {
-        let (punto_c, _)   = central[i];
+        let (punto_c, _) = central[i];
         let (punto_izq, _) = izquierda[i];
         let (punto_der, _) = derecha[i];
 
@@ -233,14 +274,25 @@ fn apply_disturbances_multihaz(
         };
 
         // Aplicamos los mismos ángulos a los tres puntos del ping
-        let (punto_c,   p_c)   = apply_inertial_angles(punto_c,   matrix, angulo_theta_x, angulo_theta_y);
-        let (punto_izq, p_izq) = apply_inertial_angles(punto_izq, matrix, angulo_theta_x, angulo_theta_y);
-        let (punto_der, p_der) = apply_inertial_angles(punto_der, matrix, angulo_theta_x, angulo_theta_y);
+        let (punto_c, p_c) = apply_inertial_angles(punto_c, matrix, angulo_theta_x, angulo_theta_y);
+        let (punto_izq, p_izq) =
+            apply_inertial_angles(punto_izq, matrix, angulo_theta_x, angulo_theta_y);
+        let (punto_der, p_der) =
+            apply_inertial_angles(punto_der, matrix, angulo_theta_x, angulo_theta_y);
 
         // Aplicamos el resto de los errores a cada punto por separado
-        result_central.push((punto_c,   apply_single_measurement(i, punto_c,   p_c,   params, matrix, dp, constants)));
-        result_izq.push((punto_izq, apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp, constants)));
-        result_der.push((punto_der, apply_single_measurement(i, punto_der, p_der, params, matrix, dp, constants)));
+        result_central.push((
+            punto_c,
+            apply_single_measurement(i, punto_c, p_c, params, matrix, dp, constants),
+        ));
+        result_izq.push((
+            punto_izq,
+            apply_single_measurement(i, punto_izq, p_izq, params, matrix, dp, constants),
+        ));
+        result_der.push((
+            punto_der,
+            apply_single_measurement(i, punto_der, p_der, params, matrix, dp, constants),
+        ));
     }
 
     (result_central, result_izq, result_der)
@@ -261,14 +313,20 @@ fn apply_single_measurement(
     constants: &SimulationConstants,
 ) -> Option<f64> {
     let echo = &params.echo_sounder_parameters;
- 
+
     // 2. Potencia y ganancia (se aplica siempre, sin el gate de PRI)
-    let optional_p =
-        apply_power_and_gain_noise(p_ideal, dp.potency_value, dp.gain_value, echo.absortion_coefficient, constants.echosounder.detection_threshold, constants.echosounder.max_gain);
- 
+    let optional_p = apply_power_and_gain_noise(
+        p_ideal,
+        dp.potency_value,
+        dp.gain_value,
+        echo.absortion_coefficient,
+        constants.echosounder.detection_threshold,
+        constants.echosounder.max_gain,
+    );
+
     // 3. Filtro de límites
     let optional_p = apply_limits_filter(optional_p, echo.min_limit, echo.max_limit);
- 
+
     match optional_p {
         None => None,
         Some(mut p) => {
@@ -276,19 +334,23 @@ fn apply_single_measurement(
             p = if params.transport_parameters.uses_sound_profiler {
                 p
             } else {
-                apply_sound_velocity_noise(p, echo.sound_speed, constants.environment.sound_velocity)
+                apply_sound_velocity_noise(
+                    p,
+                    echo.sound_speed,
+                    constants.environment.sound_velocity,
+                )
             };
- 
+
             // 5. Marea — mismo nivel para central, izquierda y derecha del mismo ping
             p = if params.transport_parameters.uses_mareograph {
                 p
             } else {
                 apply_tide_error(p, dp.tide_levels.as_ref(), i)
             };
- 
+
             // 6. Umbral
             p = apply_threshold_error(p, echo.threshold);
- 
+
             Some(p)
         }
     }
@@ -369,7 +431,11 @@ fn apply_inertial_sensor_error(
 /// Ejemplo si el min es 5m y el maximo es 10m, cualquier profundidad fuera de ese rango devolvera None
 fn apply_limits_filter(z: Option<f64>, min_limit: f64, max_limit: f64) -> Option<f64> {
     z.and_then(|p| {
-        if p >= min_limit && p <= max_limit { Some(p) } else { None }
+        if p >= min_limit && p <= max_limit {
+            Some(p)
+        } else {
+            None
+        }
     })
 }
 
@@ -404,8 +470,7 @@ pub fn apply_power_and_gain_noise(
     }
 }
 
-
-/// Si el alumno no utiliza un perfilador de sonido, 
+/// Si el alumno no utiliza un perfilador de sonido,
 /// la velocidad del agua tiene un error con respecto a la velocidad de la sonda
 fn apply_sound_velocity_noise(p: f64, v_alumno: f64, sound_velocity: f64) -> f64 {
     p * (v_alumno / sound_velocity)
@@ -422,7 +487,6 @@ fn apply_tide_error(p: f64, tide_levels: Option<&Vec<f64>>, index: usize) -> f64
 /// 50% = correcto, sin desplazamiento
 /// 10% = 10% más cerca, 90% = 10% más lejos
 pub fn apply_threshold_error(p: f64, threshold_percent: f64) -> f64 {
-    
     let factor = (threshold_percent - 50.0) / 400.0;
     p * (1.0 + factor)
 }
@@ -430,14 +494,14 @@ pub fn apply_threshold_error(p: f64, threshold_percent: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
- 
+
     #[test]
     fn con_mareografo_no_modifica_la_profundidad() {
         // tide_levels = None simula uses_mareograph = true (la marea se anula)
         let resultado = apply_tide_error(10.0, None, 0);
         assert_eq!(resultado, 10.0);
     }
- 
+
     #[test]
     fn sin_mareografo_suma_el_nivel_de_marea_del_indice() {
         let niveles = vec![0.5, -0.3, 1.2];
@@ -445,19 +509,22 @@ mod tests {
         assert_eq!(apply_tide_error(10.0, Some(&niveles), 1), 9.7);
         assert_eq!(apply_tide_error(10.0, Some(&niveles), 2), 11.2);
     }
- 
+
     #[test]
     fn umbral_50_por_ciento_no_desplaza_la_medicion() {
         // 50% es el caso "correcto".
         let resultado = apply_threshold_error(10.0, 50.0);
         assert!((resultado - 10.0).abs() < 1e-9);
     }
- 
+
     #[test]
     fn umbral_bajo_acerca_la_medicion_umbral_alto_la_aleja() {
         let cerca = apply_threshold_error(10.0, 10.0);
         let lejos = apply_threshold_error(10.0, 90.0);
-        assert!(cerca < 10.0, "con umbral 10% deberia acercarse, dio {cerca}");
+        assert!(
+            cerca < 10.0,
+            "con umbral 10% deberia acercarse, dio {cerca}"
+        );
         assert!(lejos > 10.0, "con umbral 90% deberia alejarse, dio {lejos}");
     }
 }

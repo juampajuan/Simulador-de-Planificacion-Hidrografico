@@ -1,5 +1,5 @@
-use crate::db::queries::auth;
 use crate::db::engine::DBEngine;
+use crate::db::queries::auth;
 use std::sync::{Arc, Mutex};
 
 /// Toma el lock de la DB y crea un token de sesión para el dueño dado.
@@ -15,30 +15,22 @@ pub fn create_token_locked(
             return Err(sqlite::Error {
                 code: None,
                 message: Some("Cannot lock db".to_string()),
-            })
+            });
         }
     };
 
-    auth::create_token(
-        &db_connection,
-        owner,
-        token,
-        expires_in_days,
-    )
+    auth::create_token(&db_connection, owner, token, expires_in_days)
 }
 
 /// Toma el lock de la DB y borra un token puntual (logout).
-pub fn delete_token_locked(
-    db: &Arc<Mutex<DBEngine>>,
-    token: &str,
-) -> Result<(), sqlite::Error> {
+pub fn delete_token_locked(db: &Arc<Mutex<DBEngine>>, token: &str) -> Result<(), sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
             return Err(sqlite::Error {
                 code: None,
                 message: Some("Cannot lock db".to_string()),
-            })
+            });
         }
     };
 
@@ -46,16 +38,14 @@ pub fn delete_token_locked(
 }
 
 /// Toma el lock de la DB y borra todos los tokens (cierra todas las sesiones).
-pub fn delete_all_tokens_locked(
-    db: &Arc<Mutex<DBEngine>>,
-) -> Result<(), sqlite::Error> {
+pub fn delete_all_tokens_locked(db: &Arc<Mutex<DBEngine>>) -> Result<(), sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
             return Err(sqlite::Error {
                 code: None,
                 message: Some("Cannot lock db".to_string()),
-            })
+            });
         }
     };
 
@@ -73,12 +63,9 @@ pub fn get_user_by_token_locked(
             return Err(sqlite::Error {
                 code: None,
                 message: Some("Cannot lock db".to_string()),
-            })
+            });
         }
     };
 
-    auth::get_user_by_token(
-        &db_connection,
-        token,
-    )
+    auth::get_user_by_token(&db_connection, token)
 }

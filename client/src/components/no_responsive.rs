@@ -1,8 +1,8 @@
-use yew::prelude::*;
-use web_sys::window;
+use lucide_yew::Smartphone;
 use wasm_bindgen::JsCast;
-use lucide_yew::Smartphone; 
 use wasm_bindgen::closure::Closure;
+use web_sys::window;
+use yew::prelude::*;
 
 /// Aviso a pantalla completa que aparece si la ventana es muy angosta (< 768px),
 /// pidiendo usar una pantalla más grande. Se actualiza al redimensionar.
@@ -10,14 +10,7 @@ use wasm_bindgen::closure::Closure;
 pub fn no_responsive() -> Html {
     let max_width = 900;
 
-    let width = use_state(|| {
-        window()
-            .unwrap()
-            .inner_width()
-            .unwrap()
-            .as_f64()
-            .unwrap() as i32
-    });
+    let width = use_state(|| window().unwrap().inner_width().unwrap().as_f64().unwrap() as i32);
 
     {
         let width = width.clone();
@@ -25,21 +18,20 @@ pub fn no_responsive() -> Html {
         use_effect_with((), move |_| {
             let window = window().unwrap();
 
-            let closure = Closure::<dyn FnMut(web_sys::Event)>::wrap(Box::new(move |_event: web_sys::Event| {
-                let window = web_sys::window().unwrap();
+            let closure = Closure::<dyn FnMut(web_sys::Event)>::wrap(Box::new(
+                move |_event: web_sys::Event| {
+                    let window = web_sys::window().unwrap();
 
-                if let Ok(w) = window.inner_width() 
-                    && let Some(w) = w.as_f64() {
+                    if let Ok(w) = window.inner_width()
+                        && let Some(w) = w.as_f64()
+                    {
                         width.set(w as i32);
-                }
-                
-            }));
+                    }
+                },
+            ));
 
             window
-                .add_event_listener_with_callback(
-                    "resize",
-                    closure.as_ref().unchecked_ref(),
-                )
+                .add_event_listener_with_callback("resize", closure.as_ref().unchecked_ref())
                 .unwrap();
 
             // importante: evitar drop del closure
@@ -52,7 +44,6 @@ pub fn no_responsive() -> Html {
     if *width >= max_width {
         return html! {};
     }
-
 
     html! {
         <div class="bg-slate-900/50 backdrop-blur h-screen w-screen p-3 dark absolute top-0 left-0 z-50">

@@ -1,7 +1,7 @@
-mod points;
 pub mod beam;
 mod disturbances;
- 
-pub use points::{find_measuring_points, calculate_distance_between_points};
-pub use beam::{get_measures, MeasureMode};
+mod points;
+
+pub use beam::{MeasureMode, get_measures};
 pub use disturbances::apply_disturbances;
+pub use points::{calculate_distance_between_points, find_measuring_points};

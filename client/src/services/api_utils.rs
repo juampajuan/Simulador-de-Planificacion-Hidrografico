@@ -10,7 +10,7 @@ pub fn process_local_login(display_name: &str, role: &str) {
 pub fn process_local_logout(redirection: &str) {
     set_local_storage("group_or_user_name", "");
     set_local_storage("user_role", ""); // Aseguramos limpiar también el rol
-    
+
     if let Some(w) = web_sys::window() {
         let _ = w.location().set_href(redirection);
     }

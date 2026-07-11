@@ -1,7 +1,6 @@
-use yew::prelude::*;
 use crate::components::form_inputs::{FormInput, FormSelect};
 use crate::pages::admin::sections::projects::projects_fields::ProjectFormFields;
-
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct ProjectParamsFormProps {
@@ -17,42 +16,54 @@ pub fn project_params_form(props: &ProjectParamsFormProps) -> Html {
     let state_attempts = state.clone();
     let on_attempts_input = Callback::from(move |e: InputEvent| {
         let mut f = (*state_attempts).clone();
-        f.attempts_limit = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+        f.attempts_limit = e
+            .target_unchecked_into::<web_sys::HtmlInputElement>()
+            .value();
         state_attempts.set(f);
     });
 
     let state_weather = state.clone();
     let on_weather_change = Callback::from(move |e: Event| {
         let mut f = (*state_weather).clone();
-        f.weather = e.target_unchecked_into::<web_sys::HtmlSelectElement>().value();
+        f.weather = e
+            .target_unchecked_into::<web_sys::HtmlSelectElement>()
+            .value();
         state_weather.set(f);
     });
 
     let state_seabed = state.clone();
     let on_seabed_change = Callback::from(move |e: Event| {
         let mut f = (*state_seabed).clone();
-        f.seabed_hardness = e.target_unchecked_into::<web_sys::HtmlSelectElement>().value();
+        f.seabed_hardness = e
+            .target_unchecked_into::<web_sys::HtmlSelectElement>()
+            .value();
         state_seabed.set(f);
     });
 
     let state_budget = state.clone();
     let on_budget_input = Callback::from(move |e: InputEvent| {
         let mut f = (*state_budget).clone();
-        f.budget = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+        f.budget = e
+            .target_unchecked_into::<web_sys::HtmlInputElement>()
+            .value();
         state_budget.set(f);
     });
 
     let state_min = state.clone();
     let on_min_input = Callback::from(move |e: InputEvent| {
         let mut f = (*state_min).clone();
-        f.min_depth = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+        f.min_depth = e
+            .target_unchecked_into::<web_sys::HtmlInputElement>()
+            .value();
         state_min.set(f);
     });
 
     let state_max = state.clone();
     let on_max_input = Callback::from(move |e: InputEvent| {
         let mut f = (*state_max).clone();
-        f.max_depth = e.target_unchecked_into::<web_sys::HtmlInputElement>().value();
+        f.max_depth = e
+            .target_unchecked_into::<web_sys::HtmlInputElement>()
+            .value();
         state_max.set(f);
     });
 

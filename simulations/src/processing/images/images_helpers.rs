@@ -1,9 +1,9 @@
 /*Archivo para funciones que se comparten unicamente en el modulo de images */
-use image::{Rgb,Rgba};
+use image::{Rgb, Rgba};
 
-use std::fmt;
-use crate::structs::depth_matrix::DepthMatrix;
 use crate::processing::processing_helpers::is_valid;
+use crate::structs::depth_matrix::DepthMatrix;
+use std::fmt;
 
 pub const ZONE_FILL_COLOR: Rgba<u8> = Rgba([71, 85, 105, 45]);
 pub const COVERAGE_OVERLAY_COLOR: Rgba<u8> = Rgba([14, 116, 144, 180]);
@@ -13,11 +13,11 @@ pub const COVERAGE_OVERLAY_COLOR: Rgba<u8> = Rgba([14, 116, 144, 180]);
 // t=0.5 → crema claro (profundidad promedio)
 // t=1.0 → azul        (más profundo)
 const STOPS: [(f64, f64, f64, f64); 5] = [
-    (0.00, 180.0,  15.0,   0.0),  // rojo oscuro
-    (0.25, 240.0, 100.0,  20.0),  // naranja
-    (0.50, 255.0, 225.0, 155.0),  // crema
-    (0.75,  30.0, 175.0, 135.0),  // teal
-    (1.00,   0.0,  70.0, 190.0),  // azul
+    (0.00, 180.0, 15.0, 0.0),    // rojo oscuro
+    (0.25, 240.0, 100.0, 20.0),  // naranja
+    (0.50, 255.0, 225.0, 155.0), // crema
+    (0.75, 30.0, 175.0, 135.0),  // teal
+    (1.00, 0.0, 70.0, 190.0),    // azul
 ];
 
 pub enum ImageType {
@@ -28,8 +28,8 @@ pub enum ImageType {
 impl ImageType {
     pub fn color_fn(&self) -> impl Fn(f64) -> Rgb<u8> {
         match self {
-            ImageType::DepthImage    => depth_color as fn(f64) -> Rgb<u8>,
-            ImageType::DifferenceImage=> diff_color as fn(f64) -> Rgb<u8>,
+            ImageType::DepthImage => depth_color as fn(f64) -> Rgb<u8>,
+            ImageType::DifferenceImage => diff_color as fn(f64) -> Rgb<u8>,
         }
     }
 }
@@ -37,7 +37,7 @@ impl ImageType {
 impl fmt::Display for ImageType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            ImageType::DepthImage      => "DepthImage",
+            ImageType::DepthImage => "DepthImage",
             ImageType::DifferenceImage => "DifferenceImage",
         };
         write!(f, "{}", s)
@@ -49,11 +49,11 @@ pub fn depth_color(t: f64) -> Rgb<u8> {
     let t = t.clamp(0.0, 1.0);
 
     let mut seg_start = STOPS[0];
-    let mut seg_end   = STOPS[1];
+    let mut seg_end = STOPS[1];
     for i in 0..STOPS.len() - 1 {
         if t <= STOPS[i + 1].0 {
             seg_start = STOPS[i];
-            seg_end   = STOPS[i + 1];
+            seg_end = STOPS[i + 1];
             break;
         }
     }
@@ -96,11 +96,7 @@ pub fn depth_range(matrix: &[Vec<f64>], no_data: Option<f64>) -> (f64, f64) {
     (min, max)
 }
 
-pub fn fill_zone_translucent(
-    img: &mut image::RgbaImage,
-    matrix: &DepthMatrix,
-    color: Rgba<u8>,
-) {
+pub fn fill_zone_translucent(img: &mut image::RgbaImage, matrix: &DepthMatrix, color: Rgba<u8>) {
     for (y, row) in matrix.data.iter().enumerate() {
         for (x, &val) in row.iter().enumerate() {
             if is_valid(val, matrix.no_data) {
