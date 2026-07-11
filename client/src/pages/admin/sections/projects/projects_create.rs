@@ -1,10 +1,10 @@
-use yew::prelude::*;
-use crate::structs::project::{NewProject, Project};
-use crate::components::modal::Modal;
-use crate::services::requests::create_project;
 use crate::components::form_inputs::FormInput;
+use crate::components::modal::Modal;
 use crate::pages::admin::sections::projects::projects_fields::ProjectFormFields;
 use crate::pages::admin::sections::projects::projects_params_form::ProjectParamsForm;
+use crate::services::requests::create_project;
+use crate::structs::project::{NewProject, Project};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct CreateProjectModalProps {
@@ -17,14 +17,14 @@ pub struct CreateProjectModalProps {
 pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
     let name_input = use_state(String::new);
     let description_input = use_state(String::new);
-    let selected_file = use_state(|| None::<web_sys::File>); 
+    let selected_file = use_state(|| None::<web_sys::File>);
     let exam_mode_input = use_state(|| false);
     let due_date_input = use_state(String::new);
-    
+
     let form_fields_state = use_state(ProjectFormFields::new_empty);
 
     let error_msg = use_state(String::new);
-    let modal_loading = use_state(|| false); 
+    let modal_loading = use_state(|| false);
 
     let on_submit = {
         let is_open = props.is_open.clone();
@@ -34,27 +34,33 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
         let description = (*description_input).clone();
         let is_exam = *exam_mode_input;
         let due_date = (*due_date_input).clone();
-        
+
         let fields = form_fields_state.clone();
         let error_msg = error_msg.clone();
-        let modal_loading = modal_loading.clone(); 
+        let modal_loading = modal_loading.clone();
 
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
-            
+
             let file = match &file_opt {
                 Some(f) => f.clone(),
-                None => { error_msg.set("Tenés que seleccionar un archivo GeoTIFF obligatorio".to_string()); return; }
+                None => {
+                    error_msg
+                        .set("Tenés que seleccionar un archivo GeoTIFF obligatorio".to_string());
+                    return;
+                }
             };
-            if name.is_empty() { 
-                error_msg.set("El nombre del proyecto es obligatorio".to_string()); 
-                return; 
+            if name.is_empty() {
+                error_msg.set("El nombre del proyecto es obligatorio".to_string());
+                return;
             }
 
             // Validación de la fecha límite solo si el Modo Entrega está activo
             let due_date_opt = if is_exam {
                 if due_date.is_empty() {
-                    error_msg.set("La fecha límite de entrega es obligatoria para el modo examen".to_string());
+                    error_msg.set(
+                        "La fecha límite de entrega es obligatoria para el modo examen".to_string(),
+                    );
                     return;
                 }
                 Some(due_date.clone())
@@ -63,29 +69,41 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
             };
 
             let attempts = match fields.attempts_limit.parse::<i64>() {
-                Ok(n) => { 
+                Ok(n) => {
                     if n <= 0 {
-                        error_msg.set("El límite de intentos debe ser mayor a cero".to_string()); 
+                        error_msg.set("El límite de intentos debe ser mayor a cero".to_string());
                         return;
                     }
                     n
                 }
-                Err(_) => { error_msg.set("El límite de intentos debe ser un número entero".to_string()); return; }
+                Err(_) => {
+                    error_msg.set("El límite de intentos debe ser un número entero".to_string());
+                    return;
+                }
             };
             let b = match fields.budget.parse::<f64>() {
                 Ok(n) => n,
-                Err(_) => { error_msg.set("El presupuesto debe ser un número válido".to_string()); return; }
+                Err(_) => {
+                    error_msg.set("El presupuesto debe ser un número válido".to_string());
+                    return;
+                }
             };
             let mind = match fields.min_depth.parse::<f64>() {
                 Ok(n) => n,
-                Err(_) => { error_msg.set("La profundidad mínima debe ser un número válido".to_string()); return; }
+                Err(_) => {
+                    error_msg.set("La profundidad mínima debe ser un número válido".to_string());
+                    return;
+                }
             };
             let maxd = match fields.max_depth.parse::<f64>() {
                 Ok(n) => n,
-                Err(_) => { error_msg.set("La profundidad máxima debe ser un número válido".to_string()); return; }
+                Err(_) => {
+                    error_msg.set("La profundidad máxima debe ser un número válido".to_string());
+                    return;
+                }
             };
             if mind >= maxd {
-                error_msg.set("La profundidad máxima debe ser mayor a la mínima".to_string()); 
+                error_msg.set("La profundidad máxima debe ser mayor a la mínima".to_string());
                 return;
             }
 
@@ -110,7 +128,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                 modal_loading.clone(),
             );
 
-            is_open.set(false); 
+            is_open.set(false);
         })
     };
 
@@ -120,8 +138,8 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
     let due_date_clone = due_date_input.clone();
 
     html! {
-        <Modal 
-            title="Crear Nuevo Proyecto" 
+        <Modal
+            title="Crear Nuevo Proyecto"
             subtitle="Ingresá los detalles e inicializá el archivo geográfico del entorno."
             on_close={Callback::from(move |_| is_open_close.set(false))}
             max_width_class={Some("max-w-2xl".to_string())}
@@ -129,7 +147,7 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
 
             <form onsubmit={on_submit} class="space-y-4">
 
-                if !error_msg.is_empty() { 
+                if !error_msg.is_empty() {
                     <div class="p-2 bg-red-500/15 border border-red-500/20 rounded-lg text-red-400 text-xs font-semibold flex items-center gap-1.5">
                         <span>{ &*error_msg }</span>
                     </div>
@@ -138,12 +156,12 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput label="Nombre del Proyecto" value={(*name_input).clone()}
                         oninput={Callback::from(move |e: InputEvent| name_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))} />
-                    
+
                     <div class="flex flex-col space-y-1">
                         <label class="text-xs font-semibold text-white/80">{"Archivo GeoTIFF"}</label>
-                        <input type="file" accept=".tif,.tiff" class="bg-slate-950 text-sm p-2 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-200 file:text-black file:cursor-pointer" 
+                        <input type="file" accept=".tif,.tiff" class="bg-slate-950 text-sm p-2 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cyan-200 file:text-black file:cursor-pointer"
                             onchange={Callback::from(move |e: Event| {
-                                if let Some(files) = e.target_unchecked_into::<web_sys::HtmlInputElement>().files() 
+                                if let Some(files) = e.target_unchecked_into::<web_sys::HtmlInputElement>().files()
                                     && let Some(f) = files.get(0) { selected_file.set(Some(f)); }
                             })} />
                     </div>
@@ -159,9 +177,9 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
                     <div class="flex flex-col space-y-1 select-none">
                         <label class="text-xs font-semibold text-white/80 mb-1">{"Modo de Trabajo"}</label>
                         <div class="flex items-center gap-3 p-2 bg-slate-950 rounded-lg border border-white/10 focus-within:border-cyan-400 h-[38px] transition-colors">
-                            <input 
+                            <input
                                 id="exam_mode_checkbox"
-                                type="checkbox" 
+                                type="checkbox"
                                 checked={*exam_mode_input}
                                 onchange={Callback::from(move |e: Event| {
                                     let target = e.target_unchecked_into::<web_sys::HtmlInputElement>();
@@ -178,8 +196,8 @@ pub fn create_project_modal(props: &CreateProjectModalProps) -> Html {
 
                     <div class="flex flex-col space-y-1">
                         <label class="text-xs font-semibold text-white/80 mb-1">{"Fecha Límite de Entrega"}</label>
-                        <input 
-                            type="date" 
+                        <input
+                            type="date"
                             value={(*due_date_input).clone()}
                             disabled={!*exam_mode_input}
                             oninput={Callback::from(move |e: InputEvent| due_date_input.set(e.target_unchecked_into::<web_sys::HtmlInputElement>().value()))}

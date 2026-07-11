@@ -1,18 +1,24 @@
-use yew::prelude::UseStateHandle;
-use crate::parser::{parse_path_parameters, parse_echosounder_parameters, parse_transport_parameters};
-use crate::structs::state::{PathState, EchoState, FullSimulationRequest, SimulationUiState, CreatePathRequest};
-use crate::structs::limits::ConfigLimits;
-use crate::structs::student::{Student, NewStudent};
-use crate::structs::project::{AdminProjectView, NewProject, Project};
-use common::{StudentMeasuringParameters, SimulationResponse, PathParameters, TransportParameters, EchosounderParameters};
-use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
-use crate::services::api_utils::{process_local_logout, process_local_login};
 use crate::pages::student::components::measure_params::AttemptsState;
+use crate::parser::{
+    parse_echosounder_parameters, parse_path_parameters, parse_transport_parameters,
+};
+use crate::services::api_client::{
+    send_native_blob_request, send_native_formdata_request, send_native_request,
+};
+use crate::services::api_utils::{process_local_login, process_local_logout};
+use crate::structs::limits::ConfigLimits;
+use crate::structs::project::{AdminProjectView, NewProject, Project};
+use crate::structs::state::{
+    CreatePathRequest, EchoState, FullSimulationRequest, PathState, SimulationUiState,
+};
+use crate::structs::student::{NewStudent, Student};
+use common::{SimulationResponse, StudentMeasuringParameters, StudentSimulation};
+use yew::prelude::UseStateHandle;
 
 #[derive(serde::Deserialize, Clone, PartialEq, Debug)]
 pub struct StudentProjectResponse {
     #[serde(flatten)]
-    pub project: AdminProjectView,  // toda la info de proyecto
+    pub project: AdminProjectView, // toda la info de proyecto
     pub attempts_spent: i64,
     pub coordinates: GeoCorners,
     pub maptiler_api_key: String,
@@ -25,24 +31,6 @@ pub struct GeoCorners {
     pub inf_izq: (f64, f64),
     pub inf_der: (f64, f64),
     pub centro: (f64, f64),
-}
-
-#[derive(serde::Deserialize, Clone, PartialEq, Debug)]
-pub struct StudentSimulation {
-    pub id: i64,
-    pub selected: bool,
-    pub attempt_number: i64,
-    pub result_min_depth: f64,
-    pub result_max_depth: f64,
-    pub student_id: i64,
-    pub project_id: i64,
-    pub path_parameters: PathParameters,
-    pub transport_parameters: TransportParameters,
-    pub echosounder_parameters: EchosounderParameters,
-
-    pub simulation_image_path: Option<String>,
-    pub coverage_image_path: Option<String>,
-    pub difference_image_path: Option<String>,
 }
 
 /// Obtiene el historial de simulaciones/intentos.
@@ -72,23 +60,23 @@ pub fn get_student_simulations_history(
         move |response_text| {
             if let Ok(historial) = serde_json::from_str::<Vec<StudentSimulation>>(&response_text) {
                 history_handle.set(historial);
-                ui_mensaje.set(String::new()); 
+                ui_mensaje.set(String::new());
             } else {
                 ui_mensaje.set("Error al interpretar el historial de simulaciones".to_string());
             }
         },
         Some(move |status_code: u16| {
-            msg_for_error.set(format!("Error al obtener el historial. Código del servidor: {}", status_code));
-        })
+            msg_for_error.set(format!(
+                "Error al obtener el historial. Código del servidor: {}",
+                status_code
+            ));
+        }),
     );
 }
 
 /// Registra o remueve la entrega de una simulación en el servidor.
 /// Si `simulation_id` es `Some(id)`, se entrega ese intento. Si es `None`, se quita la entrega actual.
-pub fn select_exam_delivery(
-    simulation_id: Option<i64>,
-    ui_mensaje: UseStateHandle<String>,
-) {
+pub fn select_exam_delivery(simulation_id: Option<i64>, ui_mensaje: UseStateHandle<String>) {
     let payload = serde_json::json!({ "simulation_id": simulation_id }).to_string();
 
     send_native_request(
@@ -98,7 +86,7 @@ pub fn select_exam_delivery(
         Some(ui_mensaje),
         None,
         move |_| {},
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -122,7 +110,7 @@ pub fn get_all_students(
                 ui_mensaje.set("Error de lectura de datos de estudiantes".to_string());
             }
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -145,7 +133,7 @@ pub fn create_student(
             ui_mensaje.set("Grupo creado con éxito".to_string());
             get_all_students(students_state, ui_mensaje, ui_loading);
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -159,7 +147,8 @@ pub fn update_student(
     ui_loading: UseStateHandle<bool>,
 ) {
     let url = format!("/api/v1/students/{}", student_id);
-    let body = serde_json::json!({ "name": updated_name, "project_id": updated_project_id }).to_string();
+    let body =
+        serde_json::json!({ "name": updated_name, "project_id": updated_project_id }).to_string();
 
     send_native_request(
         &url,
@@ -171,7 +160,7 @@ pub fn update_student(
             ui_mensaje.set("Estudiante actualizado con éxito".to_string());
             get_all_students(students_state, ui_mensaje, ui_loading);
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -193,7 +182,7 @@ pub fn delete_student(
             ui_mensaje.set("Grupo eliminado con éxito".to_string());
             get_all_students(students_state, ui_mensaje, ui_loading);
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -215,7 +204,7 @@ pub fn get_all_projects(
                 ui_mensaje.set(String::new());
             }
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -259,7 +248,8 @@ pub fn create_project(
         "budget": budget,
         "geotiff_min_depth": geotiff_min_depth,
         "geotiff_max_depth": geotiff_max_depth
-    }).to_string();
+    })
+    .to_string();
 
     let _ = form_data.append_with_str("metadata", &metadata_json);
     let _ = form_data.append_with_blob("file", &file);
@@ -273,7 +263,7 @@ pub fn create_project(
         ui_loading,
         move || {
             get_all_projects(projects_state, msg, load);
-        }
+        },
     );
 }
 
@@ -302,7 +292,7 @@ pub fn update_project(
             }
             ui_mensaje.set("Proyecto modificado con éxito".to_string());
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -326,7 +316,7 @@ pub fn delete_project(
             projects_state.set(current_list);
             ui_mensaje.set(String::new());
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -348,7 +338,7 @@ pub fn get_system_limits(
                 ui_mensaje.set("Seleccione parámetros para el recorrido".to_string());
             }
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
@@ -369,54 +359,81 @@ pub fn get_student_project(
                 project_handle.set(Some(parsed));
                 ui_mensaje.set(String::new());
             } else {
-                ui_mensaje.set("Error al interpretar los datos del proyecto y sus intentos".to_string());
+                ui_mensaje
+                    .set("Error al interpretar los datos del proyecto y sus intentos".to_string());
             }
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }
 
 // Pide la creación de un path. Usando CreatePathRequest
 pub fn trigger_path_generation(state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
-    if state.separacion.is_empty() || state.azimut.is_empty() { return; }
+    if state.separacion.is_empty() || state.azimut.is_empty() {
+        return;
+    }
     let params = match parse_path_parameters(state, limits) {
         Ok(p) => p,
-        Err(err_msg) => { ui.mensaje.set(err_msg); return; }
+        Err(err_msg) => {
+            ui.mensaje.set(err_msg);
+            return;
+        }
     };
     ui.min_depth.set(0.0);
     ui.max_depth.set(0.0);
     ui.mensaje.set("Generando recorrido...".to_string());
-    let request_body = serde_json::to_string(&CreatePathRequest { path_parameters: params }).unwrap_or_default();
+    let request_body = serde_json::to_string(&CreatePathRequest {
+        path_parameters: params,
+    })
+    .unwrap_or_default();
 
-    send_native_blob_request("/api/v1/create_path", &request_body, ui.image_url, ui.mensaje, ui.loading);
+    send_native_blob_request(
+        "/api/v1/create_path",
+        &request_body,
+        ui.image_url,
+        ui.mensaje,
+        ui.loading,
+    );
 }
 
 // Pide la ejecución de la simulación. Usando tanto echo como path state.
 pub fn run_simulation(
-    echo_state: &EchoState, 
-    path_state: &PathState, 
-    ui: SimulationUiState, 
+    echo_state: &EchoState,
+    path_state: &PathState,
+    ui: SimulationUiState,
     limits: &ConfigLimits,
     attempts_handle: UseStateHandle<AttemptsState>,
 ) {
     let echo_params = match parse_echosounder_parameters(echo_state, limits) {
         Ok(p) => p,
-        Err(err) => { ui.mensaje.set(err); return; }
+        Err(err) => {
+            ui.mensaje.set(err);
+            return;
+        }
     };
     let path_params = match parse_path_parameters(path_state, limits) {
         Ok(p) => p,
-        Err(err) => { ui.mensaje.set(err); return; }
+        Err(err) => {
+            ui.mensaje.set(err);
+            return;
+        }
     };
     let transport_params = match parse_transport_parameters(echo_state, limits) {
         Ok(t) => t,
-        Err(e) => { ui.mensaje.set(e); return; }
+        Err(e) => {
+            ui.mensaje.set(e);
+            return;
+        }
     };
     ui.image_url.set(None);
     ui.mensaje.set("Simulando medición...".to_string());
     ui.loading.set(true);
 
     let simulation_params = FullSimulationRequest {
-        echo_parameters: StudentMeasuringParameters { transport_parameters: transport_params, echo_sounder_parameters: echo_params },
+        echo_parameters: StudentMeasuringParameters {
+            transport_parameters: transport_params,
+            echo_sounder_parameters: echo_params,
+        },
         path_parameters: path_params,
     };
     let request_body = serde_json::to_string(&simulation_params).unwrap_or_default();
@@ -424,15 +441,15 @@ pub fn run_simulation(
     let min_handle = ui.min_depth.clone();
     let max_handle = ui.max_depth.clone();
     let show_legend_handle = ui.show_legend.clone();
-    let msg_handle_success = ui.mensaje.clone(); 
+    let msg_handle_success = ui.mensaje.clone();
     let msg_handle_error = ui.mensaje.clone();
 
     let simulation_image_path = ui.simulation_image_path.clone();
     let coverage_image_path = ui.coverage_image_path.clone();
     let difference_image_path = ui.difference_image_path.clone();
     let image_url = ui.image_url.clone();
-    
-    let attempts_handle_success = attempts_handle.clone(); 
+
+    let attempts_handle_success = attempts_handle.clone();
 
     send_native_request(
         "/api/v1/run_simulation",
@@ -445,11 +462,11 @@ pub fn run_simulation(
                 // Usamos las profundidades de reales para la escala visual del mapa renderizado
                 min_handle.set(data.real_min_depth);
                 max_handle.set(data.real_max_depth);
-                
+
                 // Guardamos los paths en los estados correspondientes
                 simulation_image_path.set(data.simulation_image_path.clone());
                 coverage_image_path.set(data.coverage_image_path);
-                difference_image_path.set(data.difference_image_path); 
+                difference_image_path.set(data.difference_image_path);
 
                 if let Some(path) = data.simulation_image_path {
                     if !path.is_empty() {
@@ -463,51 +480,69 @@ pub fn run_simulation(
                     image_url.set(None);
                     show_legend_handle.set(false);
                 }
- 
+
                 msg_handle_success.set(String::new());
 
                 let mut current_attempts = (*attempts_handle_success).clone();
                 current_attempts.spent += 1;
                 attempts_handle_success.set(current_attempts);
             } else {
-                msg_handle_success.set("Error al interpretar la respuesta de simulación".to_string());
+                msg_handle_success
+                    .set("Error al interpretar la respuesta de simulación".to_string());
             }
         },
         Some(move |status_code| {
             if status_code == 403 {
-                msg_handle_error.set("Has alcanzado el límite máximo de intentos permitidos para este proyecto.".to_string());
+                msg_handle_error.set(
+                    "Has alcanzado el límite máximo de intentos permitidos para este proyecto."
+                        .to_string(),
+                );
             } else {
                 msg_handle_error.set(format!("Error en el servidor: Código {}", status_code));
             }
-        })
+        }),
     );
 }
 
 // Pide la creacion del area de cobertura, usando tanto echo como path state.
-pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: SimulationUiState, limits: &ConfigLimits) {
+pub fn run_coverage(
+    echo_state: &EchoState,
+    path_state: &PathState,
+    ui: SimulationUiState,
+    limits: &ConfigLimits,
+) {
     let echo_params = match parse_echosounder_parameters(echo_state, limits) {
         Ok(p) => p,
-        Err(err) => { ui.mensaje.set(err); return; }
+        Err(err) => {
+            ui.mensaje.set(err);
+            return;
+        }
     };
- 
+
     let path_params = match parse_path_parameters(path_state, limits) {
         Ok(p) => p,
-        Err(err) => { ui.mensaje.set(err); return; }
+        Err(err) => {
+            ui.mensaje.set(err);
+            return;
+        }
     };
- 
+
     let transport_params = match parse_transport_parameters(echo_state, limits) {
         Ok(t) => t,
-        Err(e) => { ui.mensaje.set(e); return; }
+        Err(e) => {
+            ui.mensaje.set(e);
+            return;
+        }
     };
-    
+
     // Al ser una cobertura preliminar, limpiamos los límites numéricos
     ui.min_depth.set(0.0);
     ui.max_depth.set(0.0);
-    ui.show_legend.set(false); 
-    
+    ui.show_legend.set(false);
+
     ui.mensaje.set("Calculando cobertura...".to_string());
     ui.loading.set(true);
- 
+
     let simulation_params = FullSimulationRequest {
         echo_parameters: StudentMeasuringParameters {
             transport_parameters: transport_params,
@@ -519,15 +554,16 @@ pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: Simulati
     match serde_json::to_string(&simulation_params) {
         Ok(body_json) => {
             send_native_blob_request(
-                "/api/v1/coverage_image", 
-                &body_json, 
-                ui.image_url, 
-                ui.mensaje, 
-                ui.loading
+                "/api/v1/coverage_image",
+                &body_json,
+                ui.image_url,
+                ui.mensaje,
+                ui.loading,
             );
-        },
+        }
         Err(_) => {
-            ui.mensaje.set("Error interno al preparar los datos de simulación".to_string());
+            ui.mensaje
+                .set("Error interno al preparar los datos de simulación".to_string());
             ui.loading.set(false);
         }
     }
@@ -539,19 +575,22 @@ pub fn trigger_login(
     teacher_user: &str,
     teacher_password: &str,
     ui_mensaje: UseStateHandle<String>,
-    ui_loading: UseStateHandle<bool>
+    ui_loading: UseStateHandle<bool>,
 ) {
     let (credentials, redirection) = if !student_code.is_empty() {
         (serde_json::json!({ "code": student_code }), "/".to_string())
     } else if !teacher_user.is_empty() && !teacher_password.is_empty() {
-        (serde_json::json!({ "user": teacher_user, "pass": teacher_password }), "/admin".to_string())
+        (
+            serde_json::json!({ "user": teacher_user, "pass": teacher_password }),
+            "/admin".to_string(),
+        )
     } else {
         return;
     };
 
     ui_loading.set(true);
     ui_mensaje.set("Autenticando...".to_string());
-    
+
     let msg_success = ui_mensaje.clone();
     let msg_err = ui_mensaje.clone();
     let loading_err = ui_loading.clone();
@@ -563,24 +602,28 @@ pub fn trigger_login(
         Some(&cred_str),
         None,
         Some(ui_loading),
-        move |response_text| { 
+        move |response_text| {
             let trimmed = response_text.trim();
             let response_lower = trimmed.to_lowercase();
 
-            if trimmed.is_empty() 
-                || trimmed == "{}" 
-                || response_lower.contains("invalid") 
-                || response_lower.contains("error") 
+            if trimmed.is_empty()
+                || trimmed == "{}"
+                || response_lower.contains("invalid")
+                || response_lower.contains("error")
                 || response_lower.contains("incorrect")
-                || response_lower.contains("unauthorized") 
+                || response_lower.contains("unauthorized")
             {
                 msg_success.set("Credenciales incorrectas. Intente nuevamente.".to_string());
                 return;
             }
 
-            let role = if redirection == "/admin" { "admin" } else { "student" };
+            let role = if redirection == "/admin" {
+                "admin"
+            } else {
+                "student"
+            };
             process_local_login(trimmed, role);
-            
+
             // Redirección síncrona controlada de fin de flujo
             if let Some(window) = web_sys::window() {
                 let _ = window.location().set_href(&redirection);
@@ -589,7 +632,7 @@ pub fn trigger_login(
         Some(move |_status_code| {
             loading_err.set(false);
             msg_err.set("Usuario o clave incorrectos. Intente de nuevo.".to_string());
-        })
+        }),
     );
 }
 
@@ -604,6 +647,6 @@ pub fn trigger_logout() {
         move |_| {
             process_local_logout("/login");
         },
-        Some(|_| {})
+        Some(|_| {}),
     );
 }

@@ -1,4 +1,4 @@
-use yew::prelude::*; 
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct ParamContProps {
@@ -26,7 +26,7 @@ pub fn param_cont(props: &ParamContProps) -> Html {
                     rounded-lg
                     shadow-xl
                 "
-            > 
+            >
 
                 <div class="shrink-0 sticky top-0 z-1 bg-slate-950/60 rounded-t-lg overflow-hidden backdrop-blur border-b border-white/20 shadow p-2">
                     { props.header.clone() }

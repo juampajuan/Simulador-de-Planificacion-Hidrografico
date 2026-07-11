@@ -1,9 +1,9 @@
-use yew::prelude::*;
-use crate::structs::student::Student;
-use crate::structs::project::Project;
 use crate::services::requests::update_student;
-use lucide_yew::{Trash, Pencil, X, Save, Eye};
+use crate::structs::project::Project;
+use crate::structs::student::Student;
+use lucide_yew::{Eye, Pencil, Save, Trash, X};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct StudentRowProps {
@@ -11,7 +11,7 @@ pub struct StudentRowProps {
     pub proyectos: Vec<Project>,
     pub delete_target: UseStateHandle<Option<Student>>,
     pub students_state: UseStateHandle<Vec<Student>>,
-    pub on_view_attempts: Callback<(Student, Project)>, 
+    pub on_view_attempts: Callback<(Student, Project)>,
 }
 
 /// Fila de un alumno en la tabla.
@@ -94,12 +94,17 @@ pub fn student_row(props: &StudentRowProps) -> Html {
     let edit_project_select = edit_project_id.clone();
     let row_mensaje_clear = row_mensaje.clone();
 
-    let proyecto_encontrado = props.proyectos.iter().find(|p| p.id == props.usuario.project_id);
+    let proyecto_encontrado = props
+        .proyectos
+        .iter()
+        .find(|p| p.id == props.usuario.project_id);
 
     let (proy_name, proy_desc) = match proyecto_encontrado {
         Some(p) => (
             p.name.clone(),
-            p.description.clone().unwrap_or_else(|| "Sin descripción".to_string()),
+            p.description
+                .clone()
+                .unwrap_or_else(|| "Sin descripción".to_string()),
         ),
         None => (String::new(), String::new()),
     };
@@ -179,10 +184,10 @@ pub fn student_row(props: &StudentRowProps) -> Html {
                         {
                             for props.proyectos.iter().map(|proy| {
                                 let is_selected = current_project_id == proy.id;
-                                html! { 
+                                html! {
                                     <option value={proy.id.to_string()} selected={is_selected}>
                                         { &proy.name }
-                                    </option> 
+                                    </option>
                                 }
                             })
                         }
@@ -215,9 +220,9 @@ pub fn student_row(props: &StudentRowProps) -> Html {
                     }
 
                     if *is_editing {
-                        <button 
+                        <button
                             disabled={*row_loading}
-                            onclick={on_save_student} 
+                            onclick={on_save_student}
                             class="flex items-center gap-2 bg-cyan-200 hover:bg-cyan-300 text-black font-semibold text-xs px-3 py-2 rounded transition-colors cursor-pointer shrink-0"
                         >
                             <Save size={18}/>

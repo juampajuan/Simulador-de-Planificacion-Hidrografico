@@ -1,4 +1,3 @@
-
 // tiene lo comun entre edicion y creacion,
 #[derive(Clone, PartialEq, Default)]
 pub struct ProjectFormFields {

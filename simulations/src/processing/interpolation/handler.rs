@@ -7,10 +7,9 @@ use crate::structs::depth_matrix::DepthMatrix;
 use crate::structs::interpolation_type::InterpolationMethod;
 use crate::structs::measurement_type::MeasurementsTypeWithError;
 
-
 /// Prepara la matriz a interpolar en base a las mediciones tomadas
-/// Genera una matriz llena de 0, almacena en las respectivas celdas las mediciones, 
-/// descarta las mediciones que por aplicacion de errores quedaron en None 
+/// Genera una matriz llena de 0, almacena en las respectivas celdas las mediciones,
+/// descarta las mediciones que por aplicacion de errores quedaron en None
 /// Y la envia a la interpolacion correspondiente
 pub fn interpolate(
     method: InterpolationMethod,
@@ -18,18 +17,33 @@ pub fn interpolate(
     geotiff: &DepthMatrix,
     log_debug: &dyn Fn(&str),
 ) -> Result<Vec<Vec<f64>>, String> {
-
     log_debug(format!("Se utilizó el método de interpolación: {method:?}.").as_str());
 
     let (new_points, new_matrix) = match measuring_points {
         MeasurementsTypeWithError::Monohaz { measurements } => {
             create_matrix_with_measurments_and_eliminate_none_points(&measurements, geotiff)
-        },
-    
-        MeasurementsTypeWithError::Multihaz { central_measurments, paralel_measurment_1, paralel_measurment_2 } => {
-            let (points_central, matrix_central) = create_matrix_with_measurments_and_eliminate_none_points(&central_measurments, geotiff);
-            let (points_left,    matrix_left)    = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_1, geotiff);
-            let (points_right,   matrix_right)   = create_matrix_with_measurments_and_eliminate_none_points(&paralel_measurment_2, geotiff);
+        }
+
+        MeasurementsTypeWithError::Multihaz {
+            central_measurments,
+            paralel_measurment_1,
+            paralel_measurment_2,
+        } => {
+            let (points_central, matrix_central) =
+                create_matrix_with_measurments_and_eliminate_none_points(
+                    &central_measurments,
+                    geotiff,
+                );
+            let (points_left, matrix_left) =
+                create_matrix_with_measurments_and_eliminate_none_points(
+                    &paralel_measurment_1,
+                    geotiff,
+                );
+            let (points_right, matrix_right) =
+                create_matrix_with_measurments_and_eliminate_none_points(
+                    &paralel_measurment_2,
+                    geotiff,
+                );
 
             let mut new_matrix = vec![vec![0.0; geotiff.width]; geotiff.height];
 
@@ -48,18 +62,19 @@ pub fn interpolate(
             new_points.extend(points_right);
 
             (new_points, new_matrix)
-        },
+        }
     };
 
     match method {
-        InterpolationMethod::Idw     => Ok(interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff)),
-        InterpolationMethod::Kriging => Ok(interpolation_kriging(&new_points, &new_matrix, geotiff)),
-        InterpolationMethod::Tin     => Ok(interpolation_tin(&new_points, &new_matrix, geotiff)),
-        InterpolationMethod::GdalTin => interpolation_gdal_tin(&new_points, &new_matrix, geotiff, log_debug),
+        InterpolationMethod::Idw => {
+            Ok(interpolation_idw_kdtrees(&new_points, &new_matrix, geotiff))
+        }
+        InterpolationMethod::Kriging => {
+            Ok(interpolation_kriging(&new_points, &new_matrix, geotiff))
+        }
+        InterpolationMethod::Tin => Ok(interpolation_tin(&new_points, &new_matrix, geotiff)),
+        InterpolationMethod::GdalTin => {
+            interpolation_gdal_tin(&new_points, &new_matrix, geotiff, log_debug)
+        }
     }
-    
 }
-
-
-
-

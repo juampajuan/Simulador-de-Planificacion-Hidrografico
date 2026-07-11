@@ -1,6 +1,6 @@
 use crate::db::engine::DBEngine;
-use serde::{Serialize, Deserialize};
- 
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProjectMetadata {
     pub name: String,
@@ -20,7 +20,7 @@ pub struct AdminProjectView {
     pub id: usize,
     pub filename: String,
     pub professor_id: i64,
-    #[serde(flatten)] 
+    #[serde(flatten)]
     pub metadata: ProjectMetadata,
 }
 
@@ -50,13 +50,13 @@ pub fn create_project(
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
-        "
+        ",
     )?;
 
     statement.bind((1, metadata.name.as_str()))?;
     match &metadata.description {
         Some(desc) => statement.bind((2, desc.as_str()))?,
-        None => statement.bind((2, ""))?, 
+        None => statement.bind((2, ""))?,
     };
     statement.bind((3, filename))?;
     statement.bind((4, metadata.attempts_limit))?;
@@ -84,7 +84,6 @@ pub fn get_all_by_professor_id(
     db: &DBEngine,
     professor_id: i64,
 ) -> Result<Vec<AdminProjectView>, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         SELECT id, name, description, filename, professor_id,
@@ -101,8 +100,8 @@ pub fn get_all_by_professor_id(
     while let sqlite::State::Row = statement.next()? {
         projects.push(AdminProjectView {
             id: statement.read::<i64, _>("id")? as usize,
-            filename: statement.read::<String, _>("filename")?, 
-            professor_id: statement.read::<i64, _>("professor_id")?, 
+            filename: statement.read::<String, _>("filename")?,
+            professor_id: statement.read::<i64, _>("professor_id")?,
             metadata: ProjectMetadata {
                 name: statement.read::<String, _>("name")?,
                 description: statement.read::<Option<String>, _>("description")?,
@@ -114,7 +113,7 @@ pub fn get_all_by_professor_id(
                 budget: statement.read::<f64, _>("budget")?,
                 geotiff_min_depth: statement.read::<f64, _>("geotiff_min_depth")?,
                 geotiff_max_depth: statement.read::<f64, _>("geotiff_max_depth")?,
-            }
+            },
         });
     }
 
@@ -154,7 +153,7 @@ pub fn get_project_by_id(
                 budget: statement.read::<f64, _>("budget")?,
                 geotiff_min_depth: statement.read::<f64, _>("geotiff_min_depth")?,
                 geotiff_max_depth: statement.read::<f64, _>("geotiff_max_depth")?,
-            }
+            },
         }))
     } else {
         Ok(None)
@@ -167,13 +166,12 @@ pub fn get_project_id_by_student(
     db: &DBEngine,
     student_id: i64,
 ) -> Result<Option<i64>, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         SELECT project_id
         FROM students
         WHERE id = ?
-        "
+        ",
     )?;
 
     statement.bind((1, student_id))?;
@@ -192,13 +190,12 @@ pub fn delete_project_by_id(
     project_id: i64,
     professor_id: i64,
 ) -> Result<bool, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         DELETE FROM projects
         WHERE id = ?
           AND professor_id = ?
-        "
+        ",
     )?;
 
     statement.bind((1, project_id))?;
@@ -217,7 +214,6 @@ pub fn update_project(
     professor_id: i64,
     metadata: &ProjectMetadata,
 ) -> Result<bool, sqlite::Error> {
-
     let mut statement = db.run_query(
         "
         UPDATE projects
@@ -232,13 +228,13 @@ pub fn update_project(
             geotiff_max_depth = ?
         WHERE id = ?
           AND professor_id = ?
-        "
+        ",
     )?;
 
     statement.bind((1, metadata.name.as_str()))?;
     match &metadata.description {
         Some(desc) => statement.bind((2, desc.as_str()))?,
-        None => statement.bind((2, ""))?, 
+        None => statement.bind((2, ""))?,
     };
     statement.bind((3, metadata.attempts_limit))?;
     statement.bind((4, if metadata.exam_mode { 1 } else { 0 }))?;
@@ -262,16 +258,18 @@ pub fn update_project_geotiff_bounds(
     min_depth: f64,
     max_depth: f64,
 ) -> Result<(), sqlite::Error> {
-    let mut statement = db.run_query("
+    let mut statement = db.run_query(
+        "
         UPDATE projects 
         SET geotiff_min_depth = ?, geotiff_max_depth = ? 
         WHERE id = ?
-    ")?;
+    ",
+    )?;
 
     statement.bind((1, min_depth))?;
     statement.bind((2, max_depth))?;
     statement.bind((3, project_id))?;
-    
+
     statement.next()?;
     Ok(())
 }

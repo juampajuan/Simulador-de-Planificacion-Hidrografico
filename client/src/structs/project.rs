@@ -7,7 +7,7 @@ pub struct Project {
     pub id: i64,
     pub name: String,
     pub description: Option<String>,
-    pub filename: String, 
+    pub filename: String,
     pub professor_id: i64,
 
     pub exam_mode: bool,
@@ -34,7 +34,6 @@ pub struct NewProject {
     pub geotiff_max_depth: f64,
 }
 
-
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ProjectMetadata {
     pub name: String,
@@ -54,6 +53,6 @@ pub struct AdminProjectView {
     pub id: usize,
     pub filename: String,
     pub professor_id: i64,
-    #[serde(flatten)] 
+    #[serde(flatten)]
     pub metadata: ProjectMetadata,
 }

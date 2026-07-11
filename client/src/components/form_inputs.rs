@@ -6,8 +6,10 @@ pub struct FormInputProps {
     pub label: &'static str,
     pub value: String,
     pub oninput: Callback<InputEvent>,
-    #[prop_or("text")] pub input_type: &'static str,
-    #[prop_or_default] pub step: &'static str,
+    #[prop_or("text")]
+    pub input_type: &'static str,
+    #[prop_or_default]
+    pub step: &'static str,
 }
 
 /// Input genérico de texto o número con su label.
@@ -16,12 +18,12 @@ pub fn form_input(props: &FormInputProps) -> Html {
     html! {
         <div class="flex flex-col space-y-1 w-full">
             <label class="text-xs font-semibold text-white/80">{props.label}</label>
-            <input 
-                type={props.input_type} 
+            <input
+                type={props.input_type}
                 step={props.step}
-                value={props.value.clone()} 
-                oninput={props.oninput.clone()} 
-                class="bg-slate-950 text-sm p-2.5 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none text-white w-full" 
+                value={props.value.clone()}
+                oninput={props.oninput.clone()}
+                class="bg-slate-950 text-sm p-2.5 rounded-lg border border-white/10 focus:border-cyan-400 focus:outline-none text-white w-full"
             />
         </div>
     }
@@ -42,8 +44,8 @@ pub fn form_select(props: &FormSelectProps) -> Html {
     html! {
         <div class="flex flex-col space-y-1 w-full">
             <label class="text-xs font-semibold text-white/80">{props.label}</label>
-            <select 
-                onchange={props.onchange.clone()} 
+            <select
+                onchange={props.onchange.clone()}
                 class="bg-slate-950 border border-white/10 rounded-lg p-2.5 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer w-full transition-all"
             >
                 {

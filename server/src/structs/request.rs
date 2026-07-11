@@ -1,17 +1,17 @@
 use std::sync::mpsc::Sender;
 
-use tiny_http::ResponseBox;
+use crate::db::queries::proyects::AdminProjectView;
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::LogType;
 use crate::{db::queries::student::Student, logging::structs::ThreadMessage};
-use crate::db::queries::proyects::AdminProjectView;
-use common::{StudentMeasuringParameters, PathParameters};
- 
+use common::{PathParameters, StudentMeasuringParameters};
+use tiny_http::ResponseBox;
+
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
 const RED: &str = "\x1b[31m";
 const RESET: &str = "\x1b[0m";
- 
+
 /// Lo genera cada endpoints, para luego loggear en consola.
 /// Sirve para obtener informacion en tiempo real de que esta haciendo el servidor.
 pub struct RequestLog {
@@ -20,11 +20,10 @@ pub struct RequestLog {
     pub status_code: u16,
     pub error: Option<String>,
 }
- 
+
 impl RequestLog {
     /// Imprime el log en consola coloreado según el código de estado (verde 2xx, azul 3xx/4xx, rojo 5xx).
     pub fn print(&self, simplified: bool) {
-
         if !simplified {
             return;
         }
@@ -35,20 +34,15 @@ impl RequestLog {
             500..=599 => RED,
             _ => RESET,
         };
- 
+
         let error_str = match &self.error {
             Some(err) => format!(" - {}", err),
             None => String::new(),
         };
- 
+
         println!(
             "{} {} -> {}{}{}{}",
-            self.method,
-            self.path,
-            color,
-            self.status_code,
-            error_str,
-            RESET
+            self.method, self.path, color, self.status_code, error_str, RESET
         );
     }
 
@@ -59,18 +53,15 @@ impl RequestLog {
             500..=599 => LogType::Error,
             _ => LogType::Info,
         };
- 
+
         let error_str = match &self.error {
             Some(err) => format!(" - {}", err),
             None => String::new(),
         };
- 
+
         let msg = format!(
             "{} {} -> {}{}",
-            self.method,
-            self.path,
-            self.status_code,
-            error_str,
+            self.method, self.path, self.status_code, error_str,
         );
 
         send_message_to_logger(tx, msg, log_type);
@@ -94,7 +85,7 @@ pub struct RequestContext {
     pub file_path: String,
     pub data: FullSimulationRequest,
     pub student_id: i64,
-    pub student: Student, 
+    pub student: Student,
     pub project: AdminProjectView,
     pub project_id: i64,
 }

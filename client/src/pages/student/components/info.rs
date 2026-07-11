@@ -1,7 +1,7 @@
-use yew::prelude::*;
-use crate::structs::project::AdminProjectView;
 use crate::components::subtitle::Subtitle;
-use lucide_yew::{FolderSync, TriangleAlert, ChevronDown, ChevronUp, CalendarClock};
+use crate::structs::project::AdminProjectView;
+use lucide_yew::{CalendarClock, ChevronDown, ChevronUp, FolderSync, TriangleAlert};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct InfoProps {
@@ -11,8 +11,10 @@ pub struct InfoProps {
 /// Pestaña "Información": muestra los datos del proyecto asignado al alumno.
 #[function_component(InfoParams)]
 pub fn info_params(props: &InfoProps) -> Html {
-    let input_cls = "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full font-mono"; // Agregado font-mono para consistencia de datos
-    let normal_input_cls = "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full";
+    let input_cls =
+        "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full font-mono"; // Agregado font-mono para consistencia de datos
+    let normal_input_cls =
+        "rounded p-2 text-sm bg-zinc-700/50 text-white border border-white/5 w-full";
 
     let is_project_open = use_state(|| true);
     let is_restrictions_open = use_state(|| true);
@@ -27,7 +29,9 @@ pub fn info_params(props: &InfoProps) -> Html {
         Callback::from(move |_| is_restrictions_open.set(!*is_restrictions_open))
     };
 
-    let due_date_to_render = props.project_state.as_ref()
+    let due_date_to_render = props
+        .project_state
+        .as_ref()
         .and_then(|p| p.metadata.due_date.as_deref())
         .map(|s| s.trim())
         .filter(|s| !s.is_empty());
@@ -35,9 +39,9 @@ pub fn info_params(props: &InfoProps) -> Html {
     html! {
         <div class="flex flex-col w-full text-white">
             if let Some(p) = &*props.project_state {
-                
+
                 <div class="border-white/25 p-3 pt-0 border-b flex flex-col gap-3">
-                    <div 
+                    <div
                         onclick={toggle_project}
                         class="flex justify-between items-center transition-colors cursor-pointer py-1"
                     >
@@ -49,14 +53,14 @@ pub fn info_params(props: &InfoProps) -> Html {
                             { if *is_project_open { html!{ <ChevronUp size={16} /> } } else { html!{ <ChevronDown size={16} /> } } }
                         </span>
                     </div>
-                    
+
                     if *is_project_open {
                         <div class="flex flex-col gap-3">
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-semibold text-white/40 ml-1">{"Nombre"}</span>
                                 <input type="text" readonly=true disabled=true class={normal_input_cls} value={p.metadata.name.clone()} />
                             </div>
-                            
+
                             <div class="flex flex-col gap-1">
                                 <span class="text-xs font-semibold text-white/40 ml-1">{"Archivo Geográfico"}</span>
                                 <input type="text" readonly=true disabled=true class={format!("{} text-xs text-slate-300", input_cls)} value={p.filename.clone()} />
@@ -90,7 +94,7 @@ pub fn info_params(props: &InfoProps) -> Html {
                 </div>
 
                 <div class="border-white/25 p-3 flex flex-col gap-3">
-                    <div 
+                    <div
                         onclick={toggle_restrictions}
                         class="flex justify-between items-center transition-colors cursor-pointer py-1"
                     >
@@ -102,7 +106,7 @@ pub fn info_params(props: &InfoProps) -> Html {
                             { if *is_restrictions_open { html!{ <ChevronUp size={16} /> } } else { html!{ <ChevronDown size={16} /> } } }
                         </span>
                     </div>
-                    
+
                     if *is_restrictions_open {
                         <div class="grid grid-cols-2 gap-3">
                             <div class="flex flex-col gap-1">
@@ -128,7 +132,7 @@ pub fn info_params(props: &InfoProps) -> Html {
                         </div>
                     }
                 </div>
-                
+
             } else {
                 <div class="text-center py-8 text-white/30 italic text-sm w-full">
                     {"Cargando datos del entorno..."}

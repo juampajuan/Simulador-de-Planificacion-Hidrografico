@@ -1,6 +1,6 @@
-use serde::Serialize;
-use common::{StudentMeasuringParameters, PathParameters, Transport, EcosondaMode};
 use crate::UseStateHandle;
+use common::{EcosondaMode, PathParameters, StudentMeasuringParameters, Transport};
+use serde::Serialize;
 
 // Structs de states para simulación.
 #[derive(Default, Clone, PartialEq, Serialize)]
@@ -64,15 +64,15 @@ pub struct CreatePathRequest {
 pub struct SimulationUiState {
     pub mensaje: UseStateHandle<String>,
     pub loading: UseStateHandle<bool>,
-    
-    pub image_url: UseStateHandle<Option<String>>, 
+
+    pub image_url: UseStateHandle<Option<String>>,
 
     pub show_legend: UseStateHandle<bool>,
-    
-    pub min_depth: UseStateHandle<f64>,               
-    pub max_depth: UseStateHandle<f64>,  
+
+    pub min_depth: UseStateHandle<f64>,
+    pub max_depth: UseStateHandle<f64>,
 
     pub simulation_image_path: UseStateHandle<Option<String>>,
     pub coverage_image_path: UseStateHandle<Option<String>>,
-    pub difference_image_path: UseStateHandle<Option<String>>,           
+    pub difference_image_path: UseStateHandle<Option<String>>,
 }

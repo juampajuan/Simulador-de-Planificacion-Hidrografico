@@ -1,9 +1,9 @@
-use yew::prelude::*;
-use crate::services::utils::get_local_storage;
 use crate::services::requests::trigger_logout;
+use crate::services::utils::get_local_storage;
+use yew::prelude::*;
 
 use super::title::Title;
-use lucide_yew::{LogOut};
+use lucide_yew::LogOut;
 use yew_router::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -16,14 +16,11 @@ pub struct RootProps {
 
 #[function_component(Root)]
 pub fn root(props: &RootProps) -> Html {
-
     let location = use_location();
-    let is_login = location
-        .as_ref()
-        .is_some_and(|l| l.path() == "/login");
+    let is_login = location.as_ref().is_some_and(|l| l.path() == "/login");
 
     html! {
-        <main class=" 
+        <main class="
             h-screen
             w-full
             bg-slate-900
@@ -35,7 +32,7 @@ pub fn root(props: &RootProps) -> Html {
             if !is_login {
                 <div class="pt-2 px-3 flex justify-between items-center h-14">
                     <div>
-                        <Title text={&props.title} 
+                        <Title text={&props.title}
                             icon={html! {
                                 <img width="36px" src="/static/icon.png"/>
                             }}
@@ -59,9 +56,7 @@ pub fn root(props: &RootProps) -> Html {
 #[function_component(UserButton)]
 pub fn user_button() -> Html {
     let location = use_location();
-    let is_login = location
-        .as_ref()
-        .is_some_and(|l| l.path() == "/login");
+    let is_login = location.as_ref().is_some_and(|l| l.path() == "/login");
     let token = get_local_storage("group_or_user_name").unwrap_or_default();
 
     let on_logout_click = Callback::from(move |_| {
@@ -74,7 +69,7 @@ pub fn user_button() -> Html {
         html! {
             <div class="flex pl-3 gap-3 p-1 items-center rounded-full text-white bg-white/10">
                 <p class="text-sm">{token}</p>
-                <button 
+                <button
                     onclick={on_logout_click}
                     class="hover:text-white rounded-full p-2 hover:bg-red-700 cursor-pointer transition-colors"
                 >

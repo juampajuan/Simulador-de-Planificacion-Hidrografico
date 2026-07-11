@@ -1,18 +1,20 @@
+use serde::{Deserialize, Serialize};
+use simulations::structs::simulation_constants::{
+    EchosounderConstants, EnvironmentConstants, SimulationConstants,
+};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
-use simulations::structs::simulation_constants::{SimulationConstants, EchosounderConstants, EnvironmentConstants};
 
 /// Tipos de valores que puede tener una entrada del archivo de configuración.
 pub enum ConfigValue {
     String(String),
-    Int(i32), 
+    Int(i32),
     Float(f64),
 }
 
 // Struct de todas las configuraciones que se deben cargar del "config.toml"
 // Esta como una structura fija para
-    // Evitar hacer matchs en cada uso, por si no existen
-    // Evitar levantar el servidor, si faltan valores necesarios.
+// Evitar hacer matchs en cada uso, por si no existen
+// Evitar levantar el servidor, si faltan valores necesarios.
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
     pub port: i32,
@@ -22,7 +24,7 @@ pub struct Settings {
     pub log_file_name: String,
     pub logging_type: i32,
     pub simplified_terminal_logs: bool,
-    #[serde(skip)]  
+    #[serde(skip)]
     pub admin_pass: String,
     pub maptiler_api_key: String,
     pub azimut_min: f64,
@@ -123,17 +125,15 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             log_file_name: get_string(&config, "LOG_FILE_NAME")?,
             logging_type: get_int(&config, "LOGGING_TYPE")?,
             simplified_terminal_logs: int_to_bool(get_int(&config, "SIMPLIFIED_TERMINAL_LOGS")?),
-            storage_path: get_string(&config, "FILE_STORAGE_PATH").unwrap_or("./storage".to_string()),
+            storage_path: get_string(&config, "FILE_STORAGE_PATH")
+                .unwrap_or("./storage".to_string()),
         })
     }
 }
 
 // get_usize / get_int / get_string / get_float: leen una clave del config y validan su tipo.
 // Devuelven Err con un mensaje claro si la clave falta o no es del tipo esperado.
-fn get_usize(
-    config: &HashMap<String, ConfigValue>,
-    key: &str,
-) -> Result<usize, String> {
+fn get_usize(config: &HashMap<String, ConfigValue>, key: &str) -> Result<usize, String> {
     match config.get(key) {
         Some(ConfigValue::Int(v)) => Ok(*v as usize),
         Some(_) => Err(format!("'{key}' no es un entero")),
@@ -141,10 +141,7 @@ fn get_usize(
     }
 }
 
-fn get_int(
-    config: &HashMap<String, ConfigValue>,
-    key: &str,
-) -> Result<i32, String> {
+fn get_int(config: &HashMap<String, ConfigValue>, key: &str) -> Result<i32, String> {
     match config.get(key) {
         Some(ConfigValue::Int(v)) => Ok(*v),
         Some(_) => Err(format!("'{key}' no es un entero")),
@@ -152,10 +149,7 @@ fn get_int(
     }
 }
 
-fn get_string(
-    config: &HashMap<String, ConfigValue>,
-    key: &str,
-) -> Result<String, String> {
+fn get_string(config: &HashMap<String, ConfigValue>, key: &str) -> Result<String, String> {
     match config.get(key) {
         Some(ConfigValue::String(v)) => Ok(v.clone()),
         Some(_) => Err(format!("'{key}' no es un string")),
@@ -163,10 +157,7 @@ fn get_string(
     }
 }
 
-fn get_float(
-    config: &HashMap<String, ConfigValue>,
-    key: &str,
-) -> Result<f64, String> {
+fn get_float(config: &HashMap<String, ConfigValue>, key: &str) -> Result<f64, String> {
     match config.get(key) {
         Some(ConfigValue::Float(v)) => Ok(*v),
         Some(_) => Err(format!("'{key}' no es un float")),

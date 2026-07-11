@@ -1,6 +1,6 @@
+use super::points::calculate_distance_between_points;
 use crate::structs::depth_matrix::DepthMatrix;
 use crate::structs::measurement_type::MeasurementsType;
-use super::points::calculate_distance_between_points;
 
 #[allow(dead_code)]
 pub enum MeasureMode {
@@ -21,8 +21,10 @@ pub fn get_measures(
                 let group = get_points_circular_to_this(point, angle, matrix);
                 resulting_measures.push(((point.0, point.1), calculate_measure(group, matrix)));
             }
-            MeasurementsType::Monohaz { measurements: (resulting_measures) }
-        },
+            MeasurementsType::Monohaz {
+                measurements: (resulting_measures),
+            }
+        }
         MeasureMode::Perpendicular { angle } => {
             //el avg_depth enviado como None en los parametros hace que se use la profundidad real de cada punto, en vez de una fija para todos
             //Se utilizaria una profundidad fija solamente para ver la cobertura de la sonda en toda la matriz, sin importar la profundidad real de cada punto.
@@ -41,29 +43,41 @@ pub fn get_perpendicular_measurements(
     let mut resulting_measures: Vec<((usize, usize), f64)> = Vec::new();
     let mut previous_point: Option<&(usize, usize)> = None;
     let mut current_point = &measure_points[0];
- 
+
     let mut right_group: Vec<((usize, usize), f64)> = Vec::new();
     let mut left_group: Vec<((usize, usize), f64)> = Vec::new();
- 
+
     for next_point in measure_points {
         let z = avg_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
-        let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, Some(next_point), angle_deg, z, matrix);
- 
+        let [left, center, right] = get_points_perpendicular_to_this(
+            previous_point,
+            current_point,
+            Some(next_point),
+            angle_deg,
+            z,
+            matrix,
+        );
+
         resulting_measures.extend(center);
         left_group.extend(left);
         right_group.extend(right);
- 
+
         previous_point = Some(current_point);
         current_point = next_point;
     }
- 
+
     let z = avg_depth.unwrap_or_else(|| matrix.data[current_point.1][current_point.0]);
-    let [left, center, right] = get_points_perpendicular_to_this(previous_point, current_point, None, angle_deg, z, matrix);
+    let [left, center, right] =
+        get_points_perpendicular_to_this(previous_point, current_point, None, angle_deg, z, matrix);
     resulting_measures.extend(center);
     left_group.extend(left);
     right_group.extend(right);
- 
-    MeasurementsType::Multihaz { central_measurments: (resulting_measures), paralel_measurment_1: (left_group), paralel_measurment_2: (right_group) }
+
+    MeasurementsType::Multihaz {
+        central_measurments: (resulting_measures),
+        paralel_measurment_1: (left_group),
+        paralel_measurment_2: (right_group),
+    }
 }
 
 ///Esta funcion seria la simulacion de la sonda en un punto de medicion. Dados todos los puntos que registra la sonda, le da valor a la medicion del punto.
@@ -92,54 +106,59 @@ fn get_points_perpendicular_to_this(
     angle_deg: f64,
     z: f64,
     matrix: &DepthMatrix,
-) -> [Vec<((usize,usize), f64)>; 3] {
- 
+) -> [Vec<((usize, usize), f64)>; 3] {
     let reference = match (prev_point, next_point) {
         (Some(prev), Some(next)) => {
             let dist_to_prev = calculate_distance_between_points(current_point, prev, matrix);
             let dist_to_next = calculate_distance_between_points(current_point, next, matrix);
-            if dist_to_prev >= dist_to_next { prev } else { next }
+            if dist_to_prev >= dist_to_next {
+                prev
+            } else {
+                next
+            }
         }
         (Some(prev), None) => prev,
         (None, Some(next)) => next,
-        (None, None) => {return [vec![], vec![], vec![]]}
+        (None, None) => return [vec![], vec![], vec![]],
     };
- 
+
     //Forma el vector
     let dx = reference.0 as f64 - current_point.0 as f64;
     let dy = reference.1 as f64 - current_point.1 as f64;
     let magnitude = (dx * dx + dy * dy).sqrt();
- 
+
     let dx_norm = dx / magnitude;
     let dy_norm = dy / magnitude;
- 
+
     //90 grados
     let perp_x = -dy_norm;
     let perp_y = dx_norm;
- 
+
     //Coordenadas actuales
     let cx = current_point.0 as f64;
     let cy = current_point.1 as f64;
- 
+
     //Hay que hacer que se mida una cantidad de puntos ingresada por parametro y lo mismo con el salto entra cada punto
-    let mitad_cobertura = (2.0*z*((angle_deg/ 2.0).to_radians()).tan())/2.0/ matrix.size_x; 
- 
+    let mitad_cobertura = (2.0 * z * ((angle_deg / 2.0).to_radians()).tan()) / 2.0 / matrix.size_x;
+
     let left_point_x = cx + mitad_cobertura * perp_x;
     let left_point_y = cy + mitad_cobertura * perp_y;
- 
+
     let right_point_x = cx - mitad_cobertura * perp_x;
     let right_point_y = cy - mitad_cobertura * perp_y;
-    
- 
-    let der_point: (usize, usize) = (right_point_x.round() as usize, right_point_y.round() as usize);
+
+    let der_point: (usize, usize) = (
+        right_point_x.round() as usize,
+        right_point_y.round() as usize,
+    );
     let cent_point = (current_point.0, current_point.1);
     let izq_point = (left_point_x.round() as usize, left_point_y.round() as usize);
- 
+
     let center_vector = vec![(cent_point, matrix.data[cent_point.1][cent_point.0])];
- 
+
     let right_vector = get_points_on_line(cent_point, der_point, matrix);
     let left_vector = get_points_on_line(cent_point, izq_point, matrix);
- 
+
     [left_vector, center_vector, right_vector]
 }
 
@@ -165,8 +184,11 @@ pub fn get_points_on_line(
     let mut err = dx - dy;
 
     loop {
-        if check_point_validity((x as usize, y as usize), matrix){
-            points.push(((x as usize, y as usize), matrix.data[y as usize][x as usize]));
+        if check_point_validity((x as usize, y as usize), matrix) {
+            points.push((
+                (x as usize, y as usize),
+                matrix.data[y as usize][x as usize],
+            ));
         }
 
         if x == x1 && y == y1 {
@@ -194,7 +216,7 @@ fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
     let x = point.0;
     let y = point.1;
 
-    if x < matrix.width && y < matrix.height{
+    if x < matrix.width && y < matrix.height {
         if let Some(no_data) = matrix.no_data {
             return matrix.data[y][x] != no_data;
         }
@@ -206,8 +228,8 @@ fn check_point_validity(point: (usize, usize), matrix: &DepthMatrix) -> bool {
 
 ///Calcula el area cubierta para la sonda Monohaz
 pub fn calculate_covered_radius(z: f64, angle_deg: f64, matrix: &DepthMatrix) -> f64 {
-    let a = z * (angle_deg.to_radians()/2.0).tan();
-    (a/matrix.size_x).abs()
+    let a = z * (angle_deg.to_radians() / 2.0).tan();
+    (a / matrix.size_x).abs()
 }
 
 /// Función central: retorna los puntos dentro de un radio específico.
@@ -221,9 +243,17 @@ pub fn get_points_in_radius(
     let squared_radius = radius * radius;
 
     // Definimos los límites de búsqueda controlando que no bajen de 0
-    let min_x = if center_x > radius { (center_x - radius).floor() as usize } else { 0 };
+    let min_x = if center_x > radius {
+        (center_x - radius).floor() as usize
+    } else {
+        0
+    };
     let max_x = ((center_x + radius).ceil() as usize).min(matrix.width - 1);
-    let min_y = if center_y > radius { (center_y - radius).floor() as usize } else { 0 };
+    let min_y = if center_y > radius {
+        (center_y - radius).floor() as usize
+    } else {
+        0
+    };
     let max_y = ((center_y + radius).ceil() as usize).min(matrix.height - 1);
 
     let mut points = Vec::new();
@@ -249,18 +279,24 @@ pub fn get_points_circular_to_this(
     angle: f64,
     matrix: &DepthMatrix,
 ) -> Vec<(usize, usize)> {
-    let radius = calculate_covered_radius(matrix.data[current_point.1][current_point.0], angle, matrix);
+    let radius =
+        calculate_covered_radius(matrix.data[current_point.1][current_point.0], angle, matrix);
     get_points_in_radius(current_point, radius, matrix)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
- 
-    // Matriz chica con profundidad grande y size_x grande tambien. 
+
+    // Matriz chica con profundidad grande y size_x grande tambien.
     // El radio del haz en pixeles termina siendo enorme
     // en relacion al tamaño de la matriz
-    fn matriz_chica_y_profunda(width: usize, height: usize, depth: f64, size_x: f64) -> DepthMatrix {
+    fn matriz_chica_y_profunda(
+        width: usize,
+        height: usize,
+        depth: f64,
+        size_x: f64,
+    ) -> DepthMatrix {
         DepthMatrix {
             data: vec![vec![depth; width]; height],
             width,
@@ -272,7 +308,7 @@ mod tests {
             projection: String::new(),
         }
     }
- 
+
     #[test]
     fn no_genera_puntos_fuera_de_los_limites_de_la_matriz() {
         // Caso real que hacia panic con GEBCO: punto pegado al borde
@@ -280,22 +316,26 @@ mod tests {
         // distancia al borde.
         let matrix = matriz_chica_y_profunda(101, 67, 2500.0, 413.0);
         let punto_en_el_borde = (100, 66); // ultima columna, ultima fila
- 
+
         let puntos = get_points_circular_to_this(&punto_en_el_borde, 60.0, &matrix);
- 
+
         for (x, y) in puntos {
             assert!(x < matrix.width, "x={x} se paso del ancho={}", matrix.width);
-            assert!(y < matrix.height, "y={y} se paso del alto={}", matrix.height);
+            assert!(
+                y < matrix.height,
+                "y={y} se paso del alto={}",
+                matrix.height
+            );
         }
     }
- 
+
     #[test]
     fn el_punto_central_siempre_queda_incluido() {
         let matrix = matriz_chica_y_profunda(101, 67, 2500.0, 413.0);
         let centro = (50, 33);
- 
+
         let puntos = get_points_circular_to_this(&centro, 60.0, &matrix);
- 
+
         assert!(puntos.contains(&centro));
     }
 
@@ -327,13 +367,16 @@ mod tests {
         let path: Vec<(usize, usize)> = (10..90).map(|x| (x, 10)).collect();
 
         let result = get_perpendicular_measurements(&path, 60.0, Some(50.0), &matrix);
-        let MeasurementsType::Multihaz { paralel_measurment_1: left, .. } = result else {
+        let MeasurementsType::Multihaz {
+            paralel_measurment_1: left,
+            ..
+        } = result
+        else {
             panic!("se esperaba Multihaz");
         };
 
-        let ancho_en_x = |target_x: usize| -> usize {
-            left.iter().filter(|(p, _)| p.0 == target_x).count()
-        };
+        let ancho_en_x =
+            |target_x: usize| -> usize { left.iter().filter(|(p, _)| p.0 == target_x).count() };
         let ancho_zona_profunda = ancho_en_x(30);
         let ancho_zona_poco_profunda = ancho_en_x(70);
 
@@ -349,13 +392,16 @@ mod tests {
         let path: Vec<(usize, usize)> = (10..90).map(|x| (x, 10)).collect();
 
         let result = get_perpendicular_measurements(&path, 60.0, None, &matrix);
-        let MeasurementsType::Multihaz { paralel_measurment_1: left, .. } = result else {
+        let MeasurementsType::Multihaz {
+            paralel_measurment_1: left,
+            ..
+        } = result
+        else {
             panic!("se esperaba Multihaz");
         };
 
-        let ancho_en_x = |target_x: usize| -> usize {
-            left.iter().filter(|(p, _)| p.0 == target_x).count()
-        };
+        let ancho_en_x =
+            |target_x: usize| -> usize { left.iter().filter(|(p, _)| p.0 == target_x).count() };
         let ancho_zona_profunda = ancho_en_x(30);
         let ancho_zona_poco_profunda = ancho_en_x(70);
 

@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
+use crate::{
+    processing::measuring::calculate_distance_between_points, structs::depth_matrix::DepthMatrix,
+};
 use rand::RngExt;
-use crate::{processing::measuring::calculate_distance_between_points, structs::depth_matrix::DepthMatrix};
 
 /// Aplica ruido GNSS a un path ya construido, detectando los segmentos automáticamente.
 pub fn apply_gnss_noise(
@@ -28,13 +30,17 @@ pub fn apply_gnss_noise_segmented(
         let seg_end = seg.end;
         let seg_len = seg_end - seg_start;
 
-        if seg_len < 2 { continue; }
+        if seg_len < 2 {
+            continue;
+        }
 
         let start_point = &path[seg_start];
-        let end_point   = &path[seg_end - 1];
+        let end_point = &path[seg_end - 1];
 
         let len_meters = calculate_distance_between_points(start_point, end_point, matrix);
-        if len_meters == 0.0 { continue; }
+        if len_meters == 0.0 {
+            continue;
+        }
 
         // El desvío máximo real se acota según la longitud del segmento.
         // - `max_fraction`: el desvío nunca supera el 15% de la longitud del tramo,
@@ -65,7 +71,8 @@ pub fn apply_gnss_noise_segmented(
             let idx = seg_start + j;
             let t = j as f64 / (seg_len - 1) as f64 * std::f64::consts::PI;
 
-            let raw: f64 = harmonics.iter()
+            let raw: f64 = harmonics
+                .iter()
                 .enumerate()
                 .map(|(ki, (amp, phase))| {
                     let k = ki + 1;
@@ -93,15 +100,21 @@ fn detect_segments(path: &[(usize, usize)]) -> Vec<std::ops::Range<usize>> {
 
     let is_turn: Vec<bool> = (0..n)
         .map(|i| {
-            if i == 0 || i + 1 >= n { return true; }
+            if i == 0 || i + 1 >= n {
+                return true;
+            }
             let (px, py) = (path[i - 1].0 as f64, path[i - 1].1 as f64);
             let (cx, cy) = (path[i].0 as f64, path[i].1 as f64);
             let (nx, ny) = (path[i + 1].0 as f64, path[i + 1].1 as f64);
-            let dx1 = cx - px; let dy1 = cy - py;
-            let dx2 = nx - cx; let dy2 = ny - cy;
+            let dx1 = cx - px;
+            let dy1 = cy - py;
+            let dx2 = nx - cx;
+            let dy2 = ny - cy;
             let len1 = (dx1 * dx1 + dy1 * dy1).sqrt();
             let len2 = (dx2 * dx2 + dy2 * dy2).sqrt();
-            if len1 == 0.0 || len2 == 0.0 { return true; }
+            if len1 == 0.0 || len2 == 0.0 {
+                return true;
+            }
             let dot = (dx1 * dx2 + dy1 * dy2) / (len1 * len2);
             dot < 0.7
         })
@@ -125,7 +138,8 @@ fn detect_segments(path: &[(usize, usize)]) -> Vec<std::ops::Range<usize>> {
 fn valid(matrix: &DepthMatrix, x: f64, y: f64) -> bool {
     let xi = x.round() as isize;
     let yi = y.round() as isize;
-    xi >= 0 && yi >= 0
+    xi >= 0
+        && yi >= 0
         && xi < matrix.width as isize
         && yi < matrix.height as isize
         && Some(matrix.data[yi as usize][xi as usize]) != matrix.no_data

@@ -1,13 +1,15 @@
-use yew::prelude::*;
-use crate::components::subtitle::Subtitle;
-use crate::components::confirm_modal::ConfirmModal; 
+use crate::components::confirm_modal::ConfirmModal;
 use crate::components::modal::Modal;
-use crate::services::requests::{get_all_students, get_all_projects, create_student, delete_student};
+use crate::components::subtitle::Subtitle;
+use crate::services::requests::{
+    create_student, delete_student, get_all_projects, get_all_students,
+};
+use crate::structs::project::Project;
 use crate::structs::student::Student;
-use crate::structs::project::Project; 
-use lucide_yew::{Plus, Users, Search, Check, ClipboardCopy};
+use lucide_yew::{Check, ClipboardCopy, Plus, Search, Users};
 use wasm_bindgen::JsCast;
 use web_sys::window;
+use yew::prelude::*;
 
 use crate::pages::admin::sections::students::students_table::TablaUsuarios;
 
@@ -16,29 +18,29 @@ use crate::pages::admin::sections::students::students_table::TablaUsuarios;
 #[function_component(AdminStudents)]
 pub fn admin_students() -> Html {
     let students_state = use_state(Vec::<Student>::new);
-    let projects_state = use_state(Vec::<Project>::new); 
-    
+    let projects_state = use_state(Vec::<Project>::new);
+
     let ui_mensaje = use_state(String::new);
     let ui_loading = use_state(|| false);
-    
+
     let show_modal = use_state(|| false);
     let input_name = use_state(String::new);
-    let input_project_id = use_state(|| 0i64); 
-    
+    let input_project_id = use_state(|| 0i64);
+
     let form_error = use_state(String::new);
 
     let delete_target = use_state(|| None::<Student>);
-    let search_filter = use_state(|| String::new());
+    let search_filter = use_state(String::new);
 
     {
         let students_state = students_state.clone();
         let projects_state = projects_state.clone();
         let ui_mensaje = ui_mensaje.clone();
         let ui_loading = ui_loading.clone();
-        
+
         use_effect_with((), move |_| {
             get_all_students(students_state, ui_mensaje.clone(), ui_loading.clone());
-            get_all_projects(projects_state, ui_mensaje, ui_loading); 
+            get_all_projects(projects_state, ui_mensaje, ui_loading);
             || ()
         });
     }
@@ -49,7 +51,7 @@ pub fn admin_students() -> Html {
         let students = students_state.clone();
         let ui_mensaje = ui_mensaje.clone();
         let is_copied = is_copied.clone(); // Clonamos el estado
-        
+
         Callback::from(move |_| {
             if students.is_empty() {
                 ui_mensaje.set("No hay grupos cargados para exportar.".to_string());
@@ -58,14 +60,17 @@ pub fn admin_students() -> Html {
 
             let mut export_text = String::from("");
             for student in &*students {
-                export_text.push_str(&format!("Grupo: {}  |  Código: `{}`\n", student.name, student.code));
+                export_text.push_str(&format!(
+                    "Grupo: {}  |  Código: `{}`\n",
+                    student.name, student.code
+                ));
             }
 
             if let Some(win) = window() {
                 let navigator = win.navigator();
                 let clipboard = navigator.clipboard();
                 let _ = clipboard.write_text(&export_text);
-                
+
                 is_copied.set(true);
 
                 // Corregido: Usamos Closure::once con una clausura FnOnce normal de Rust
@@ -73,17 +78,18 @@ pub fn admin_students() -> Html {
                 let closure = wasm_bindgen::closure::Closure::once(move || {
                     is_copied_reset.set(false);
                 });
-                
+
                 // Le pasamos la referencia al setTimeout del navegador
                 let _ = win.set_timeout_with_callback_and_timeout_and_arguments_0(
                     closure.as_ref().unchecked_ref(),
-                    3000
+                    3000,
                 );
-                
+
                 // Dejamos que el runtime de JS controle su ciclo de vida
                 closure.forget();
             } else {
-                ui_mensaje.set("Error: Tu navegador bloqueó el acceso al portapapeles.".to_string());
+                ui_mensaje
+                    .set("Error: Tu navegador bloqueó el acceso al portapapeles.".to_string());
             }
         })
     };
@@ -101,7 +107,7 @@ pub fn admin_students() -> Html {
         Callback::from(move |_| {
             show_modal.set(false);
             input_name.set(String::new());
-            input_project_id.set(0); 
+            input_project_id.set(0);
             form_error.set(String::new());
         })
     };
@@ -118,25 +124,26 @@ pub fn admin_students() -> Html {
         let form_error = form_error.clone();
 
         Callback::from(move |e: SubmitEvent| {
-            e.prevent_default(); 
-            
+            e.prevent_default();
+
             if project_id == 0 {
-                form_error.set("Debes seleccionar un proyecto disponible para el grupo.".to_string());
+                form_error
+                    .set("Debes seleccionar un proyecto disponible para el grupo.".to_string());
                 return;
             }
 
             if !name.is_empty() {
                 form_error.set(String::new());
                 create_student(
-                    name.clone(), 
-                    project_id, 
-                    students_state.clone(), 
-                    ui_mensaje.clone(), 
-                    ui_loading.clone()
+                    name.clone(),
+                    project_id,
+                    students_state.clone(),
+                    ui_mensaje.clone(),
+                    ui_loading.clone(),
                 );
                 show_modal.set(false);
                 input_name.set(String::new());
-                input_project_id.set(0); 
+                input_project_id.set(0);
             } else {
                 form_error.set("Asigna a un alumno/grupo válido.".to_string());
             }
@@ -148,12 +155,17 @@ pub fn admin_students() -> Html {
         let students_state = students_state.clone();
         let ui_mensaje = ui_mensaje.clone();
         let ui_loading = ui_loading.clone();
-        
+
         Callback::from(move |_| {
             if let Some(student) = &*delete_target {
-                delete_student(student.id, students_state.clone(), ui_mensaje.clone(), ui_loading.clone());
+                delete_student(
+                    student.id,
+                    students_state.clone(),
+                    ui_mensaje.clone(),
+                    ui_loading.clone(),
+                );
             }
-            delete_target.set(None); 
+            delete_target.set(None);
         })
     };
 
@@ -189,22 +201,22 @@ pub fn admin_students() -> Html {
 
                         <div>
                             <label class="block text-xs font-semibold text-white/70 mb-1">{"Nombre del Alumno / Grupo"}</label>
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 required=true
                                 value={(*input_name).clone()}
                                 oninput={Callback::from(move |e: InputEvent| {
                                     let input: web_sys::HtmlInputElement = e.target_unchecked_into();
                                     input_name_setter.set(input.value());
                                 })}
-                                placeholder="Grupo 4" 
+                                placeholder="Grupo 4"
                                 class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white"
                             />
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-white/70 mb-1">{"Seleccionar Proyecto Asignado"}</label>
-                            <select 
+                            <select
                                 value={(*input_project_id).to_string()}
                                 onchange={Callback::from(move |e: Event| {
                                     let select: web_sys::HtmlSelectElement = e.target_unchecked_into();
@@ -246,11 +258,11 @@ pub fn admin_students() -> Html {
     };
 
     html! {
-        <> 
+        <>
             <div class="text-white flex justify-between p-2 pr-1 items-end">
                 <div class="space-y-1">
                     <Subtitle text={"Todos los estudiantes y grupos"} icon={html! { <Users size={24}/> }} />
-                    <p class="text-white/70 text-xs">{"Aca podes administrar los distintos grupos y asignarles proyectos a realizar."}</p> 
+                    <p class="text-white/70 text-xs">{"Aca podes administrar los distintos grupos y asignarles proyectos a realizar."}</p>
                     if !ui_mensaje.is_empty() {
                         <p class="text-cyan-300 text-xs font-mono">{ &*ui_mensaje }</p>
                     }
@@ -260,7 +272,7 @@ pub fn admin_students() -> Html {
                         <span class="absolute left-3 text-white pointer-events-none">
                             <Search size={14} />
                         </span>
-                        <input 
+                        <input
                             type="text"
                             placeholder="Busca por proyecto."
                             value={(*search_filter).clone()}
@@ -269,8 +281,8 @@ pub fn admin_students() -> Html {
                         />
                     </div>
 
-                    <button 
-                        onclick={on_export} 
+                    <button
+                        onclick={on_export}
                         disabled={*is_copied}
                         class={
                             if *is_copied {
@@ -281,10 +293,10 @@ pub fn admin_students() -> Html {
                         }
                         title="Copia los nombres y códigos de los alumnos en portapapeles"
                     >
-                        if *is_copied { 
+                        if *is_copied {
                             <Check size={16}/>
                             <span class="text-xs font-semibold">{"¡Copiado!"}</span>
-                        } else { 
+                        } else {
                             <ClipboardCopy size={16}/>
                             <span class="text-xs font-semibold">{"Copiar códigos"}</span>
                         }
@@ -298,14 +310,14 @@ pub fn admin_students() -> Html {
                     </button>
                 </div>
             </div>
-    
+
             <div class="h-full overflow-y-auto pb-16 mt-2">
                 if *ui_loading {
                     <div class="text-white text-center p-4 font-mono text-sm">{"Procesando operacion..."}</div>
                 } else {
-                    <TablaUsuarios 
-                        usuarios={(*students_state).clone()} 
-                        proyectos={(*projects_state).clone()} 
+                    <TablaUsuarios
+                        usuarios={(*students_state).clone()}
+                        proyectos={(*projects_state).clone()}
                         delete_target={delete_target.clone()}
                         students_state={students_state.clone()}
                         filter={(*search_filter).clone()}
@@ -315,7 +327,7 @@ pub fn admin_students() -> Html {
 
             { add_student_modal_html }
 
-            <ConfirmModal 
+            <ConfirmModal
                 is_open={delete_target.is_some()}
                 title="¿Eliminar Alumno / Grupo?"
                 message={

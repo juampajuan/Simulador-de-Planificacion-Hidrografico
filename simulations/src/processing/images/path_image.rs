@@ -1,15 +1,19 @@
-use image::{Rgba, RgbaImage};
-use crate::structs::depth_matrix::DepthMatrix;
+use super::images_helpers::{
+    COVERAGE_OVERLAY_COLOR, ZONE_FILL_COLOR, depth_color, depth_range, draw_covered_points,
+    draw_path, fill_zone_translucent,
+};
 use crate::processing::processing_helpers::is_valid;
-use super::images_helpers::{depth_color, depth_range, fill_zone_translucent, draw_covered_points, draw_path, ZONE_FILL_COLOR, COVERAGE_OVERLAY_COLOR};
+use crate::structs::depth_matrix::DepthMatrix;
+use image::{Rgba, RgbaImage};
 
 #[allow(dead_code)]
-pub fn makepng_with_matrix_and_path(
-    matrix: &DepthMatrix,
-    path: &Vec<(usize, usize)>,
-) -> RgbaImage {
+pub fn makepng_with_matrix_and_path(matrix: &DepthMatrix, path: &Vec<(usize, usize)>) -> RgbaImage {
     let (min_depth, max_depth) = depth_range(&matrix.data, matrix.no_data);
-    let range = if (max_depth - min_depth).abs() < 1e-10 { 1.0 } else { max_depth - min_depth };
+    let range = if (max_depth - min_depth).abs() < 1e-10 {
+        1.0
+    } else {
+        max_depth - min_depth
+    };
 
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
 
@@ -44,14 +48,11 @@ pub fn makepng_with_matrix_and_path(
 
 /// Genera un png del recorrido de la matriz sobre el GeoTIFF
 /// Fondo transparente, recorrido blanco
-pub fn makepng_transparent_with_path(
-    matrix: &DepthMatrix,
-    path: &Vec<(usize, usize)>,
-) -> RgbaImage {
+pub fn makepng_transparent_with_path(matrix: &DepthMatrix, path: &[(usize, usize)]) -> RgbaImage {
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
 
     fill_zone_translucent(&mut img, matrix, ZONE_FILL_COLOR);
-    
+
     draw_path(&mut img, matrix, path, Rgba([255, 255, 255, 255]));
 
     img
@@ -64,16 +65,15 @@ pub fn make_shaded_png(
     covered_points: &[((usize, usize), f64)],
     path: &[(usize, usize)],
 ) -> RgbaImage {
-    
     let mut img = RgbaImage::new(matrix.width as u32, matrix.height as u32);
- 
+
     fill_zone_translucent(&mut img, matrix, ZONE_FILL_COLOR);
- 
+
     // Puntos cubiertos en azul oscuro
     draw_covered_points(&mut img, covered_points, COVERAGE_OVERLAY_COLOR);
- 
+
     // Recorrido blanco semitransparente encima
     draw_path(&mut img, matrix, path, Rgba([255, 255, 255, 180]));
- 
+
     img
 }

@@ -1,8 +1,8 @@
-use yew::prelude::*;
-use web_sys::HtmlInputElement;
+use crate::{components::subtitle::Subtitle, structs::state::EchoState};
 use common::Transport;
 use lucide_yew::Ship;
-use crate::{components::subtitle::Subtitle, structs::state::EchoState};
+use web_sys::HtmlInputElement;
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct TransportParamsProps {
@@ -22,9 +22,9 @@ pub fn transport_params(props: &TransportParamsProps) -> Html {
                 <input type="checkbox" class="w-4 h-4" checked={value} onchange={Callback::from(move |e: Event| {
                     let input: HtmlInputElement = e.target_unchecked_into();
                     let mut s = (*state).clone();
-                    match id { 
-                        "m" => s.uses_mareograph = input.checked(), 
-                        "s" => s.uses_sound_profiler = input.checked(), 
+                    match id {
+                        "m" => s.uses_mareograph = input.checked(),
+                        "s" => s.uses_sound_profiler = input.checked(),
                         "i" => s.uses_inertial_sensor = input.checked(),
                         _ => ()
                     };
@@ -47,9 +47,9 @@ pub fn transport_params(props: &TransportParamsProps) -> Html {
                     let state = state.clone();
                     let is_selected = state.transport == t;
                     html! {
-                        <button 
+                        <button
                             type="button"
-                            class={format!("flex-1 p-2 text-[10px] font-bold rounded-sm transition-colors {}", 
+                            class={format!("flex-1 p-2 text-[10px] font-bold rounded-sm transition-colors {}",
                                 if is_selected { "bg-cyan-200 text-black" } else { "text-white hover:bg-zinc-600" }
                             )}
                             onclick={Callback::from(move |_| {
@@ -66,11 +66,11 @@ pub fn transport_params(props: &TransportParamsProps) -> Html {
 
             <div class="flex flex-col gap-1">
                 <span class="text-xs text-white/40 ml-1">{"Velocidad de la embarcación (m/s)"}</span>
-                <input 
-                    type="number" 
+                <input
+                    type="number"
                     step="0.1"
                     placeholder="1.0"
-                    class={input_cls} 
+                    class={input_cls}
                     value={state.speed.clone()}
                     oninput={Callback::from({let state = state.clone(); move |e: InputEvent| {
                         let mut s = (*state).clone();

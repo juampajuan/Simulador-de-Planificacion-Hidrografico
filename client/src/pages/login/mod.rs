@@ -1,7 +1,7 @@
-use yew::prelude::*;
-use web_sys::window;
 use crate::components::title::Title;
 use crate::services::requests::trigger_login;
+use web_sys::window;
+use yew::prelude::*;
 
 pub mod login_welcome;
 pub mod student_form;
@@ -38,11 +38,11 @@ pub fn login_page() -> Html {
         let counter = counter.clone();
         use_effect_with((), move |_| {
             counter.set(next_counter());
-            if let Some(win) = window() 
-                && let Ok(Some(storage)) = win.local_storage() {
-                    let _ = storage.remove_item("group_or_user_name");
-                    let _ = storage.remove_item("user_role");
-                
+            if let Some(win) = window()
+                && let Ok(Some(storage)) = win.local_storage()
+            {
+                let _ = storage.remove_item("group_or_user_name");
+                let _ = storage.remove_item("user_role");
             }
             || ()
         });
@@ -59,13 +59,21 @@ pub fn login_page() -> Html {
     let show_divider = matches!(mode, LoginMode::None);
 
     let student_cls = match mode {
-        LoginMode::Teacher => "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-0 scale-95 max-w-0 p-0",
-        _ => "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-100 scale-100 max-w-md",
+        LoginMode::Teacher => {
+            "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-0 scale-95 max-w-0 p-0"
+        }
+        _ => {
+            "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-100 scale-100 max-w-md"
+        }
     };
 
     let teacher_cls = match mode {
-        LoginMode::Student => "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-0 scale-95 max-w-0 p-0",
-        _ => "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-100 scale-100 max-w-md flex-1",
+        LoginMode::Student => {
+            "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-0 scale-95 max-w-0 p-0"
+        }
+        _ => {
+            "flex-1 overflow-hidden transition-all duration-300 ease-in-out opacity-100 scale-100 max-w-md flex-1"
+        }
     };
 
     // Al enviar el form, dispara el login con los datos del modo correspondiente.
@@ -83,7 +91,7 @@ pub fn login_page() -> Html {
                 &teacher_user,
                 &teacher_password,
                 mensaje.clone(),
-                loading.clone()
+                loading.clone(),
             );
         })
     };
@@ -108,14 +116,14 @@ pub fn login_page() -> Html {
                     class="w-full h-full object-cover opacity-60"
                 />
             </div>
-            
+
             <div class="h-screen w-screen grid grid-cols-2 bg-gradient-to-t from-slate-900/80 to-transparent relative">
-                
+
                 <LoginWelcome />
 
                 <div class="flex-1 flex items-center justify-center relative dot-grid-dark">
                     <form onsubmit={on_submit} class="bg-slate-950/70 backdrop-blur w-[420px] border border-white/25 rounded-md shadow-xl">
-                        
+
                         <div class="p-6 border-b border-white/20 space-y-2">
                             <Title text={"Acceso al simulador"} />
                             <div class="text-white/90 text-xs">
@@ -125,10 +133,10 @@ pub fn login_page() -> Html {
 
                         <div class="flex">
                             <div class={student_cls}>
-                                <StudentForm 
-                                    loading={*loading} 
-                                    student_code={student_code} 
-                                    input_cls={input_cls} 
+                                <StudentForm
+                                    loading={*loading}
+                                    student_code={student_code}
+                                    input_cls={input_cls}
                                 />
                             </div>
 
@@ -136,13 +144,13 @@ pub fn login_page() -> Html {
                                 "w-px", "bg-white/20", "transition-opacity", "duration-300",
                                 if show_divider { "opacity-100" } else { "opacity-0" }
                             )}/>
-                            
+
                             <div class={teacher_cls}>
-                                <TeacherForm 
-                                    loading={*loading} 
-                                    teacher_user={teacher_user} 
-                                    teacher_password={teacher_password} 
-                                    input_cls={input_cls} 
+                                <TeacherForm
+                                    loading={*loading}
+                                    teacher_user={teacher_user}
+                                    teacher_password={teacher_password}
+                                    input_cls={input_cls}
                                 />
                             </div>
                         </div>
@@ -158,7 +166,7 @@ pub fn login_page() -> Html {
                             }
                             <button
                                 type="submit"
-                                disabled={*loading}        
+                                disabled={*loading}
                                 class="text-center w-full disabled:opacity-30 bg-cyan-200 p-2 px-6 text-black text-sm font-bold hover:bg-cyan-300 transition-all rounded shadow-xl disabled:bg-cyan-100 cursor-pointer"
                             >
                                 {"Acceder"}
@@ -176,7 +184,11 @@ pub fn login_page() -> Html {
 /// para mostrar una imagen distinta en cada carga de la página.
 fn next_counter() -> u8 {
     let storage = window().unwrap().local_storage().unwrap().unwrap();
-    let current = storage.get_item("page_counter").unwrap().and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
+    let current = storage
+        .get_item("page_counter")
+        .unwrap()
+        .and_then(|s| s.parse::<u8>().ok())
+        .unwrap_or(0);
     let next = (current + 1) % 3;
     let _ = storage.set_item("page_counter", &next.to_string());
     next

@@ -4,11 +4,9 @@ use crate::db::engine::DBEngine;
 /// auth_tokens (con sus foreign keys en cascada), inserta el usuario 'admin' por defecto
 /// y crea los índices de las columnas más consultadas. Es idempotente: se puede correr en
 /// cada arranque sin romper datos existentes.
-pub fn init(
-    db: &DBEngine
-) -> Result<(), sqlite::Error> {
-
-    db.connection.execute("
+pub fn init(db: &DBEngine) -> Result<(), sqlite::Error> {
+    db.connection.execute(
+        "
         CREATE TABLE IF NOT EXISTS professors (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
@@ -137,7 +135,8 @@ pub fn init(
         CREATE INDEX IF NOT EXISTS idx_students_professor_id ON students(professor_id);
         CREATE INDEX IF NOT EXISTS idx_students_code ON students(code);
         CREATE INDEX IF NOT EXISTS idx_professors_username ON professors(username);
-    ")?;
+    ",
+    )?;
 
     Ok(())
 }

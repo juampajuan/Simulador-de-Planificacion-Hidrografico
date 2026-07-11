@@ -1,4 +1,4 @@
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{DEFAULT_COST, hash, verify};
 
 /// Genera el hash bcrypt de una contraseña (con el costo por defecto) para guardarlo en la base.
 pub fn hash_password(password: &str) -> Result<String, bcrypt::BcryptError> {

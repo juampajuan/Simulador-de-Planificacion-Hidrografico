@@ -1,10 +1,10 @@
-use yew::prelude::*;
 use crate::components::subtitle::Subtitle;
+use crate::pages::admin::sections::projects::projects_create::CreateProjectModal;
+use crate::pages::admin::sections::projects::projects_row::ProjectRow;
+use crate::services::requests::get_all_projects;
 use crate::structs::project::Project;
 use lucide_yew::{FolderOpenDot, Plus};
-use crate::services::requests::get_all_projects;
-use crate::pages::admin::sections::projects::projects_row::ProjectRow;
-use crate::pages::admin::sections::projects::projects_create::CreateProjectModal;
+use yew::prelude::*;
 
 /// Sección de proyectos: lista los del profesor y permite crear uno nuevo.
 #[function_component(AdminProjects)]
@@ -18,7 +18,7 @@ pub fn admin_projects() -> Html {
         let projects = projects.clone();
         let ui_mensaje = ui_mensaje.clone();
         let ui_loading = ui_loading.clone();
-        
+
         use_effect_with((), move |_| {
             get_all_projects(projects, ui_mensaje, ui_loading);
             || ()
@@ -30,7 +30,7 @@ pub fn admin_projects() -> Html {
         Callback::from(move |_| is_modal_open.set(true))
     };
 
-    html! {<> 
+    html! {<>
         <div class="text-white flex justify-between p-2 pr-1 items-end">
             <div class="space-y-1">
                 <Subtitle
@@ -39,10 +39,10 @@ pub fn admin_projects() -> Html {
                         <FolderOpenDot size={24}/>
                     }}
                 />
-                <p class="text-white/70 text-xs">{"Aca podes administrar los proyectos que luego se podran asignar a los alumnos o grupos."}</p> 
+                <p class="text-white/70 text-xs">{"Aca podes administrar los proyectos que luego se podran asignar a los alumnos o grupos."}</p>
             </div>
             <div>
-                <button 
+                <button
                     onclick={on_click_add}
                     class="flex items-center px-4 h-9 gap-1.5 bg-cyan-200 text-black/90 rounded-lg cursor-pointer hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-500/5"
                 >
@@ -51,7 +51,7 @@ pub fn admin_projects() -> Html {
                 </button>
             </div>
         </div>
- 
+
         <div class="h-full overflow-y-auto pb-16 mt-4">
             if *ui_loading {
                 <p class="text-cyan-300 text-xs animate-pulse">{"Cargando proyectos..."}</p>
@@ -62,9 +62,9 @@ pub fn admin_projects() -> Html {
         </div>
 
         if *is_modal_open {
-            <CreateProjectModal 
-                is_open={is_modal_open.clone()} 
-                projects_state={projects.clone()} 
+            <CreateProjectModal
+                is_open={is_modal_open.clone()}
+                projects_state={projects.clone()}
             />
         }
     </>}
@@ -95,11 +95,11 @@ pub fn projects_table(props: &ProjectsTableProps) -> Html {
                     {
                         props.projects_state.iter().enumerate().map(|(index, item)| {
                             html! {
-                                <ProjectRow 
+                                <ProjectRow
                                     key={item.id}
                                     row_number={index + 1}
-                                    project={item.clone()} 
-                                    projects_state={props.projects_state.clone()} 
+                                    project={item.clone()}
+                                    projects_state={props.projects_state.clone()}
                                 />
                             }
                         }).collect::<Html>()

@@ -1,8 +1,8 @@
-use yew::prelude::*;
-use lucide_yew::{EqualNot, Image, Layers};
-use crate::services::requests::StudentSimulation;
 use crate::structs::state::SimulationUiState;
+use common::StudentSimulation;
 use gloo_timers::callback::Timeout;
+use lucide_yew::{EqualNot, Image, Layers};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct ImageSelectorProps {
@@ -15,7 +15,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
     let sim = props.active_sim.clone();
     let min_depth_val = sim.result_min_depth;
     let max_depth_val = sim.result_max_depth;
-    
+
     let selected = use_state(|| 1);
 
     let change_view_map = {
@@ -27,13 +27,13 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     ui.mensaje.set(String::new());
                     ui.min_depth.set(min_depth_val);
                     ui.max_depth.set(max_depth_val);
-                    
+
                     if is_diff_view {
                         ui.show_legend.set(false);
                     } else {
                         ui.show_legend.set(true);
                     }
-                    
+
                     ui.loading.set(false);
                 } else {
                     ui.image_url.set(None);
@@ -117,9 +117,9 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
 
     html! {
         <div class="flex gap-2 p-2 bg-slate-950/60 backdrop-blur border border-white/20 rounded-lg shadow-xl select-none animate-fade-in z-10">
-                        
-            <button 
-                onclick={on_click_sim} 
+
+            <button
+                onclick={on_click_sim}
                 class={classes!(
                     "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
                     "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-2",
@@ -130,12 +130,12 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     }
                 )}
             >
-                <Image size={18}/> 
+                <Image size={18}/>
                 <span class="truncate">{"Simulación"}</span>
             </button>
-            
-            <button 
-                onclick={on_click_cov} 
+
+            <button
+                onclick={on_click_cov}
                 class={classes!(
                     "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
                     "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-2",
@@ -146,12 +146,12 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     }
                 )}
             >
-                <Layers size={18}/> 
+                <Layers size={18}/>
                 <span class="truncate">{"Cobertura"}</span>
             </button>
-            
-            <button 
-                onclick={on_click_diff} 
+
+            <button
+                onclick={on_click_diff}
                 class={classes!(
                     "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
                     "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-2",
@@ -162,7 +162,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     }
                 )}
             >
-                <EqualNot size={18}/> 
+                <EqualNot size={18}/>
                 <span class="truncate">{"Diferencias"}</span>
             </button>
 

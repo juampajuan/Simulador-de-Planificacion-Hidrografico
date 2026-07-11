@@ -1,7 +1,7 @@
-use yew::prelude::*;
+use crate::components::subtitle::Subtitle;
 use lucide_yew::University;
 use web_sys::HtmlInputElement;
-use crate::components::subtitle::Subtitle;
+use yew::prelude::*;
 
 /// Props del formulario de docente: estado de carga, los estados compartidos de usuario
 /// y contraseña, y las clases CSS de los inputs.

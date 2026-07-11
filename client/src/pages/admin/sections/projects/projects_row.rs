@@ -1,15 +1,15 @@
-use crate::pages::admin::sections::projects::projects_edit::ProjectEdit;
-use yew::prelude::*;
-use crate::structs::project::Project;
-use lucide_yew::{X, Trash, Pencil};
-use crate::services::requests::{update_project, delete_project};
 use crate::components::confirm_modal::ConfirmModal;
+use crate::pages::admin::sections::projects::projects_edit::ProjectEdit;
+use crate::services::requests::{delete_project, update_project};
+use crate::structs::project::Project;
+use lucide_yew::{Pencil, Trash, X};
+use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct ProjectRowProps {
-    pub project: Project, 
-    pub row_number: usize,                            
-    pub projects_state: UseStateHandle<Vec<Project>>, 
+    pub project: Project,
+    pub row_number: usize,
+    pub projects_state: UseStateHandle<Vec<Project>>,
 }
 
 /// Fila de un proyecto
@@ -38,7 +38,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                 updated_data,
                 projects_state.clone(),
                 row_mensaje.clone(),
-                row_loading.clone()
+                row_loading.clone(),
             );
 
             is_editing.set(false);
@@ -62,7 +62,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                 project_id,
                 projects_state.clone(),
                 row_mensaje.clone(),
-                row_loading.clone()
+                row_loading.clone(),
             );
             is_delete_modal_open.set(false);
         })
@@ -73,12 +73,16 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
         Callback::from(move |_| is_delete_modal_open.set(false))
     };
 
-    let desc_text = props.project.description.clone().unwrap_or_else(|| "Sin descripción".to_string());
+    let desc_text = props
+        .project
+        .description
+        .clone()
+        .unwrap_or_else(|| "Sin descripción".to_string());
     let is_exam_project = props.project.exam_mode;
 
     html! {
         <>
-            <tr 
+            <tr
                 class={classes!(
                     "text-sm",
                     if *is_editing { "bg-slate-600" } else { "bg-slate-800" },
@@ -86,7 +90,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                     "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_0_1px_rgba(255,255,255,0.1)]"
                 )}
             >
-                <td class="px-4 py-2 text-left font-medium rounded-l-lg overflow-hidden">{ props.row_number }</td>   
+                <td class="px-4 py-2 text-left font-medium rounded-l-lg overflow-hidden">{ props.row_number }</td>
                 <td class="px-4 py-3">
                     <div class="space-y-1">
                         <div class="font-medium text-white">{ &props.project.name }</div>
@@ -116,7 +120,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
 
                 <td class="p-3 rounded-r-lg align-middle">
                     <div class="flex justify-end gap-2 items-center h-full">
-                        <button 
+                        <button
                             onclick={toggle_edit}
                             class={classes!(
                                 "p-2", "rounded-full", "transition-colors", "cursor-pointer",
@@ -125,7 +129,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                         >
                             if *is_editing { <X size={18}/> } else { <Pencil size={18}/> }
                         </button>
-                        <button 
+                        <button
                             onclick={on_click_trash}
                             class="bg-red-800 p-2 rounded-full hover:bg-red-700 transition-colors cursor-pointer"
                         >
@@ -139,7 +143,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                 <tr class="text-sm">
                     <td colspan="6" class="p-4 bg-slate-600 rounded-lg border border-white/20">
                         <ProjectEdit
-                            project_state={props.project.clone()} 
+                            project_state={props.project.clone()}
                             projects_state={props.projects_state.clone()}
                             on_save={on_save_project}
                         />
@@ -149,7 +153,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
                     </td>
                 </tr>
             }
-            <ConfirmModal 
+            <ConfirmModal
                 is_open={*is_delete_modal_open}
                 title="¿Estás completamente seguro?"
                 message={format!("Esta acción eliminará permanentemente el proyecto '{}' \n junto a todas sus asignaciones.", props.project.name)}

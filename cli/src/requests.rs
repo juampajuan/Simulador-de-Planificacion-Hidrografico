@@ -1,5 +1,5 @@
-use serde::Serialize;
 use reqwest::blocking::Client;
+use serde::Serialize;
 
 #[derive(Serialize)]
 struct UserRequest {
@@ -10,16 +10,17 @@ struct UserRequest {
 /// Genera la estructura de cliente HTTP, habilitando las cookies
 // Para poder hacer las requets autenticado.
 pub fn generate_client() -> Result<Client, reqwest::Error> {
-    let client = Client::builder()
-    .cookie_store(true)
-    .build()?;
+    let client = Client::builder().cookie_store(true).build()?;
 
     Ok(client)
 }
 
 /// Ejecuta la request de login, para autenticar el CLI
-pub fn login(host: &str, pass: &str, client: &Client) -> Result<(String, u16), Box<dyn std::error::Error>> {
-
+pub fn login(
+    host: &str,
+    pass: &str,
+    client: &Client,
+) -> Result<(String, u16), Box<dyn std::error::Error>> {
     println!("\n\x1b[36mIniciando sesion como admin...\x1b[0m");
 
     let body = UserRequest {
@@ -44,12 +45,11 @@ pub fn create_user(
     user: &str,
     pass: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-
     let body = UserRequest {
         user: user.into(),
         pass: pass.into(),
     };
- 
+
     let response = client
         .post(format!("{}/api/v1/auth/create_professor_user", host))
         .json(&body)
@@ -66,7 +66,6 @@ pub fn change_pass(
     user: &str,
     pass: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-
     let body = UserRequest {
         user: user.into(),
         pass: pass.into(),
@@ -82,11 +81,7 @@ pub fn change_pass(
 }
 
 /// Realiza la request para cerrar todas las sesiones
-pub fn close_all(
-    client: &Client,
-    host: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-
+pub fn close_all(client: &Client, host: &str) -> Result<String, Box<dyn std::error::Error>> {
     let response = client
         .post(format!("{}/api/v1/auth/close_all", host))
         .send()?;
@@ -95,14 +90,8 @@ pub fn close_all(
     Ok(text)
 }
 
-pub fn clean_files(
-    client: &Client,
-    host: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-
-    let response = client
-        .post(format!("{}/api/v1/clean_files", host))
-        .send()?;
+pub fn clean_files(client: &Client, host: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let response = client.post(format!("{}/api/v1/clean_files", host)).send()?;
 
     let text = response.text()?;
     Ok(text)
