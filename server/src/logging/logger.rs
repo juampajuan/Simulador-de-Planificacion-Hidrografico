@@ -25,12 +25,12 @@ pub fn logger_handler(rx: Receiver<ThreadMessage>, settings: Arc<Settings>) {
         },
     };
 
-    logging_writter_loop(rx, &mut file, settings.logging_type);
+    logging_writter_loop(rx, &mut file, settings.logging_type, settings.simplified_terminal_logs);
 }
 
 
 /// Ejecuta el loop que recibe los LOGS de distintos hilos y los escribe en archivo si corresponde
-pub fn logging_writter_loop(rx: Receiver<ThreadMessage>, file: &mut File, logging_type: i32) {
+pub fn logging_writter_loop(rx: Receiver<ThreadMessage>, file: &mut File, logging_type: i32, simplified: bool) {
     loop{
 
         let result = match rx.recv() {
@@ -47,7 +47,13 @@ pub fn logging_writter_loop(rx: Receiver<ThreadMessage>, file: &mut File, loggin
         if let Ok(Some(msg)) = result {
             let now = Local::now();
             let timestamp = now.format("%H:%M:%S %d:%M").to_string();
-            if let Err(e) = writeln!(file, "[{}] [{}]: {}",timestamp, msg.1.to_string(), msg.0) {
+            let log = format!("[{}] [{}]: {}", timestamp, msg.1.to_string(), msg.0);
+
+            if !simplified {
+                println!("{log}");
+            }
+
+            if let Err(e) = writeln!(file, "{log}") {
                 eprintln!("\x1b[91m[LOGGER]: No se pudo escribir en el archivo ({:?}).\x1b[0m", e);
                 eprintln!("\x1b[93m[LOGGER]: El servidor funcionará con regularidad, pero no se almacenarán los LOG en el archivo.\x1b[0m");
             };

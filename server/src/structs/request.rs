@@ -23,7 +23,12 @@ pub struct RequestLog {
  
 impl RequestLog {
     /// Imprime el log en consola coloreado según el código de estado (verde 2xx, azul 3xx/4xx, rojo 5xx).
-    pub fn print(&self) {
+    pub fn print(&self, simplified: bool) {
+
+        if !simplified {
+            return;
+        }
+
         let color: &str = match self.status_code {
             200..=299 => GREEN,
             300..=499 => BLUE,

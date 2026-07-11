@@ -14,8 +14,9 @@ use crate::logging::{logger, structs::ThreadMessage};
 /// y al terminar imprime su log en consola. Devuelve el handle del hilo.
 pub fn create_request_thread(request: Request, cache: Arc<Mutex<FileCache>>, settings: Arc<Settings>, db: Arc<Mutex<DBEngine>>, tx: Sender<ThreadMessage>) -> JoinHandle<()> {
     thread::spawn(move || {
+        let simplified = settings.simplified_terminal_logs;
         let log = handle_request(request, cache, db, settings, &tx);
-        log.print();
+        log.print(simplified);
         log.send_to_logger(&tx);
     })
 }
