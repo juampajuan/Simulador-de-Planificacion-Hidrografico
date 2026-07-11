@@ -5,7 +5,7 @@ use crate::components::modal::Modal;
 use crate::services::requests::{get_all_students, get_all_projects, create_student, delete_student};
 use crate::structs::student::Student;
 use crate::structs::project::Project; 
-use lucide_yew::{Plus, Users, Search};
+use lucide_yew::{Plus, Users, Search, Check, ClipboardCopy};
 use wasm_bindgen::JsCast;
 use web_sys::window;
 
@@ -262,10 +262,10 @@ pub fn admin_students() -> Html {
                         </span>
                         <input 
                             type="text"
-                            placeholder="Buscar por proyecto asignado..."
+                            placeholder="Busca por proyecto."
                             value={(*search_filter).clone()}
                             oninput={on_search_input}
-                            class="w-[200px] h-9 pl-8 pr-3 rounded-lg text-xs bg-slate-900 hover:bg-slate-850 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none transition-all font-medium shadow-inner"
+                            class="w-[160px] h-9 pl-8 pr-3 rounded-lg text-xs bg-slate-900 hover:bg-slate-850 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none transition-all font-medium shadow-inner"
                         />
                     </div>
 
@@ -274,23 +274,23 @@ pub fn admin_students() -> Html {
                         disabled={*is_copied}
                         class={
                             if *is_copied {
-                                "flex items-center px-3 h-9 gap-1.5 border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 rounded-lg transition-colors shadow-md opacity-90"
+                                "flex items-center px-3 h-9 gap-1.5 border border-emerald-200 bg-emerald-900 text-emerald-200 rounded-lg transition-colors shadow-md opacity-90"
                             } else {
                                 "flex items-center px-3 h-9 gap-1.5 border border-white/10 bg-slate-800 hover:bg-slate-750 text-white/90 rounded-lg cursor-pointer transition-colors shadow-md"
                             }
                         }
                         title="Copia los nombres y códigos de los alumnos en portapapeles"
                     >
-                        if *is_copied {
-                            // Icono de check/visto cuando está copiado
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        if *is_copied { 
+                            <Check size={16}/>
                             <span class="text-xs font-semibold">{"¡Copiado!"}</span>
-                        } else {
-                            // Tu icono original de portapapeles
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="14" x="4" y="8" rx="2" ry="2"/><path d="M16 4h2a2 2 0 0 1 2 2v4M8 4H6a2 2 0 0 0 -2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M12 2v4"/></svg>
-                            <span class="text-xs font-semibold">{"Copiar nombres y codigos a portapapeles"}</span>
+                        } else { 
+                            <ClipboardCopy size={16}/>
+                            <span class="text-xs font-semibold">{"Copiar códigos"}</span>
                         }
                     </button>
+
+                    <div/>
 
                     <button onclick={on_open_add_modal} class="flex items-center px-4 h-9 gap-1.5 bg-cyan-200 text-black/90 rounded-lg cursor-pointer hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-500/5">
                         <Plus size={16}/>

@@ -21,6 +21,7 @@ pub struct Settings {
     pub storage_path: String,
     pub log_file_name: String,
     pub logging_type: i32,
+    pub simplified_terminal_logs: bool,
     #[serde(skip)]  
     pub admin_pass: String,
     pub maptiler_api_key: String,
@@ -121,6 +122,7 @@ impl TryFrom<HashMap<String, ConfigValue>> for Settings {
             tide_phase: get_float(&config, "TIDE_PHASE")?,
             log_file_name: get_string(&config, "LOG_FILE_NAME")?,
             logging_type: get_int(&config, "LOGGING_TYPE")?,
+            simplified_terminal_logs: int_to_bool(get_int(&config, "SIMPLIFIED_TERMINAL_LOGS")?),
             storage_path: get_string(&config, "FILE_STORAGE_PATH").unwrap_or("./storage".to_string()),
         })
     }
@@ -170,4 +172,8 @@ fn get_float(
         Some(_) => Err(format!("'{key}' no es un float")),
         None => Err(format!("Falta '{key}'")),
     }
+}
+
+fn int_to_bool(value: i32) -> bool {
+    value == 1
 }

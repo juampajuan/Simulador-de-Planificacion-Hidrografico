@@ -59,3 +59,8 @@ LOGGING_TYPE = 0
     # Info  = 1,
     # Warn  = 2,
     # Error = 3,
+
+# Si esta en 1, loguea en la termina, SOLAMENTE los resultados de cada requests.
+SIMPLIFIED_TERMINAL_LOGS = 1
+    # Esto NO afecta los LOGS que van al archivo, que se configuran arriba.
+    # Si esta en 0, en la terminal se imprime lo mismo que en el archivo.

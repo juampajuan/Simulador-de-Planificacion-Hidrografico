@@ -2,6 +2,7 @@ use yew::prelude::*;
 use lucide_yew::{EqualNot, Image, Layers};
 use crate::services::requests::StudentSimulation;
 use crate::structs::state::SimulationUiState;
+use gloo_timers::callback::Timeout;
 
 #[derive(Properties, PartialEq)]
 pub struct ImageSelectorProps {
@@ -15,15 +16,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
     let min_depth_val = sim.result_min_depth;
     let max_depth_val = sim.result_max_depth;
     
-    // Arrancamos siempre en 0 (Limpio por defecto)
-    let selected = use_state(|| 0);
-
-    // Si la simulación que entra por Props cambia de ID, obligamos a que el botón activo vuelva a 0.
-    let current_sim_id = use_state(|| sim.id.clone());
-    if *current_sim_id != sim.id {
-        current_sim_id.set(sim.id.clone());
-        selected.set(0);
-    }
+    let selected = use_state(|| 1);
 
     let change_view_map = {
         let ui = props.ui_state.clone();
@@ -90,6 +83,23 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
         }
     };
 
+    // Esto preselecciona la foto y la aplica.
+    {
+        let apply = apply_selection.clone();
+        let sim = props.active_sim.clone();
+
+        // Usamos un pequenio timeout, ya que si no, el evento en el modal (del profe) NO logra mostrar la imagen.
+        use_effect_with(sim, move |_| {
+            let timeout = Timeout::new(10, move || {
+                apply(1);
+            });
+
+            move || {
+                drop(timeout);
+            }
+        });
+    }
+
     let on_click_sim = {
         let apply = apply_selection.clone();
         Callback::from(move |_| apply(1))
@@ -112,7 +122,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                 onclick={on_click_sim} 
                 class={classes!(
                     "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
-                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-1.5",
+                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-2",
                     if *selected == 1 {
                         Some("text-white bg-zinc-700/50")
                     } else {
@@ -120,7 +130,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     }
                 )}
             >
-                <Image size={20}/> 
+                <Image size={18}/> 
                 <span class="truncate">{"Simulación"}</span>
             </button>
             
@@ -128,7 +138,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                 onclick={on_click_cov} 
                 class={classes!(
                     "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
-                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-1.5",
+                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-2",
                     if *selected == 2 {
                         Some("text-white bg-zinc-700/50")
                     } else {
@@ -136,7 +146,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     }
                 )}
             >
-                <Layers size={20}/> 
+                <Layers size={18}/> 
                 <span class="truncate">{"Cobertura"}</span>
             </button>
             
@@ -144,7 +154,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                 onclick={on_click_diff} 
                 class={classes!(
                     "w-full", "text-xs", "font-semibold", "transition-all", "rounded",
-                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-1.5",
+                    "cursor-pointer", "text-left", "flex", "items-center", "gap-2", "py-2", "px-2",
                     if *selected == 3 {
                         Some("text-white bg-zinc-700/50")
                     } else {
@@ -152,7 +162,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     }
                 )}
             >
-                <EqualNot size={20}/> 
+                <EqualNot size={18}/> 
                 <span class="truncate">{"Diferencias"}</span>
             </button>
 
