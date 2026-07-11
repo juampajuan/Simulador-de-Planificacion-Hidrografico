@@ -12,8 +12,7 @@ use crate::requests::endpoints::generic::{string_response};
 use crate::helpers::simulation::{extract_request_context, save_simulation_images, lock_get_or_create_matrix, lock_get_or_create_path};
 use crate::db::engine::DBEngine;
 use crate::structs::settings::Settings;
-use common::SimulationBase64Response;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use common::SimulationResponse;
 use std::io::Cursor;
 
 /// Endpoint para la creacion del recorrido. 
@@ -93,23 +92,18 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         Err(e) => return generic::server_error(e),
     };
     
-    // aca cambia con respecto a las otras req que usan blob
-    // los pixeles rgb se pasan a bytes png y luego a strings de base 64, para mandarlos en el struct
+    // Generamos las imágenes de la simulación
     let (map_image, real_min_depth, real_max_depth, interpolation_min_depth, interpolation_max_depth) = simulations::create_simulation_image(&matrix, &interpolation, &log_debug);
-    let scale_image = simulations::create_scale_pure_image(&log_debug);
-
+    
     let mut map_bytes = Vec::new();
-    let mut scale_bytes = Vec::new();
     let _ = map_image.write_to(&mut Cursor::new(&mut map_bytes), image::ImageFormat::Png);
-    let _ = scale_image.write_to(&mut Cursor::new(&mut scale_bytes), image::ImageFormat::Png);
 
     // TODO: Usar el wrapper, ver como hice el resto.
     let db_lock = db.lock().unwrap();
     let attempt_number = student_simulations::get_next_attempt_number(&db_lock, ctx.student_id).unwrap_or(1);
     drop(db_lock);
 
-    // Genera y guarda en storage/images/ las 3 imagenes del intento (mapa,
-    // cobertura, diferencias)
+    // Genera y guarda en storage/images/ las 3 imagenes del intento (mapa, cobertura, diferencias)
     let (map_saved, coverage_saved, difference_saved) = save_simulation_images(
         &matrix,
         &interpolation,
@@ -123,9 +117,6 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         tx,
         &log_debug,
     );
-
-    let map_encoded = STANDARD.encode(map_bytes);
-    let scale_encoded = STANDARD.encode(scale_bytes); //base64
 
 
     if let Err(e) = student_simulations::create_student_simulation_locked(
@@ -149,13 +140,11 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
         );
     }
 
-     let response_data = SimulationBase64Response {
+     let response_data = SimulationResponse {
         real_min_depth,
         real_max_depth,
         interpolation_min_depth,
         interpolation_max_depth,
-        map_base64: map_encoded,
-        scale_base64: scale_encoded,
         simulation_image_path: map_saved,
         coverage_image_path: coverage_saved,
         difference_image_path: difference_saved,
@@ -214,5 +203,3 @@ pub fn create_coverage_image(request: &mut Request, cache: Arc<Mutex<FileCache>>
 
     (response.boxed(), 200, None)
 }
- 
-

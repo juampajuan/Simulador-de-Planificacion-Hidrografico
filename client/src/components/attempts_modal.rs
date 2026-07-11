@@ -24,8 +24,6 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
     let image_url = use_state(|| None::<String>);
     let loading = use_state(|| false);
     
-    let map_base64 = use_state(|| None::<String>);
-    let scale_base64 = use_state(|| None::<String>);
     let min_depth = use_state(|| 0.0f64);
     let max_depth = use_state(|| 0.0f64);
 
@@ -37,8 +35,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
         mensaje: mensaje.clone(),
         image_url: image_url.clone(),
         loading: loading.clone(),
-        map_base64: map_base64.clone(),
-        scale_base64: scale_base64.clone(),
+        show_legend: use_state(|| false),
         min_depth: min_depth.clone(),
         max_depth: max_depth.clone(),
         simulation_image_path: simulation_image_path.clone(),
@@ -73,15 +70,19 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
         let ui_state = ui_state.clone();
         
         use_effect_with(active_layers_sim.clone(), move |active| {
+            // limpiamos las imágenes previas
+            ui_state.image_url.set(None); 
+            ui_state.show_legend.set(false);
+            ui_state.simulation_image_path.set(None);
+            ui_state.coverage_image_path.set(None);
+            ui_state.difference_image_path.set(None);
+
             if let Some(sim) = &**active {
-                if let Some(path) = &sim.simulation_image_path {
-                    ui_state.image_url.set(Some(format!("/images/{}", path)));
-                }
+                // Seteamos los datos de profundidad del nuevo intento, pero la pantalla sigue vacía
                 ui_state.min_depth.set(sim.result_min_depth);
                 ui_state.max_depth.set(sim.result_max_depth);
                 ui_state.mensaje.set(String::new());
             } else {
-                ui_state.image_url.set(None);
                 ui_state.mensaje.set("Seleccione un intento del historial para revisar".to_string());
             }
             || ()
@@ -147,9 +148,13 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
                 <div class="flex-1 relative flex flex-col h-full rounded-lg overflow-hidden">
                     
                     { if let Some(sim) = &*active_layers_sim {
-                        html! { 
-                            <div class="absolute top-0 right-0 z-10">
-                                <ImageSelector ui_state={ui_state.clone()} active_sim={sim.clone()} /> 
+                        html! {
+                            <div class="absolute top-2 right-2 z-20">
+                                <ImageSelector 
+                                    key={sim.id.to_string()}
+                                    ui_state={ui_state.clone()} 
+                                    active_sim={sim.clone()} 
+                                />
                             </div>
                         }
                     } else { html!{} } }

@@ -66,9 +66,9 @@ pub struct SimulationUiState {
     pub loading: UseStateHandle<bool>,
     
     pub image_url: UseStateHandle<Option<String>>, 
+
+    pub show_legend: UseStateHandle<bool>,
     
-    pub map_base64: UseStateHandle<Option<String>>,   
-    pub scale_base64: UseStateHandle<Option<String>>, 
     pub min_depth: UseStateHandle<f64>,               
     pub max_depth: UseStateHandle<f64>,  
 

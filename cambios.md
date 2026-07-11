@@ -94,14 +94,14 @@ No lo discutimos, pero no lo veo complicado, asi que lo haria.
 
 
 # Important Juanjo Front
-- [] Quitar Base64.
-- [] TODO1 en `IMGviewer` linea 24. (Habla de incorporar un booleano, para saber si simulamos, para mostrar la barra de colores, una var extra en ui_state?)
-- [] OPTIONAL: (Evitar si es de alta complejidad) Hacer que el modal de los profes de los intentos, NO proceseleccione la imagen de simulacion.
-- [] TODO3 descomentarlo, eso es quien se encarga de elegir la imagen a mostrar. Porque una vez borrado Base64, nada te va a mostrar al simular.
+- [X] Quitar Base64.
+- [X] TODO1 en `IMGviewer` linea 24. (Habla de incorporar un booleano, para saber si simulamos, para mostrar la barra de colores, una var extra en ui_state?)
+- [X] OPTIONAL: (Evitar si es de alta complejidad) Hacer que el modal de los profes de los intentos, NO proceseleccione la imagen de simulacion.
+- [X] TODO3 descomentarlo, eso es quien se encarga de elegir la imagen a mostrar. Porque una vez borrado Base64, nada te va a mostrar al simular.
 
-- [] Login *****NO***** debe redirigir si pones mal la contrasenia, solo mostrar el mensaje. Porque ahora te la recarga. 
+- [X] Login *****NO***** debe redirigir si pones mal la contrasenia, solo mostrar el mensaje. Porque ahora te la recarga. 
 	
 	Osea el 403/401 en otras paginas llevan al login, pero en el login, no lo llevas.
 
 Este es un chiche.
-- [] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar por slack o algo.
+- [X] Boton para exportar una Lista de `<Nombre grupo, CODIGO>`, asi lo enviar por slack o algo.

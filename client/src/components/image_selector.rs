@@ -14,26 +14,42 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
     let sim = props.active_sim.clone();
     let min_depth_val = sim.result_min_depth;
     let max_depth_val = sim.result_max_depth;
-    let selected = use_state(|| 1);
+    
+    // Arrancamos siempre en 0 (Limpio por defecto)
+    let selected = use_state(|| 0);
+
+    // Si la simulación que entra por Props cambia de ID, obligamos a que el botón activo vuelva a 0.
+    let current_sim_id = use_state(|| sim.id.clone());
+    if *current_sim_id != sim.id {
+        current_sim_id.set(sim.id.clone());
+        selected.set(0);
+    }
 
     let change_view_map = {
         let ui = props.ui_state.clone();
-        move |path_opt: Option<String>, err_msg: &str| {
+        move |path_opt: Option<String>, err_msg: &str, is_diff_view: bool| {
             if let Some(path) = path_opt {
                 if !path.is_empty() {
-                    ui.map_base64.set(None);
-                    ui.scale_base64.set(None);
                     ui.image_url.set(Some(format!("/images/{}", path)));
                     ui.mensaje.set(String::new());
                     ui.min_depth.set(min_depth_val);
                     ui.max_depth.set(max_depth_val);
+                    
+                    if is_diff_view {
+                        ui.show_legend.set(false);
+                    } else {
+                        ui.show_legend.set(true);
+                    }
+                    
                     ui.loading.set(false);
                 } else {
                     ui.image_url.set(None);
+                    ui.show_legend.set(false);
                     ui.mensaje.set(err_msg.to_string());
                 }
             } else {
                 ui.image_url.set(None);
+                ui.show_legend.set(false);
                 ui.mensaje.set(err_msg.to_string());
             }
         }
@@ -42,40 +58,37 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
     let apply_selection = {
         let selected = selected.clone();
         let change = change_view_map.clone();
+        let sim = sim.clone();
+        let ui = props.ui_state.clone();
 
         move |index: usize| {
             selected.set(index);
 
             match index {
+                0 => {
+                    ui.image_url.set(None);
+                    ui.show_legend.set(false);
+                    ui.mensaje.set(String::new());
+                }
                 1 => change(
                     sim.simulation_image_path.clone(),
                     "No hay mapa de simulación disponible.",
+                    false,
                 ),
                 2 => change(
                     sim.coverage_image_path.clone(),
                     "No hay mapa de cobertura disponible.",
+                    false,
                 ),
                 3 => change(
                     sim.difference_image_path.clone(),
                     "No hay mapa de diferencias disponible.",
+                    true,
                 ),
                 _ => {}
             }
         }
     };
-
-    // TODO2: Descomentar esto, cuando si se quita Base64
-    // Esto preselecciona la foto y la aplica.
-    // {
-    //     let apply = apply_selection.clone();
-    //     let sim = props.active_sim.clone();
-    //     // let selected = selected.clone();
-
-    //     use_effect_with(sim, move |_| {
-    //         apply(1);
-    //         || ()
-    //     });
-    // }
 
     let on_click_sim = {
         let apply = apply_selection.clone();
@@ -93,7 +106,7 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
     };
 
     html! {
-        <div class="flex gap-2 p-2 bg-slate-950/60 backdrop-blur border border-white/20 rounded-lg shadow-xl select-none animate-fade-in">
+        <div class="flex gap-2 p-2 bg-slate-950/60 backdrop-blur border border-white/20 rounded-lg shadow-xl select-none animate-fade-in z-10">
                         
             <button 
                 onclick={on_click_sim} 

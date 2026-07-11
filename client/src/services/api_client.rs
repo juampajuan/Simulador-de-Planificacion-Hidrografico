@@ -105,17 +105,12 @@ pub fn send_native_request(
                     let _ = storage.remove_item("group_or_user_name");
                     let _ = storage.remove_item("user_role");
                 }
-
-                let location = win.location();
-                let _ = location.set_href("/login");
-                return;
             }
             
             if let Some(cb_err) = on_error_opt.take() {
-                // Si la función de negocio nos pasó un manejador personalizado, se lo delegamos
+                // Delegamos el estado al callback para que tu LoginPage muestre el mensaje correspondiente
                 cb_err(status);
             } else if let Some(ref m) = msg {
-                // Comportamiento por defecto si no hay un handler específico
                 m.set(format!("Error del servidor: {}", status));
             }
         }

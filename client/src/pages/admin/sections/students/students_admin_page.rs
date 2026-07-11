@@ -6,6 +6,8 @@ use crate::services::requests::{get_all_students, get_all_projects, create_stude
 use crate::structs::student::Student;
 use crate::structs::project::Project; 
 use lucide_yew::{Plus, Users, Search};
+use wasm_bindgen::JsCast;
+use web_sys::window;
 
 use crate::pages::admin::sections::students::students_table::TablaUsuarios;
 
@@ -40,6 +42,51 @@ pub fn admin_students() -> Html {
             || ()
         });
     }
+
+    let is_copied = use_state(|| false);
+
+    let on_export = {
+        let students = students_state.clone();
+        let ui_mensaje = ui_mensaje.clone();
+        let is_copied = is_copied.clone(); // Clonamos el estado
+        
+        Callback::from(move |_| {
+            if students.is_empty() {
+                ui_mensaje.set("No hay grupos cargados para exportar.".to_string());
+                return;
+            }
+
+            let mut export_text = String::from("");
+            for student in &*students {
+                export_text.push_str(&format!("Grupo: {}  |  Código: `{}`\n", student.name, student.code));
+            }
+
+            if let Some(win) = window() {
+                let navigator = win.navigator();
+                let clipboard = navigator.clipboard();
+                let _ = clipboard.write_text(&export_text);
+                
+                is_copied.set(true);
+
+                // Corregido: Usamos Closure::once con una clausura FnOnce normal de Rust
+                let is_copied_reset = is_copied.clone();
+                let closure = wasm_bindgen::closure::Closure::once(move || {
+                    is_copied_reset.set(false);
+                });
+                
+                // Le pasamos la referencia al setTimeout del navegador
+                let _ = win.set_timeout_with_callback_and_timeout_and_arguments_0(
+                    closure.as_ref().unchecked_ref(),
+                    3000
+                );
+                
+                // Dejamos que el runtime de JS controle su ciclo de vida
+                closure.forget();
+            } else {
+                ui_mensaje.set("Error: Tu navegador bloqueó el acceso al portapapeles.".to_string());
+            }
+        })
+    };
 
     let on_open_add_modal = {
         let show_modal = show_modal.clone();
@@ -218,9 +265,32 @@ pub fn admin_students() -> Html {
                             placeholder="Buscar por proyecto asignado..."
                             value={(*search_filter).clone()}
                             oninput={on_search_input}
-                            class="w-[260px] h-9 pl-8 pr-3 rounded-lg text-xs bg-slate-900 hover:bg-slate-850 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none transition-all font-medium shadow-inner"
+                            class="w-[200px] h-9 pl-8 pr-3 rounded-lg text-xs bg-slate-900 hover:bg-slate-850 text-white placeholder-white/40 border border-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none transition-all font-medium shadow-inner"
                         />
                     </div>
+
+                    <button 
+                        onclick={on_export} 
+                        disabled={*is_copied}
+                        class={
+                            if *is_copied {
+                                "flex items-center px-3 h-9 gap-1.5 border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 rounded-lg transition-colors shadow-md opacity-90"
+                            } else {
+                                "flex items-center px-3 h-9 gap-1.5 border border-white/10 bg-slate-800 hover:bg-slate-750 text-white/90 rounded-lg cursor-pointer transition-colors shadow-md"
+                            }
+                        }
+                        title="Copia los nombres y códigos de los alumnos en portapapeles"
+                    >
+                        if *is_copied {
+                            // Icono de check/visto cuando está copiado
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span class="text-xs font-semibold">{"¡Copiado!"}</span>
+                        } else {
+                            // Tu icono original de portapapeles
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="14" x="4" y="8" rx="2" ry="2"/><path d="M16 4h2a2 2 0 0 1 2 2v4M8 4H6a2 2 0 0 0 -2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M12 2v4"/></svg>
+                            <span class="text-xs font-semibold">{"Copiar nombres y codigos a portapapeles"}</span>
+                        }
+                    </button>
 
                     <button onclick={on_open_add_modal} class="flex items-center px-4 h-9 gap-1.5 bg-cyan-200 text-black/90 rounded-lg cursor-pointer hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-500/5">
                         <Plus size={16}/>

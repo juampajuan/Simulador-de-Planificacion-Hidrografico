@@ -124,18 +124,15 @@ pub struct StudentMeasuringParameters {
     pub transport_parameters: TransportParameters,
 }
 
-/// Resultado de una simulación listo para mostrar en el front. Las dos imágenes (el mapa
-/// interpolado y la barra de escala) viajan como texto base64 
-/// `min_depth`/`max_depth` se usan para rotular la escala de colores.
-#[derive(serde::Serialize, serde::Deserialize, Clone, Default)]
-
-pub struct SimulationBase64Response {
+/// Resultado de una simulación listo para mostrar en el front.
+/// Almacena los metadatos de las profundidades calculadas y las rutas 
+/// relativas a los archivos de imágenes físicas guardados en el servidor.
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct SimulationResponse {
     pub real_min_depth: f64,
     pub real_max_depth: f64,
     pub interpolation_min_depth: f64,
     pub interpolation_max_depth: f64,
-    pub map_base64: String,
-    pub scale_base64: String,
     pub simulation_image_path: Option<String>,
     pub coverage_image_path: Option<String>,
     pub difference_image_path: Option<String>,
