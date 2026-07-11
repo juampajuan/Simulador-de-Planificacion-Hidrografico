@@ -1,5 +1,4 @@
 use crate::db::engine::DBEngine;
-use crate::db::queries::student_simulations::StudentSimulationData;
 use crate::db::queries_interface::{projects, student_simulations};
 use crate::helpers::simulation::{
     SimulationImagesInput, extract_request_context, lock_get_or_create_matrix,
@@ -13,7 +12,7 @@ use crate::requests::http_helper::create_png_response;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
-use common::SimulationResponse;
+use common::{SimulationResponse, StudentSimulationData};
 use std::io::Cursor;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};

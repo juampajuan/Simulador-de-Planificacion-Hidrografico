@@ -12,10 +12,7 @@ use crate::structs::state::{
     CreatePathRequest, EchoState, FullSimulationRequest, PathState, SimulationUiState,
 };
 use crate::structs::student::{NewStudent, Student};
-use common::{
-    EchosounderParameters, PathParameters, SimulationResponse, StudentMeasuringParameters,
-    TransportParameters,
-};
+use common::{SimulationResponse, StudentMeasuringParameters, StudentSimulation};
 use yew::prelude::UseStateHandle;
 
 #[derive(serde::Deserialize, Clone, PartialEq, Debug)]
@@ -34,24 +31,6 @@ pub struct GeoCorners {
     pub inf_izq: (f64, f64),
     pub inf_der: (f64, f64),
     pub centro: (f64, f64),
-}
-
-#[derive(serde::Deserialize, Clone, PartialEq, Debug)]
-pub struct StudentSimulation {
-    pub id: i64,
-    pub selected: bool,
-    pub attempt_number: i64,
-    pub result_min_depth: f64,
-    pub result_max_depth: f64,
-    pub student_id: i64,
-    pub project_id: i64,
-    pub path_parameters: PathParameters,
-    pub transport_parameters: TransportParameters,
-    pub echosounder_parameters: EchosounderParameters,
-
-    pub simulation_image_path: Option<String>,
-    pub coverage_image_path: Option<String>,
-    pub difference_image_path: Option<String>,
 }
 
 /// Obtiene el historial de simulaciones/intentos.

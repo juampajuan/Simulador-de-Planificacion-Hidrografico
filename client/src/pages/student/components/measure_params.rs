@@ -1,11 +1,10 @@
 use crate::components::subtitle::Subtitle;
 use crate::pages::student::components::echosounder::EchosounderParams;
 use crate::pages::student::components::transport::TransportParams;
-use crate::services::requests::{
-    StudentSimulation, get_student_simulations_history, run_coverage, run_simulation,
-};
+use crate::services::requests::{get_student_simulations_history, run_coverage, run_simulation};
 use crate::structs::limits::ConfigLimits;
 use crate::structs::state::{EchoState, PathState, SimulationUiState};
+use common::{StudentSimulation, StudentSimulationData};
 use lucide_yew::Play;
 use yew::prelude::*;
 
@@ -95,18 +94,20 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                     let next_attempt = (history_handle.len() + 1) as i64;
                     let live_sim = StudentSimulation {
                         id: 0,
-                        attempt_number: next_attempt,
                         selected: false,
-                        result_min_depth: final_min,
-                        result_max_depth: final_max,
-                        student_id: 0,
-                        project_id: 0,
-                        simulation_image_path: Some(path_str_clone),
-                        coverage_image_path,
-                        difference_image_path,
-                        path_parameters: Default::default(),
-                        transport_parameters: Default::default(),
-                        echosounder_parameters: Default::default(),
+                        data: StudentSimulationData {
+                            attempt_number: next_attempt,
+                            result_min_depth: final_min,
+                            result_max_depth: final_max,
+                            student_id: 0,
+                            project_id: 0,
+                            simulation_image_path: Some(path_str_clone),
+                            coverage_image_path,
+                            difference_image_path,
+                            path_parameters: Default::default(),
+                            transport_parameters: Default::default(),
+                            echosounder_parameters: Default::default(),
+                        },
                     };
 
                     active_layers_handle.set(Some(live_sim));

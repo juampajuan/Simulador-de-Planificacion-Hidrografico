@@ -135,3 +135,43 @@ pub struct SimulationResponse {
     pub coverage_image_path: Option<String>,
     pub difference_image_path: Option<String>,
 }
+
+/// Un intento de simulación guardado. Usado tanto por el server (para dar de alta
+/// una fila nueva) como por el client (para deserializar el historial que le llega
+/// del endpoint)
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct StudentSimulationData {
+    pub attempt_number: i64,
+
+    pub result_min_depth: f64,
+    pub result_max_depth: f64,
+
+    pub student_id: i64,
+    pub project_id: i64,
+
+    pub path_parameters: PathParameters,
+    pub transport_parameters: TransportParameters,
+    pub echosounder_parameters: EchosounderParameters,
+
+    pub simulation_image_path: Option<String>,
+    pub coverage_image_path: Option<String>,
+    pub difference_image_path: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct StudentSimulation {
+    pub id: i64,
+    pub selected: bool,
+    #[serde(flatten)]
+    pub data: StudentSimulationData,
+}
+
+/// Permite seguir escribiendo `sim.attempt_number`, `sim.result_min_depth`, etc.
+/// (en vez de `sim.data.attempt_number`) en todo el código que ya asumía un
+/// struct plano — tanto en el server como en el client existente.
+impl std::ops::Deref for StudentSimulation {
+    type Target = StudentSimulationData;
+    fn deref(&self) -> &StudentSimulationData {
+        &self.data
+    }
+}

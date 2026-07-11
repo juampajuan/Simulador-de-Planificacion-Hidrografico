@@ -1,9 +1,9 @@
 use crate::components::subtitle::Subtitle;
-use crate::services::requests::StudentSimulation;
 use crate::services::requests::select_exam_delivery;
 use crate::structs::state::SimulationUiState;
 use common::EcosondaMode;
 use common::GnssType;
+use common::StudentSimulation;
 use lucide_yew::{CalendarX, Check, ChevronDown, ChevronUp, Circle, History};
 use yew::prelude::*;
 

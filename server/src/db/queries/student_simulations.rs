@@ -1,36 +1,9 @@
 use crate::db::engine::DBEngine;
 use common::{
-    EchosounderParameters, EcosondaMode, GnssType, PathParameters, Transport, TransportParameters,
+    EchosounderParameters, EcosondaMode, GnssType, PathParameters, StudentSimulation,
+    StudentSimulationData, Transport, TransportParameters,
 };
 use std::collections::HashSet;
-
-/// TODO: Mover a algo compartido??
-#[derive(serde::Serialize)]
-pub struct StudentSimulationData {
-    pub attempt_number: i64,
-
-    pub result_min_depth: f64,
-    pub result_max_depth: f64,
-
-    pub student_id: i64,
-    pub project_id: i64,
-
-    pub path_parameters: PathParameters,
-    pub transport_parameters: TransportParameters,
-    pub echosounder_parameters: EchosounderParameters,
-
-    pub simulation_image_path: Option<String>,
-    pub coverage_image_path: Option<String>,
-    pub difference_image_path: Option<String>,
-}
-
-#[derive(serde::Serialize)]
-pub struct StudentSimulation {
-    pub id: i64,
-    pub selected: bool,
-    #[serde(flatten)]
-    pub data: StudentSimulationData,
-}
 
 /// Agregar una entrada de student_simualions a la DB
 /// La misma almacene los parametros de un intento de simulacion a la DB

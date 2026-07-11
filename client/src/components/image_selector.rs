@@ -1,5 +1,5 @@
-use crate::services::requests::StudentSimulation;
 use crate::structs::state::SimulationUiState;
+use common::StudentSimulation;
 use gloo_timers::callback::Timeout;
 use lucide_yew::{EqualNot, Image, Layers};
 use yew::prelude::*;

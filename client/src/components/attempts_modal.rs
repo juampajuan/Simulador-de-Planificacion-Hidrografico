@@ -3,9 +3,10 @@ use crate::components::modal::Modal;
 use crate::pages::student::components::history::HistoryParams;
 use crate::pages::student::components::img_viewer::IMGviewer;
 use crate::pages::student::components::parameters_cont::ParamCont;
-use crate::services::requests::{StudentSimulation, get_student_simulations_history};
+use crate::services::requests::get_student_simulations_history;
 use crate::structs::project::Project;
 use crate::structs::state::SimulationUiState;
+use common::StudentSimulation;
 use lucide_yew::History;
 use yew::prelude::*;
 

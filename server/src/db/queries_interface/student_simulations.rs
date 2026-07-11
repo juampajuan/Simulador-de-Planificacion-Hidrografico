@@ -1,6 +1,6 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries::student_simulations;
-use crate::db::queries::student_simulations::{StudentSimulation, StudentSimulationData};
+use common::{StudentSimulation, StudentSimulationData};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 

@@ -11,13 +11,13 @@ use self::components::measure_params::{AttemptsState, MeasuresParams};
 use self::components::parameters_cont::ParamCont;
 use self::components::path_params::PathParams;
 use crate::services::requests::{
-    StudentProjectResponse, StudentSimulation, get_student_project,
-    get_student_simulations_history, get_system_limits,
+    StudentProjectResponse, get_student_project, get_student_simulations_history, get_system_limits,
 };
 use crate::structs::limits::ConfigLimits;
 use crate::structs::project::AdminProjectView;
 use crate::structs::state::PathState;
 use crate::structs::state::SimulationUiState;
+use common::StudentSimulation;
 
 #[derive(PartialEq, Clone, Copy)]
 enum ActiveTab {
