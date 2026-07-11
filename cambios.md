@@ -96,7 +96,7 @@ No lo discutimos, pero no lo veo complicado, asi que lo haria.
 # Important Juanjo Front
 - [X] Quitar Base64.
 - [X] TODO1 en `IMGviewer` linea 24. (Habla de incorporar un booleano, para saber si simulamos, para mostrar la barra de colores, una var extra en ui_state?)
-- [] OPTIONAL: (Evitar si es de alta complejidad) Hacer que el modal de los profes de los intentos, NO proceseleccione la imagen de simulacion.
+- [X] OPTIONAL: (Evitar si es de alta complejidad) Hacer que el modal de los profes de los intentos, NO proceseleccione la imagen de simulacion.
 - [X] TODO3 descomentarlo, eso es quien se encarga de elegir la imagen a mostrar. Porque una vez borrado Base64, nada te va a mostrar al simular.
 
 - [X] Login *****NO***** debe redirigir si pones mal la contrasenia, solo mostrar el mensaje. Porque ahora te la recarga. 

@@ -27,6 +27,11 @@ pub fn info_params(props: &InfoProps) -> Html {
         Callback::from(move |_| is_restrictions_open.set(!*is_restrictions_open))
     };
 
+    let due_date_to_render = props.project_state.as_ref()
+        .and_then(|p| p.metadata.due_date.as_deref())
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
+
     html! {
         <div class="flex flex-col w-full text-white">
             if let Some(p) = &*props.project_state {
@@ -64,12 +69,19 @@ pub fn info_params(props: &InfoProps) -> Html {
                                 </div>
                             }
 
-                            if let Some(due) = &p.metadata.due_date {
+                            if let Some(due) = due_date_to_render {
                                 <div class="flex p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg items-center gap-3 select-none mt-1 animate-fade-in">
                                     <span class="text-red-400 shrink-0"><CalendarClock size={18} /></span>
                                     <div class="flex flex-col">
                                         <span class="text-[10px] font-bold text-red-400/60 uppercase tracking-wider">{"Fecha Límite de Entrega"}</span>
-                                        <span class="text-sm font-mono font-semibold text-red-300">{ due.clone() }</span>
+                                        <span class="text-sm font-mono font-semibold text-red-300">{ due }</span>
+                                    </div>
+                                </div>
+                            } else {
+                                <div class="flex p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg items-center gap-3 select-none mt-1 animate-fade-in">
+                                    <span class="text-blue-400 shrink-0"><CalendarClock size={18} /></span>
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-semibold text-blue-300">{"Entorno de práctica libre (Sin entrega)"}</span>
                                     </div>
                                 </div>
                             }

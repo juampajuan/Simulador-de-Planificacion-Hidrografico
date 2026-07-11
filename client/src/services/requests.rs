@@ -6,7 +6,7 @@ use crate::structs::student::{Student, NewStudent};
 use crate::structs::project::{AdminProjectView, NewProject, Project};
 use common::{StudentMeasuringParameters, SimulationResponse, PathParameters, TransportParameters, EchosounderParameters};
 use crate::services::api_client::{send_native_request, send_native_formdata_request, send_native_blob_request};
-use crate::services::api_utils::{process_local_login, process_local_logout};
+use crate::services::api_utils::{process_local_logout, process_local_login};
 use crate::pages::student::components::measure_params::AttemptsState;
 
 #[derive(serde::Deserialize, Clone, PartialEq, Debug)]
@@ -240,13 +240,19 @@ pub fn create_project(
         geotiff_max_depth,
     } = project;
 
+    let due_date_clean = due_date
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
     let form_data = web_sys::FormData::new().unwrap();
     let metadata_json = serde_json::json!({
         "name": name,
         "description": if description.is_empty() { None } else { Some(description) },
         "filename": file.name(),
         "exam_mode": exam_mode,
-        "due_date": due_date,
+        "due_date": due_date_clean,
         "attempts_limit": attempts_limit,
         "weather": weather,
         "seabed_hardness": seabed_hardness,
@@ -527,7 +533,7 @@ pub fn run_coverage(echo_state: &EchoState, path_state: &PathState, ui: Simulati
     }
 }
 
-// Ejecuta el login, para ambos roles, si la información es correcta.
+// Ejecuta el login de forma segura previniendo pánicos asíncronos en WASM
 pub fn trigger_login(
     student_code: &str,
     teacher_user: &str,
@@ -535,54 +541,54 @@ pub fn trigger_login(
     ui_mensaje: UseStateHandle<String>,
     ui_loading: UseStateHandle<bool>
 ) {
-    let (credentials, display_name, redirection) = if !student_code.is_empty() {
-        (serde_json::json!({ "code": student_code }), student_code.to_string(), "/".to_string())
+    let (credentials, redirection) = if !student_code.is_empty() {
+        (serde_json::json!({ "code": student_code }), "/".to_string())
     } else if !teacher_user.is_empty() && !teacher_password.is_empty() {
-        (serde_json::json!({ "user": teacher_user, "pass": teacher_password }), teacher_user.to_string(), "/admin".to_string())
+        (serde_json::json!({ "user": teacher_user, "pass": teacher_password }), "/admin".to_string())
     } else {
         return;
     };
 
+    ui_loading.set(true);
     ui_mensaje.set("Autenticando...".to_string());
     
     let msg_success = ui_mensaje.clone();
     let msg_err = ui_mensaje.clone();
-    let redirection_clone = redirection.clone();
-    
+    let loading_err = ui_loading.clone();
+    let cred_str = credentials.to_string();
+
     send_native_request(
         "/api/v1/auth/login",
         "POST",
-        Some(&credentials.to_string()),
+        Some(&cred_str),
         None,
         Some(ui_loading),
         move |response_text| { 
-            if response_text.contains("Invalid") || response_text.contains("Error") {
+            let trimmed = response_text.trim();
+            let response_lower = trimmed.to_lowercase();
+
+            if trimmed.is_empty() 
+                || trimmed == "{}" 
+                || response_lower.contains("invalid") 
+                || response_lower.contains("error") 
+                || response_lower.contains("incorrect")
+                || response_lower.contains("unauthorized") 
+            {
                 msg_success.set("Credenciales incorrectas. Intente nuevamente.".to_string());
                 return;
             }
 
-            let real_name = if !response_text.trim().is_empty() {
-                response_text.trim().to_string()
-            } else {
-                display_name
-            };
-
-            if let Some(window) = web_sys::window() 
-                && let Ok(Some(storage)) = window.local_storage() {
-                    let role = if redirection_clone == "/admin" { "admin" } else { "student" };
-                    let _ = storage.set_item("user_role", role);
-                    let _ = storage.set_item("group_or_user_name", &real_name);
-                }
+            let role = if redirection == "/admin" { "admin" } else { "student" };
+            process_local_login(trimmed, role);
             
-            // Redirección manual únicamente si es un caso exitoso real
-            process_local_login(&real_name, &redirection, msg_success);
-        },
-        Some(move |status_code| {
-            if status_code == 401 || status_code == 403 {
-                msg_err.set("Usuario o contraseña incorrectos.".to_string());
-            } else {
-                msg_err.set(format!("Error de autenticación: Código {}", status_code));
+            // Redirección síncrona controlada de fin de flujo
+            if let Some(window) = web_sys::window() {
+                let _ = window.location().set_href(&redirection);
             }
+        },
+        Some(move |_status_code| {
+            loading_err.set(false);
+            msg_err.set("Usuario o clave incorrectos. Intente de nuevo.".to_string());
         })
     );
 }

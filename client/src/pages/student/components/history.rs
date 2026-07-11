@@ -3,6 +3,8 @@ use crate::services::requests::StudentSimulation;
 use crate::components::subtitle::Subtitle;
 use crate::services::requests::select_exam_delivery;
 use crate::structs::state::SimulationUiState;
+use common::GnssType;
+use common::EcosondaMode;
 use lucide_yew::{History, ChevronDown, ChevronUp, Check, Circle, CalendarX}; 
 
 #[derive(Properties, PartialEq)]
@@ -55,10 +57,10 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                 Callback::from(move |_| {
                                     if *expanded_id == sim_id {
                                         expanded_id.set(-1);
-                                        active_layers_sim.set(None); // Oculta la botonera flotante si se colapsa
+                                        active_layers_sim.set(None);
                                     } else {
                                         expanded_id.set(sim_id);
-                                        active_layers_sim.set(Some(sim_clone.clone())); // Muestra las capas del intento expandido
+                                        active_layers_sim.set(Some(sim_clone.clone()));
                                     }
                                 })
                             };
@@ -107,6 +109,17 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                 "flex items-center justify-center gap-2 w-full h-[28px] rounded text-xs font-bold transition-all bg-zinc-800 text-white/50 border border-white/5 hover:bg-zinc-700/50 hover:text-white shrink-0"
                             };
 
+                            let gnss_str = match sim.path_parameters.gnss_type {
+                                GnssType::NoCorrection => "Sin Corrección",
+                                GnssType::DGPSCorrection => "Con corrección DGPS",
+                                GnssType::PhaseCorrection => "Con correccion por fase",
+                            };
+
+                            let echosounder_mode_str = match sim.echosounder_parameters.mode {
+                                EcosondaMode::Monohaz => "Monohaz",
+                                EcosondaMode::Multihaz => "Multihaz",
+                            };
+
                             html! {
                                 <div key={sim.id} class="p-3 first:pt-1 flex flex-col gap-2.5">
                                     <div onclick={toggle_expand} class="flex flex-col gap-2 cursor-pointer select-none">
@@ -150,6 +163,11 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}°", sim.path_parameters.azimut)} />
                                                 </div>
                                                 
+                                                <div class="flex flex-col gap-1 col-span-2">
+                                                    <span class={label_cls}>{"GNSS"}</span>
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={gnss_str} />
+                                                </div>
+                                                
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-2 mb-0.5">{"Parámetros de Transporte"}</div>
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Velocidad"}</span>
@@ -171,6 +189,12 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 </div>
 
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-2 mb-0.5">{"Configuración de Ecosonda"}</div>
+                                                
+                                                <div class="flex flex-col gap-1 col-span-2">
+                                                    <span class={label_cls}>{"Tipo de Ecosonda"}</span>
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={echosounder_mode_str} />
+                                                </div>
+
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Frecuencia"}</span>
                                                     <input type="text" readonly=true disabled=true class={input_cls} value={if sim.echosounder_parameters.uses_high_frecuency { "Alta" } else { "Baja" }} />
@@ -200,7 +224,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                     { if props.exam_mode {
                                                         html! {
                                                             <div class="w-full pt-1">
-                                                                    <button onclick={on_select_delivery} class={btn_cls} disabled={is_expired && !is_selected}>
+                                                                <button onclick={on_select_delivery} class={btn_cls} disabled={is_expired && !is_selected}>
                                                                     { if is_selected { html!{ <Check size={14} /> } } else if is_expired { html!{ <CalendarX size={14} /> } } else { html!{ <Circle size={14} /> } } }
                                                                     { if is_selected { "ENTREGADO" } else if is_expired { "PLAZO VENCIDO" } else { "ENTREGAR" } }
                                                                 </button>

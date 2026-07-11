@@ -28,11 +28,15 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                                     <img key={url.to_string()} src={url.clone()} class="max-h-full max-w-full object-contain rounded-lg shadow-lg border border-white/5" />
                                 </div>
                                 
-                                if show_legend {
-                                    <div class="h-full flex flex-col items-center justify-center z-10 py-4 shrink-0">
-                                        <DepthLegend start_m={min_depth} end_m={max_depth} />
-                                    </div>
-                                }
+                                <div class={
+                                    if show_legend {
+                                        "h-full flex flex-col items-center justify-center z-10 py-4 shrink-0 opacity-100 transition-opacity duration-200"
+                                    } else {
+                                        "h-full flex flex-col items-center justify-center z-10 py-4 shrink-0 opacity-0 pointer-events-none transition-opacity duration-200"
+                                    }
+                                }>
+                                    <DepthLegend start_m={min_depth} end_m={max_depth} />
+                                </div>
                             </div>
                         }
                     } else if !mensaje.is_empty()  {
