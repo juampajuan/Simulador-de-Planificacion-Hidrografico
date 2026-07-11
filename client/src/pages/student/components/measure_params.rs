@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::services::requests::{run_simulation, run_coverage, StudentSimulation};
+use crate::services::requests::{run_simulation, run_coverage, get_student_simulations_history, StudentSimulation};
 use crate::structs::state::{EchoState, PathState, SimulationUiState};
 use crate::pages::student::components::transport::TransportParams;
 use crate::pages::student::components::echosounder::EchosounderParams;
@@ -37,7 +37,6 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
 
     let is_limit_reached = props.attempts.limit != -1 && props.attempts.spent >= props.attempts.limit;
 
-    // El botón se deshabilita si el formulario está incompleto, si está cargando, O si llegó al límite
     let is_simulation_disabled = !is_form_complete || is_loading || is_limit_reached;
 
     let disabled_buttons = if is_loading {
@@ -49,38 +48,59 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
     {
         let simulation_image_path_state = props.ui_state.simulation_image_path.clone();
         let active_layers_sim = props.active_layers_sim.clone();
-        let min_depth = props.ui_state.min_depth.clone();
-        let max_depth = props.ui_state.max_depth.clone();
         let history = props.history_state.clone(); 
-
-        let coverage_image_path = (*props.ui_state.coverage_image_path).clone();
-        let difference_image_path = (*props.ui_state.difference_image_path).clone();
+        let ui_state = props.ui_state.clone();
 
         use_effect_with(simulation_image_path_state.clone(), move |sim_path| {
             if let Some(path_str) = &**sim_path {
                 if !path_str.is_empty() {
-                    // Calculamos el número de intento basado en el historial existente + 1
-                    let next_attempt = (history.len() + 1) as i64;
+                    let history_handle = history.clone();
+                    let active_layers_handle = active_layers_sim.clone();
+                    let ui_state_handle = ui_state.clone();
                     
-                    // Reconstruimos las rutas exactas que el backend crea físicamente en disco
-                    let live_sim = StudentSimulation {
-                        id: 0, 
-                        attempt_number: next_attempt,
-                        selected: false,
-                        result_min_depth: *min_depth,
-                        result_max_depth: *max_depth,
-                        student_id: 0,
-                        project_id: 0,
-                        // Asignamos las rutas correspondientes
-                        simulation_image_path: Some(path_str.clone()), 
-                        coverage_image_path: coverage_image_path,
-                        difference_image_path: difference_image_path,
-                        path_parameters: Default::default(),
-                        transport_parameters: Default::default(),
-                        echosounder_parameters: Default::default(),
-                    };
-                    
-                    active_layers_sim.set(Some(live_sim));
+                    get_student_simulations_history(
+                        None, 
+                        history_handle.clone(), 
+                        ui_state.mensaje.clone(), 
+                        ui_state.loading.clone()
+                    );
+
+                    let path_str_clone = path_str.clone();
+                    let coverage_image_path = (*ui_state.coverage_image_path).clone();
+                    let difference_image_path = (*ui_state.difference_image_path).clone();
+
+                    yew::platform::spawn_local(async move {
+                        yew::platform::time::sleep(std::time::Duration::from_millis(150)).await;
+                        
+                        let mut final_min = *ui_state_handle.min_depth;
+                        let mut final_max = *ui_state_handle.max_depth;
+
+                        if let Some(latest) = history_handle.iter().max_by_key(|s| s.attempt_number) {
+                            final_min = latest.result_min_depth;
+                            final_max = latest.result_max_depth;
+                            ui_state_handle.min_depth.set(latest.result_min_depth);
+                            ui_state_handle.max_depth.set(latest.result_max_depth);
+                        }
+
+                        let next_attempt = (history_handle.len() + 1) as i64;
+                        let live_sim = StudentSimulation {
+                            id: 0, 
+                            attempt_number: next_attempt,
+                            selected: false,
+                            result_min_depth: final_min,
+                            result_max_depth: final_max,
+                            student_id: 0,
+                            project_id: 0,
+                            simulation_image_path: Some(path_str_clone), 
+                            coverage_image_path: coverage_image_path,
+                            difference_image_path: difference_image_path,
+                            path_parameters: Default::default(),
+                            transport_parameters: Default::default(),
+                            echosounder_parameters: Default::default(),
+                        };
+                        
+                        active_layers_handle.set(Some(live_sim));
+                    });
                 }
             }
             || ()

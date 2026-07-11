@@ -138,3 +138,27 @@ pub fn get_project_id_by_student_locked(
         student_id,
     )
 }
+
+pub fn update_project_geotiff_bounds_locked(
+    db: &Arc<Mutex<DBEngine>>,
+    project_id: i64,
+    min_depth: f64,
+    max_depth: f64,
+) -> Result<(), sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Cannot lock db".to_string()),
+            })
+        }
+    };
+
+    crate::db::queries::proyects::update_project_geotiff_bounds(
+        &db_connection,
+        project_id,
+        min_depth,
+        max_depth,
+    )
+}

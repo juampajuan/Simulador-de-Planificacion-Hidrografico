@@ -254,3 +254,24 @@ pub fn update_project(
 
     Ok(db.connection.change_count() > 0)
 }
+
+/// Actualiza los límites mínimos y máximos de profundidad del GeoTIFF asignado al proyecto.
+pub fn update_project_geotiff_bounds(
+    db: &DBEngine,
+    project_id: i64,
+    min_depth: f64,
+    max_depth: f64,
+) -> Result<(), sqlite::Error> {
+    let mut statement = db.run_query("
+        UPDATE projects 
+        SET geotiff_min_depth = ?, geotiff_max_depth = ? 
+        WHERE id = ?
+    ")?;
+
+    statement.bind((1, min_depth))?;
+    statement.bind((2, max_depth))?;
+    statement.bind((3, project_id))?;
+    
+    statement.next()?;
+    Ok(())
+}

@@ -114,6 +114,14 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
         });
     }
 
+    let geo_min = props.project.geotiff_min_depth;
+    let geo_max = props.project.geotiff_max_depth;
+
+    let (current_sim_min, current_sim_max) = match &*active_layers_sim {
+        Some(sim) => (sim.result_min_depth, sim.result_max_depth),
+        None => (*ui_state.min_depth, *ui_state.max_depth),
+    };
+
     html! {
         <Modal
             title={format!("Intentos de {}, para el proyecto: {}", props.student_code, props.project.name)}
@@ -159,7 +167,13 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
                         }
                     } else { html!{} } }
 
-                    <IMGviewer ui_state={ui_state.clone()} />
+                    <IMGviewer 
+                        ui_state={ui_state.clone()} 
+                        geotiff_min={geo_min}
+                        geotiff_max={geo_max}
+                        sim_min={current_sim_min}
+                        sim_max={current_sim_max}
+                    />
                 </div>
 
             </div>

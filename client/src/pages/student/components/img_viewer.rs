@@ -5,6 +5,10 @@ use lucide_yew::TriangleAlert;
 #[derive(Properties, PartialEq)]
 pub struct IMGviewerProps {
     pub ui_state: SimulationUiState,
+    pub geotiff_min: f64, 
+    pub geotiff_max: f64, 
+    pub sim_min: f64,     
+    pub sim_max: f64,   
 }
 
 #[function_component(IMGviewer)]
@@ -13,8 +17,6 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
     let loading = *props.ui_state.loading;
 
     let image_url = (*props.ui_state.image_url).as_ref();
-    let min_depth = *props.ui_state.min_depth;
-    let max_depth = *props.ui_state.max_depth;
     let show_legend = *props.ui_state.show_legend;
 
     html! {
@@ -35,7 +37,12 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
                                         "h-full flex flex-col items-center justify-center z-10 py-4 shrink-0 opacity-0 pointer-events-none transition-opacity duration-200"
                                     }
                                 }>
-                                    <DepthLegend start_m={min_depth} end_m={max_depth} />
+                                    <DepthLegend 
+                                        start_m={props.geotiff_min} 
+                                        end_m={props.geotiff_max} 
+                                        sim_min={props.sim_min} 
+                                        sim_max={props.sim_max} 
+                                    />
                                 </div>
                             </div>
                         }

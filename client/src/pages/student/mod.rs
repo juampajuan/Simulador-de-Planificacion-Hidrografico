@@ -50,6 +50,18 @@ pub fn student_page() -> Html {
 
     let active_layers_sim = use_state(|| None::<StudentSimulation>);
 
+    let ui_state = SimulationUiState {
+        mensaje: mensaje.clone(),
+        image_url: image_url.clone(),
+        loading: loading.clone(),
+        show_legend: use_state(|| false),
+        min_depth: min_depth.clone(),
+        max_depth: max_depth.clone(),
+        simulation_image_path: use_state(|| None::<String>),
+        coverage_image_path: use_state(|| None::<String>),
+        difference_image_path: use_state(|| None::<String>),   
+    };
+
     {
         let active_layers_sim = active_layers_sim.clone();
         use_effect_with(active_tab.clone(), move |_| {
@@ -61,6 +73,8 @@ pub fn student_page() -> Html {
     {
         let attempts_handle = attempts_state.clone();
         let info_project_handle = info_project_state.clone();
+        let min_depth_handle = min_depth.clone();
+        let max_depth_handle = max_depth.clone();
         let project_data = (*project_state).clone();
 
         use_effect_with(project_state.clone(), move |_| {
@@ -69,7 +83,10 @@ pub fn student_page() -> Html {
                     spent: data.attempts_spent,
                     limit: data.project.metadata.attempts_limit,
                 });
-                info_project_handle.set(Some(data.project));
+                info_project_handle.set(Some(data.project.clone()));
+                
+                min_depth_handle.set(data.project.metadata.geotiff_min_depth);
+                max_depth_handle.set(data.project.metadata.geotiff_max_depth);
             }
             || ()
         });
@@ -102,18 +119,6 @@ pub fn student_page() -> Html {
         });
     }
 
-    let ui_state = SimulationUiState {
-        mensaje: mensaje.clone(),
-        image_url: image_url.clone(),
-        loading: loading.clone(),
-        show_legend: use_state(|| false),
-        min_depth: min_depth.clone(),
-        max_depth: max_depth.clone(),
-        simulation_image_path: use_state(|| None::<String>),
-        coverage_image_path: use_state(|| None::<String>),
-        difference_image_path: use_state(|| None::<String>),   
-    };
-
     let set_tab_entorno = {
         let active_tab = active_tab.clone();
         Callback::from(move |_| active_tab.set(ActiveTab::Entorno))
@@ -131,7 +136,6 @@ pub fn student_page() -> Html {
 
     let base_btn = "py-2 text-xs font-semibold rounded-sm transition-all cursor-pointer text-center flex justify-center items-center gap-2 h-9";
     
-    // Botones de pestañas con estilos condicionales según la pestaña activa.
     let (entorno_cls, entorno_text) = if *active_tab == ActiveTab::Entorno {
         (format!("{} w-11 flex-none bg-zinc-700 text-white", base_btn), html! {})
     } else {
@@ -149,6 +153,40 @@ pub fn student_page() -> Html {
     } else {
         (format!("{} flex-1 text-white/40 hover:text-white/70 px-3", base_btn), html! { <span>{"HISTORIAL"}</span> })
     };
+
+    let (geo_min, geo_max) = if let Some(p_data) = &*project_state {
+        (p_data.project.metadata.geotiff_min_depth, p_data.project.metadata.geotiff_max_depth)
+    } else if let Some(info_p) = &*info_project_state {
+        (info_p.metadata.geotiff_min_depth, info_p.metadata.geotiff_max_depth)
+    } else {
+        (0.0, 0.0)
+    };
+
+    let (current_sim_min, current_sim_max) = match &*active_layers_sim {
+        Some(sim) => (sim.result_min_depth, sim.result_max_depth),
+        None => (*ui_state.min_depth, *ui_state.max_depth),
+    };
+
+    {
+        let ui_state = ui_state.clone();
+        let active = active_layers_sim.clone();
+        use_effect_with(active_layers_sim.clone(), move |_| {
+            ui_state.image_url.set(None);
+            ui_state.show_legend.set(false);
+            ui_state.simulation_image_path.set(None);
+            ui_state.coverage_image_path.set(None);
+            ui_state.difference_image_path.set(None);
+
+            if let Some(sim) = &*active {
+                ui_state.min_depth.set(sim.result_min_depth);
+                ui_state.max_depth.set(sim.result_max_depth);
+                ui_state.mensaje.set(String::new());
+            } else {
+                ui_state.mensaje.set("Seleccione un intento del historial para revisar".to_string());
+            }
+            || ()
+        });
+    }
 
     html! {
         <Root title={"Simulador de Planificación Hidrográfico"}>
@@ -218,6 +256,10 @@ pub fn student_page() -> Html {
 
                         <IMGviewer 
                             ui_state={ui_state.clone()} 
+                            geotiff_min={geo_min}
+                            geotiff_max={geo_max}
+                            sim_min={current_sim_min}
+                            sim_max={current_sim_max}
                         />
                     </div>
 
