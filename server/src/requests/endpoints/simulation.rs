@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Sender;
 use crate::logging::structs::{ThreadMessage, LogType};
 use crate::logging::logger::{send_message_to_logger,debug_logger};
-use crate::db::queries_interface::student_simulations;
+use crate::db::queries_interface::{student_simulations, projects};
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::requests::http_helper::create_png_response;
@@ -95,6 +95,17 @@ pub fn run_simulation(request: &mut Request, cache: Arc<Mutex<FileCache>>, db: A
     // Generamos las imágenes de la simulación
     let (map_image, real_min_depth, real_max_depth, interpolation_min_depth, interpolation_max_depth) = simulations::create_simulation_image(&matrix, &interpolation, &log_debug);
     
+    // Guardamos de forma limpia y segura los límites en la base de datos a través del wrapper
+    if let Err(e) = projects::update_project_geotiff_bounds_locked(
+        &db,
+        ctx.project_id as i64,
+        real_min_depth,
+        real_max_depth,
+    ) {
+        send_message_to_logger(tx, format!("Error al actualizar límites del GeoTIFF del proyecto {}: {}", ctx.project_id, e), LogType::Error);
+        return generic::server_error("Error interno al actualizar parámetros del proyecto".to_string());
+    }
+
     let mut map_bytes = Vec::new();
     let _ = map_image.write_to(&mut Cursor::new(&mut map_bytes), image::ImageFormat::Png);
 
