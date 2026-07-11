@@ -18,14 +18,14 @@ pub fn imgviewer(props: &IMGviewerProps) -> Html {
     let show_legend = *props.ui_state.show_legend;
 
     html! {
-        <div class="flex-1 relative flex items-center justify-center overflow-hidden rounded-lg bg-slate-900/30">
+        <div class="flex-1 relative flex items-center justify-center overflow-hidden rounded-lg">
             <div class="flex items-center justify-center h-full w-full overflow-hidden py-8 px-4 relative">
                 {
                     if let Some(url) = image_url { 
                         html! {
                             <div class="relative flex items-center justify-center h-full w-full gap-4">
                                 <div class="flex-1 flex items-center justify-center h-full overflow-hidden">
-                                    <img key={url.to_string()} src={url.clone()} class="max-h-full max-w-full object-contain rounded-lg shadow-lg border border-white/5" />
+                                    <img key={url.to_string()} src={url.clone()} class="max-h-full max-w-full object-contain" />
                                 </div>
                                 
                                 <div class={

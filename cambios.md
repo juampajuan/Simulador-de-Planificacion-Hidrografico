@@ -9,7 +9,6 @@
 	- Cambias SOLO la frecuencia.
 - [x] Al no usar sensor inercial la medicion deberia venir mas profunda porque tiene mas trayecto que recorrer.
 	10, 15, 20%.
-- [] Generar un GEOTIFF de las simulaciones??
 
 ## Logger
 - [x] Generar la struct
@@ -56,7 +55,6 @@ Criterio que usamos para elegir nivel:
 - [x] Modificar el texto ese feo de image viewver en el medio. Cuando hay error. Copiar la ventana de loader, pero ponerla roja(?)
 - [x] Mapa se expande.
 
-
 ## Cache
 - [x] Separarlo
 
@@ -70,6 +68,7 @@ Criterio que usamos para elegir nivel:
 	Por ejemplo, para las settings, creo un carpeta.
 	El del reqquests, genero en requests/ un structs.rs y asi.
 - [x] Se chequean los intentos en back y front.
+- [x] Agregado modo SIMPLIFIED para los logs de terminal.
 
 ## Important
 No lo discutimos, pero no lo veo complicado, asi que lo haria.

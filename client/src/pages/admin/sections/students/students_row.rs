@@ -207,9 +207,10 @@ pub fn student_row(props: &StudentRowProps) -> Html {
                             disabled={*row_loading}
                             onclick={on_view_click}
                             title="Ver intentos de simulación"
-                            class="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 p-2 rounded-full cursor-pointer transition-colors shrink-0 border border-cyan-500/20"
+                            class="bg-white/15 hover:bg-white/25 p-2 flex gap-1 rounded-full cursor-pointer transition-colors shrink-0 items-center"
                         >
                             <Eye size={18}/>
+                            <p class="text-xs">{"Intentos"}</p>
                         </button>
                     }
 

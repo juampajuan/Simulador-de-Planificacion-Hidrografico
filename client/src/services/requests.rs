@@ -442,9 +442,9 @@ pub fn run_simulation(
         Some(ui.loading.clone()),
         move |response_text| {
             if let Ok(data) = serde_json::from_str::<SimulationResponse>(&response_text) {
-                // Usamos las profundidades de interpolación para la escala visual del mapa renderizado
-                min_handle.set(data.interpolation_min_depth);
-                max_handle.set(data.interpolation_max_depth);
+                // Usamos las profundidades de reales para la escala visual del mapa renderizado
+                min_handle.set(data.real_min_depth);
+                max_handle.set(data.real_max_depth);
                 
                 // Guardamos los paths en los estados correspondientes
                 simulation_image_path.set(data.simulation_image_path.clone());
