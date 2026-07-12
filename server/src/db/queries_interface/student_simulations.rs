@@ -65,23 +65,21 @@ pub fn get_student_simulations_locked(
     student_simulations::get_student_simulations(&db_connection, student_id)
 }
 
-/// Obtiene el número correlativo del próximo intento para un alumno específico.
-/// TODO: Esto esta mal, aca va el wrapper. Osea aca haces el lock.
-pub fn get_next_attempt_number(db: &DBEngine, student_id: i64) -> Result<i64, sqlite::Error> {
-    let mut statement = db.run_query(
-        "
-        SELECT COUNT(*) FROM student_simulations WHERE student_id = ?
-    ",
-    )?;
+pub fn get_next_attempt_number_locked(
+    db: &Arc<Mutex<DBEngine>>,
+    student_id: i64,
+) -> Result<i64, sqlite::Error> {
+    let db_connection = match db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Cannot lock db".to_string()),
+            });
+        }
+    };
 
-    statement.bind((1, student_id))?;
-
-    if let sqlite::State::Row = statement.next()? {
-        let count: i64 = statement.read(0)?;
-        Ok(count + 1)
-    } else {
-        Ok(1)
-    }
+    student_simulations::get_next_attempt_number(&db_connection, student_id)
 }
 
 pub fn get_all_simulation_images_locked(

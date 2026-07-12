@@ -49,7 +49,7 @@ fn parse_line(line: String, config: &mut HashMap<String, ConfigValue>) -> Result
 
     let (key, value) = match line.split_once('=') {
         Some(parts) => parts,
-        None => return Err("Archivo corrupto".to_string()),
+        None => return Err("Archivo de config corrupto.".to_string()),
     };
 
     let key = key.trim().to_string();

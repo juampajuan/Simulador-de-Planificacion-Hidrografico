@@ -8,6 +8,12 @@ use std::io::Write;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 
+const CYAN: &str = "\x1b[36m";
+const RED: &str = "\x1b[31m";
+const RESET: &str = "\x1b[0m";
+const YELLOW: &str = "\x1b[33m";
+const PURPLE: &str = "\x1b[35m";
+
 /// Abre el archivo para guardar los logs
 /// y ejecuta el metodo para que loguee
 pub fn logger_handler(rx: Receiver<ThreadMessage>, settings: Arc<Settings>) {
@@ -56,13 +62,26 @@ pub fn logging_writter_loop(
         if let Ok(Some(msg)) = result {
             let now = Local::now();
             let timestamp = now.format("%H:%M:%S %d:%M").to_string();
-            let log = format!("[{}] [{}]: {}", timestamp, msg.1.to_string(), msg.0);
 
             if !simplified {
-                println!("{log}");
+                let color: &str = match msg.1 {
+                    LogType::Debug => PURPLE,
+                    LogType::Info => CYAN,
+                    LogType::Warn => YELLOW,
+                    LogType::Error => RED,
+                };
+
+                println!(
+                    "[{}] [{}{}{}]: {}",
+                    timestamp,
+                    color,
+                    msg.1.to_string(),
+                    RESET,
+                    msg.0
+                );
             }
 
-            if let Err(e) = writeln!(file, "{log}") {
+            if let Err(e) = writeln!(file, "[{}] [{}]: {}", timestamp, msg.1.to_string(), msg.0) {
                 eprintln!(
                     "\x1b[91m[LOGGER]: No se pudo escribir en el archivo ({:?}).\x1b[0m",
                     e
@@ -89,4 +108,14 @@ pub fn send_message_to_logger(tx: &Sender<ThreadMessage>, msg: String, log_type:
 /// El move indica que el closure toma la propiedad de `tx` y lo mueve dentro del closure.
 pub fn debug_logger<'a>(tx: &'a Sender<ThreadMessage>, prefix: &'a str) -> impl Fn(&str) + 'a {
     move |msg: &str| send_message_to_logger(tx, format!("{}: {}", prefix, msg), LogType::Debug)
+}
+
+/// Arma el closure de debug logging atado a un `tx` para Errores
+pub fn error_logger<'a>(tx: &'a Sender<ThreadMessage>, prefix: &'a str) -> impl Fn(&str) + 'a {
+    move |msg: &str| send_message_to_logger(tx, format!("{}: {}", prefix, msg), LogType::Error)
+}
+
+/// Arma el closure de debug logging atado a un `tx` para Info
+pub fn info_logger<'a>(tx: &'a Sender<ThreadMessage>, prefix: &'a str) -> impl Fn(&str) + 'a {
+    move |msg: &str| send_message_to_logger(tx, format!("{}: {}", prefix, msg), LogType::Info)
 }
