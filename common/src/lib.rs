@@ -175,3 +175,79 @@ impl std::ops::Deref for StudentSimulation {
         &self.data
     }
 }
+
+/// Toda la configuración de un proyecto que carga el profesor.
+/// Compartido entre server y client
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct ProjectMetadata {
+    pub name: String,
+    pub description: Option<String>,
+    pub attempts_limit: i64,
+    pub exam_mode: bool,
+    pub due_date: Option<String>,
+    pub weather: String,
+    pub seabed_hardness: String,
+    pub budget: f64,
+    pub geotiff_min_depth: f64,
+    pub geotiff_max_depth: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AdminProjectView {
+    pub id: usize,
+    pub filename: String,
+    pub professor_id: i64,
+    #[serde(flatten)]
+    pub metadata: ProjectMetadata,
+}
+
+/// Coordenadas (lat, lon) de las cuatro esquinas del geotiff y su centro,
+/// usadas por el cliente para centrar y ajustar el zoom del mapa de fondo.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct GeoCorners {
+    pub sup_izq: (f64, f64),
+    pub sup_der: (f64, f64),
+    pub inf_izq: (f64, f64),
+    pub inf_der: (f64, f64),
+    pub centro: (f64, f64),
+}
+
+/// Respuesta del endpoint `/student_project`: los datos del proyecto (aplanados en el JSON),
+/// los intentos ya gastados por el alumno, las coordenadas geográficas del geotiff y la
+/// API key de MapTiler para dibujar el mapa de fondo.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct StudentProjectResponse {
+    #[serde(flatten)]
+    pub project: AdminProjectView,
+    pub attempts_spent: i64,
+    pub coordinates: GeoCorners,
+    pub maptiler_api_key: String,
+}
+
+/// Datos para dar de alta un alumno nuevo. El server lo deserializa del body
+/// del request, el client lo serializa para mandarlo
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct NewStudent {
+    pub name: String,
+    pub project_id: i64,
+}
+
+/// Body que manda el alumno al pedir una simulación: los parámetros de ecosonda
+/// y los del recorrido. `echo_parameters` es `Option` porque el endpoint `/create_path`
+/// reusa este mismo struct para parsear su body, que no incluye esos datos
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FullSimulationRequest {
+    #[serde(default)]
+    pub echo_parameters: Option<StudentMeasuringParameters>,
+    pub path_parameters: PathParameters,
+}
+
+/// Un alumno dado de alta por un profesor.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Student {
+    pub id: i64,
+    pub code: String,
+    pub name: String,
+    pub project_id: i64,
+    pub attempts: i64,
+}

@@ -1,5 +1,4 @@
 use crate::db::engine::DBEngine;
-use crate::db::queries::student::NewStudent;
 use crate::db::queries_interface::{projects, student};
 use crate::helpers::files;
 use crate::logging::logger::send_message_to_logger;
@@ -10,6 +9,7 @@ use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::utils::helpers::generate_code;
 use crate::utils::helpers_endpoints::check_profesor_auth;
+use common::NewStudent;
 use serde_json;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};

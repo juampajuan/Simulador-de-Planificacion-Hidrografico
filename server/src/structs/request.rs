@@ -1,10 +1,9 @@
 use std::sync::mpsc::Sender;
 
-use crate::db::queries::proyects::AdminProjectView;
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::LogType;
-use crate::{db::queries::student::Student, logging::structs::ThreadMessage};
-use common::{PathParameters, StudentMeasuringParameters};
+use crate::logging::structs::ThreadMessage;
+use common::{AdminProjectView, FullSimulationRequest, Student};
 use tiny_http::ResponseBox;
 
 const GREEN: &str = "\x1b[32m";
@@ -71,16 +70,6 @@ impl RequestLog {
 /// Lo que devuelve cada endpoint: la respuesta a enviar, el código de estado HTTP
 /// y un mensaje de error opcional para el logging.
 pub type HandlerResult = (ResponseBox, u16, Option<String>);
-
-/// Body que manda el alumno al pedir una simulación: los parámetros de ecosonda
-/// (opcionales, según el endpoint) y los parámetros del recorrido.
-#[derive(serde::Deserialize)]
-pub struct FullSimulationRequest {
-    #[serde(default)]
-    pub echo_parameters: Option<StudentMeasuringParameters>,
-    pub path_parameters: PathParameters,
-}
-
 pub struct RequestContext {
     pub file_path: String,
     pub data: FullSimulationRequest,

@@ -1,6 +1,6 @@
 use crate::services::requests::update_student;
 use crate::structs::project::Project;
-use crate::structs::student::Student;
+use common::Student;
 use lucide_yew::{Eye, Pencil, Save, Trash, X};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;

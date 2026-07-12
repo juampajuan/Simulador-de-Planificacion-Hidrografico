@@ -1,5 +1,4 @@
 use crate::db::engine::DBEngine;
-use crate::db::queries::proyects::ProjectMetadata;
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
 use crate::helpers::files;
@@ -9,8 +8,8 @@ use crate::requests::endpoints::generic::{server_error, string_response};
 use crate::requests::http_helper::parse_json_body;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
-use crate::structs::strudent_project_response::{GeoCorners, StudentProjectResponse};
 use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
+use common::{GeoCorners, ProjectMetadata, StudentProjectResponse};
 use multipart::server::Multipart;
 use serde_json;
 use std::path::Path;

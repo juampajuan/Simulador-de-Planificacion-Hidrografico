@@ -1,7 +1,7 @@
 use crate::components::attempts_modal::AttemptsModal;
 use crate::pages::admin::sections::students::students_row::StudentRow;
 use crate::structs::project::Project;
-use crate::structs::student::Student;
+use common::Student;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]

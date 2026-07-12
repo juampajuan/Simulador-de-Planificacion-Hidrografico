@@ -1,5 +1,5 @@
 use crate::components::subtitle::Subtitle;
-use crate::structs::project::AdminProjectView;
+use common::AdminProjectView;
 use lucide_yew::{CalendarClock, ChevronDown, ChevronUp, FolderSync, TriangleAlert};
 use yew::prelude::*;
 
