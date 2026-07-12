@@ -13,8 +13,8 @@ pub struct ImageSelectorProps {
 #[function_component(ImageSelector)]
 pub fn image_selector(props: &ImageSelectorProps) -> Html {
     let sim = props.active_sim.clone();
-    let min_depth_val = sim.result_min_depth;
-    let max_depth_val = sim.result_max_depth;
+    let min_depth_val = sim.data.result_min_depth;
+    let max_depth_val = sim.data.result_max_depth;
 
     let selected = use_state(|| 1);
 
@@ -64,17 +64,17 @@ pub fn image_selector(props: &ImageSelectorProps) -> Html {
                     ui.mensaje.set(String::new());
                 }
                 1 => change(
-                    sim.simulation_image_path.clone(),
+                    sim.data.simulation_image_path.clone(),
                     "No hay mapa de simulación disponible.",
                     false,
                 ),
                 2 => change(
-                    sim.coverage_image_path.clone(),
+                    sim.data.coverage_image_path.clone(),
                     "No hay mapa de cobertura disponible.",
                     false,
                 ),
                 3 => change(
-                    sim.difference_image_path.clone(),
+                    sim.data.difference_image_path.clone(),
                     "No hay mapa de diferencias disponible.",
                     true,
                 ),

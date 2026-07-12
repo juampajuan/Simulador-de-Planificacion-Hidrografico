@@ -192,7 +192,7 @@ pub fn student_page() -> Html {
     };
 
     let (current_sim_min, current_sim_max) = match &*active_layers_sim {
-        Some(sim) => (sim.result_min_depth, sim.result_max_depth),
+        Some(sim) => (sim.data.result_min_depth, sim.data.result_max_depth),
         None => (*ui_state.min_depth, *ui_state.max_depth),
     };
 
@@ -207,8 +207,8 @@ pub fn student_page() -> Html {
             ui_state.difference_image_path.set(None);
 
             if let Some(sim) = &*active {
-                ui_state.min_depth.set(sim.result_min_depth);
-                ui_state.max_depth.set(sim.result_max_depth);
+                ui_state.min_depth.set(sim.data.result_min_depth);
+                ui_state.max_depth.set(sim.data.result_max_depth);
                 ui_state.mensaje.set(String::new());
             } else {
                 ui_state

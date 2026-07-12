@@ -166,16 +166,6 @@ pub struct StudentSimulation {
     pub data: StudentSimulationData,
 }
 
-/// Permite seguir escribiendo `sim.attempt_number`, `sim.result_min_depth`, etc.
-/// (en vez de `sim.data.attempt_number`) en todo el código que ya asumía un
-/// struct plano — tanto en el server como en el client existente.
-impl std::ops::Deref for StudentSimulation {
-    type Target = StudentSimulationData;
-    fn deref(&self) -> &StudentSimulationData {
-        &self.data
-    }
-}
-
 /// Toda la configuración de un proyecto que carga el profesor.
 /// Compartido entre server y client
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
