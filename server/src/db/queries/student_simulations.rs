@@ -278,3 +278,24 @@ pub fn get_all_simulation_images(db: &DBEngine) -> Result<HashSet<String>, sqlit
 
     Ok(images)
 }
+
+/// Obtiene el número correlativo del próximo intento para un alumno específico.
+pub(crate) fn get_next_attempt_number(
+    db: &DBEngine,
+    student_id: i64,
+) -> Result<i64, sqlite::Error> {
+    let mut statement = db.run_query(
+        "
+        SELECT COUNT(*) FROM student_simulations WHERE student_id = ?
+    ",
+    )?;
+
+    statement.bind((1, student_id))?;
+
+    if let sqlite::State::Row = statement.next()? {
+        let count: i64 = statement.read(0)?;
+        Ok(count + 1)
+    } else {
+        Ok(1)
+    }
+}

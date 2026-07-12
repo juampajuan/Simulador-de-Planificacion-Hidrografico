@@ -13,7 +13,8 @@ mod db;
 use db::{engine::DBEngine, queries::professor};
 mod helpers;
 mod logging;
-use crate::logging::structs::ThreadMessage;
+use crate::logging::logger::info_logger;
+use crate::logging::{logger::error_logger, structs::ThreadMessage};
 
 /// Punto de entrada del servidor. Carga la configuración, prepara los recursos compartidos
 /// (base de datos y cache detrás de `Arc<Mutex>`), levanta el servidor HTTP y atiende cada
@@ -28,17 +29,18 @@ fn main() {
         }
     };
 
-    // Creamos el directorio donde se van a subir los archivo .tif
-    if create_dirs(&settings.storage_path).is_none() {
-        eprintln!("Error creando directorios");
-        return;
-    }
-
     let mut threads: Vec<JoinHandle<()>> = Vec::new();
 
     // Genero el thread que se encarga de loggear.
     let (tx, rx) = mpsc::channel::<ThreadMessage>();
     threads.push(create_logger_thread(rx, Arc::clone(&settings)));
+    let err_logger = error_logger(&tx, "On main");
+
+    // Creamos el directorio donde se van a subir los archivo .tif
+    if create_dirs(&settings.storage_path).is_none() {
+        err_logger("Error creando directorios");
+        return;
+    }
 
     // Levantamos la DB y aplicamos el schema
     // Ademas, si corresponde, actualizamos la pass del Admin
@@ -46,12 +48,12 @@ fn main() {
         Ok(db) => match professor::sync_admin_password(&db, &settings.admin_pass) {
             Ok(()) => db,
             Err(err) => {
-                eprintln!("Error inicializando la DB: {err}");
+                err_logger(format!("Error inicializando la DB: {err}").as_str());
                 return;
             }
         },
         Err(err) => {
-            eprintln!("Error inicializando la DB: {err}");
+            err_logger(format!("Error inicializando la DB: {err}").as_str());
             return;
         }
     };
@@ -65,12 +67,15 @@ fn main() {
     let server = match create_server(settings.port) {
         Ok(server) => server,
         Err(error) => {
-            eprintln!("Error iniciando servidor: {}", error);
+            err_logger(format!("Error iniciando servidor: {}", error).as_str());
             return;
         }
     };
 
-    println!("Server iniciado en puerto: {}", settings.port);
+    {
+        let info_log = info_logger(&tx, "On main");
+        info_log(&format!("Server iniciado en puerto: {}", settings.port));
+    }
 
     // Generamos el thread para el CLI
     threads.push(create_cli_thread(settings.port));
@@ -95,7 +100,7 @@ fn main() {
     // Esperamos a que hagan JOIN todos los hilos en ejecuion.
     for thread in threads {
         if let Err(err) = thread.join() {
-            eprintln!("\x1b[31mError:\x1b[0m {:?}", err);
+            err_logger(format!("Error joineando el thread: {:?}", err).as_str());
         }
     }
 }

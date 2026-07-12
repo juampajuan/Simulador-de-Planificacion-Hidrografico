@@ -1,4 +1,5 @@
 use crate::db::engine::DBEngine;
+use crate::db::queries_interface::student_simulations::get_next_attempt_number_locked;
 use crate::db::queries_interface::{projects, student_simulations};
 use crate::helpers::simulation::{
     SimulationImagesInput, extract_request_context, lock_get_or_create_matrix,
@@ -157,11 +158,21 @@ pub fn run_simulation(
     let mut map_bytes = Vec::new();
     let _ = map_image.write_to(&mut Cursor::new(&mut map_bytes), image::ImageFormat::Png);
 
-    // TODO: Usar el wrapper, ver como hice el resto.
-    let db_lock = db.lock().unwrap();
-    let attempt_number =
-        student_simulations::get_next_attempt_number(&db_lock, ctx.student_id).unwrap_or(1);
-    drop(db_lock);
+    let attempt_number = match get_next_attempt_number_locked(&db, ctx.student_id) {
+        Ok(number) => number,
+        Err(e) => {
+            send_message_to_logger(
+                tx,
+                format!(
+                    "Error al obtener el intento en la DB para el alumno {}: {}",
+                    ctx.student_id, e
+                ),
+                LogType::Error,
+            );
+
+            return generic::server_error("No se pudo obtener el número de intento".to_string());
+        }
+    };
 
     let images_input = SimulationImagesInput {
         constants: settings.simulation_constants(),
