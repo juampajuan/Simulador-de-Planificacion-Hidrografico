@@ -155,3 +155,32 @@ npm install
 
 > [!warning]
 > *Será necesario desabilitar `CORS` del server, para que se acepten las requests.*
+
+## Makefile
+
+Se ofrece un `Makefile` para facilitar la compilación y la ejecución.
+
+El mismo posee los siguientes comandos:
+
+```bash
+# Muestra los comandos disponibles.
+make help
+
+# Instala dependencias (GDAL, Trunk, etc.)
+make deps       
+
+# Compilar todo (Front + Back)
+make build      
+
+# Ejecutar el servidor (compilado)
+make run        
+
+# Desarrollo de server/simulation
+make dev
+
+# Limpiar la compilación
+make clean
+
+# Limpiar y volver a compilar
+make rebuild
+```
