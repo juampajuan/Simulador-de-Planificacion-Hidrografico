@@ -13,7 +13,6 @@ pub struct DepthLegendProps {
 pub fn depth_legend(props: &DepthLegendProps) -> Html {
     let range = props.end_m - props.start_m;
 
-    // Volvemos a fijar los valores dentro del rango real de la barra (0.0 a 1.0)
     let (pct_min, pct_max) = if range.abs() < f64::EPSILON {
         (0.0, 0.0)
     } else {
@@ -23,44 +22,22 @@ pub fn depth_legend(props: &DepthLegendProps) -> Html {
         )
     };
 
-    // Detectamos si están tan cerca que van a colisionar
-    let overlap = (pct_max - pct_min).abs() < 0.05;
-
-    let chip_1_top = if overlap {
-        format!("calc({:.2}% - 14px)", pct_min * 100.0)
-    } else {
-        format!("{:.2}%", pct_min * 100.0)
-    };
-
-    let chip_2_top = if overlap {
-        format!("calc({:.2}% + 14px)", pct_max * 100.0)
-    } else {
-        format!("{:.2}%", pct_max * 100.0)
-    };
+    let chip_1_top = format!("{:.2}%", pct_min * 100.0);
+    let chip_2_top = format!("{:.2}%", pct_max * 100.0);
 
     html! {
-        <div class="flex items-center gap-4 h-full pt-16 pb-6 opacity-100 select-none animate-fade-in pr-24">
+        <div class="flex flex-col items-end h-full pt-12 pb-2 opacity-100 select-none animate-fade-in">
 
-            // LADO IZQUIERDO: Etiquetas Grises (Valores fijos extremos)
-            <div class="flex h-full flex-col justify-between text-xs text-white py-1">
-                <div>
-                    <span class="px-3 py-1 border border-white/20 bg-slate-800 rounded-full shadow-lg font-mono whitespace-nowrap">
-                        { format!("{:.1}m", props.start_m) }
-                    </span>
-                </div>
-                <div>
-                    <span class="px-3 py-1 border border-white/20 bg-slate-800 rounded-full shadow-lg font-mono whitespace-nowrap">
-                        { format!("{:.1}m", props.end_m) }
-                    </span>
-                </div>
+            <div>
+                <span class="px-3 py-2 border relative top-[-5px] border-white/20 bg-slate-700 text-white text-xs rounded-full rounded-br-none shadow-lg font-mono whitespace-nowrap">
+                    { format!("{:.1}m", props.start_m) }
+                </span>
             </div>
 
-            // CENTRO: Contenedor de la barra
-            <div class="relative py-1.5 pb-2 h-full w-3 flex items-center justify-center">
+            <div class="relative h-full w-3 flex flex-col items-end justify-center gap-1 bg-red-200">
 
-                // La barra de color
                 <div
-                    class="w-3 h-full rounded outline outline-1 outline-white/60 -outline-offset-1 shadow-xl z-10"
+                    class="w-3 h-full outline outline-1 outline-white/30 -outline-offset-1 shadow-xl z-10"
                     style="
                         background: linear-gradient(
                             to bottom,
@@ -73,22 +50,28 @@ pub fn depth_legend(props: &DepthLegendProps) -> Html {
                     "
                 />
 
-                // LADO DERECHO: Ambas etiquetas azules a la derecha de la barra
                 <span
-                    class="absolute left-[calc(100%+12px)] z-20 px-3 py-1 border border-white/20 bg-cyan-800 rounded-full shadow-lg font-mono text-white text-xs whitespace-nowrap transition-all duration-200"
-                    style={format!("top:{}; transform: translateY(-50%);", chip_1_top)}
+                    class="absolute right-[calc(100%+12px)] z-20 px-3 py-1 border border-white/20 bg-cyan-700 rounded-full rounded-tr-none shadow-lg font-mono text-white text-xs whitespace-nowrap transition-all duration-200"
+                    style={format!("top:{}; transform: translateY(0px);", chip_1_top)}
                 >
                     { format!("{:.1}m", props.sim_min) }
                 </span>
 
                 <span
-                    class="absolute left-[calc(100%+12px)] z-20 px-3 py-1 border border-white/20 bg-cyan-800 rounded-full shadow-lg font-mono text-white text-xs whitespace-nowrap transition-all duration-200"
-                    style={format!("top:{}; transform: translateY(-50%);", chip_2_top)}
+                    class="absolute right-[calc(100%+12px)] z-20 px-3 py-1 border border-white/20 bg-cyan-700 rounded-full rounded-br-none shadow-lg font-mono text-white text-xs whitespace-nowrap transition-all duration-200"
+                    style={format!("top:{}; transform: translateY(-100%);", chip_2_top)}
                 >
                     { format!("{:.1}m", props.sim_max) }
                 </span>
 
             </div>
+
+            <div>
+                <span class="px-3 py-2 relative border border-white/20 top-[2px] bg-slate-700 text-white text-xs rounded-full rounded-tr-none shadow-lg font-mono whitespace-nowrap">
+                    { format!("{:.1}m", props.end_m) }
+                </span>
+            </div>
+
         </div>
     }
 }
