@@ -1,6 +1,7 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
+use crate::helpers::auth::check_student_auth;
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
 use crate::requests::endpoints::generic;
@@ -9,7 +10,6 @@ use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, RequestContext};
 use crate::structs::settings::Settings;
 use crate::utils::helpers::random_letters;
-use crate::utils::helpers_endpoints::check_student_auth;
 use chrono::Local;
 use common::{FullSimulationRequest, PathParameters, StudentMeasuringParameters};
 use simulations::structs::depth_matrix::DepthMatrix;
@@ -181,7 +181,7 @@ pub fn lock_get_or_create_matrix(
     cache: &Arc<Mutex<FileCache>>,
     file_path: &str,
     tx: &Sender<ThreadMessage>,
-    student_name: &str,
+    prefix: &str,
 ) -> Result<DepthMatrix, String> {
     let mut lock = match cache.lock() {
         Ok(l) => l,
@@ -189,7 +189,7 @@ pub fn lock_get_or_create_matrix(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, student_name);
+    let log_debug = debug_logger(tx, prefix);
 
     // La nueva estructura busca mapas globalmente usando el file_path
     if let Some(m) = lock.get_map(file_path) {
@@ -228,10 +228,10 @@ pub fn lock_get_or_create_path(
     matrix: &DepthMatrix,
     path_params: &PathParameters,
     tx: &Sender<ThreadMessage>,
-    student_name: &str,
+    prefix: &str,
 ) -> Result<Vec<(usize, usize)>, String> {
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, student_name);
+    let log_debug = debug_logger(tx, prefix);
 
     let mut lock = match cache.lock() {
         Ok(l) => l,

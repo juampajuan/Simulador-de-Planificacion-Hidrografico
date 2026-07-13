@@ -1,11 +1,11 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries_interface::student_simulations;
+use crate::helpers::auth::{check_profesor_auth, check_student_auth};
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
 use crate::requests::endpoints::generic;
 use crate::requests::http_helper::parse_json_body;
 use crate::structs::request::HandlerResult;
-use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use tiny_http::Request;
@@ -24,8 +24,7 @@ pub fn get_my_simulations(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        ("se esta intentando consultar el historial de simulaciones de un estudiante/grupo")
-            .to_string(),
+        ("Se consulta el historial de simulaciones de un estudiante/grupo.").to_string(),
         LogType::Debug,
     );
 

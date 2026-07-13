@@ -1,9 +1,46 @@
-use crate::db::engine::DBEngine;
-use crate::db::queries_interface::professor;
-use crate::utils::helpers_endpoints::check_profesor_auth;
+use crate::db::{
+    engine::DBEngine, queries::auth::TokenOwner, queries_interface::auth,
+    queries_interface::professor,
+};
+use crate::utils::helpers::get_cookie;
 use rand::Rng;
 use std::sync::{Arc, Mutex};
 use tiny_http::{Header, Request};
+
+/// Valida la sesión de un profesor a partir de la cookie `auth_token`.
+/// Devuelve `Ok(Some(id))` si el token es válido y de un profesor, `Ok(None)` si no hay
+/// cookie o el token no corresponde a un profesor, y `Err` ante un fallo de base de datos.
+pub fn check_profesor_auth(
+    request: &tiny_http::Request,
+    db: &Arc<Mutex<DBEngine>>,
+) -> Result<Option<i64>, String> {
+    let Some(token) = get_cookie(request, "auth_token") else {
+        return Ok(None);
+    };
+
+    match auth::get_user_by_token_locked(db, &token) {
+        Ok(Some(TokenOwner::Professor(id))) => Ok(Some(id)),
+        Ok(_) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Igual que `check_profesor_auth` pero para alumnos.
+/// Devuelve el id SOLO si el token pertenece a un alumno.
+pub fn check_student_auth(
+    request: &tiny_http::Request,
+    db: &Arc<Mutex<DBEngine>>,
+) -> Result<Option<i64>, String> {
+    let Some(token) = get_cookie(request, "auth_token") else {
+        return Ok(None);
+    };
+
+    match auth::get_user_by_token_locked(db, &token) {
+        Ok(Some(TokenOwner::Student(id))) => Ok(Some(id)),
+        Ok(_) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
 
 /// Valida si la request fue realizada por alguien con permisos de administrador.
 /// Autenticandolo en consecuencia.

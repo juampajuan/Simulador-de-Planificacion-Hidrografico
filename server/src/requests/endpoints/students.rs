@@ -1,5 +1,6 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries_interface::{projects, student};
+use crate::helpers::auth::check_profesor_auth;
 use crate::helpers::files;
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
@@ -8,7 +9,6 @@ use crate::requests::http_helper::parse_json_body;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use crate::utils::helpers::generate_code;
-use crate::utils::helpers_endpoints::check_profesor_auth;
 use common::NewStudent;
 use serde_json;
 use std::sync::mpsc::Sender;
@@ -36,7 +36,10 @@ pub fn create_new_student(
 
     send_message_to_logger(
         tx,
-        format!("creando estudiante/grupo para el profesor {}", professor_id),
+        format!(
+            "creando estudiante/grupo para el profesor (ID:{})",
+            professor_id
+        ),
         LogType::Debug,
     );
 
@@ -57,7 +60,7 @@ pub fn create_new_student(
         send_message_to_logger(
             tx,
             format!(
-                "Profesor {} intentó crear un estudiante/grupo en un proyecto que no le pertenece ({}).",
+                "Profesor (ID:{}) intentó crear un estudiante/grupo en un proyecto ({}) que no le pertenece.",
                 professor_id, data.project_id
             ),
             LogType::Warn,
@@ -76,7 +79,7 @@ pub fn create_new_student(
             send_message_to_logger(
                 tx,
                 format!(
-                    "estudiante/grupo '{}' creado con el proyecto {}.",
+                    "estudiante/grupo '{}' creado con el proyecto (ID:{}).",
                     data.name, data.project_id
                 ),
                 LogType::Info,
@@ -116,7 +119,7 @@ pub fn get_all_students(
         Ok(json) => json,
         Err(e) => {
             return server_error(format!(
-                "Error al obtener los estudiantes/grupos del profesor {}: {}",
+                "Error al obtener los estudiantes/grupos del profesor (ID:{}): {}",
                 professor_id, e
             ));
         }
@@ -125,7 +128,7 @@ pub fn get_all_students(
     send_message_to_logger(
         tx,
         format!(
-            "Obteniendo todos los estudiantes/grupos para el profesor {}",
+            "Obteniendo todos los estudiantes/grupos para el profesor (ID:{})",
             professor_id
         ),
         LogType::Debug,

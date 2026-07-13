@@ -34,10 +34,14 @@ pub fn create_path(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &ctx.student.name);
+    let prefix = format!(
+        "Estudiante (Id: {}), proyecto (Id: {})",
+        &ctx.student.id, &ctx.project_id
+    );
+    let log_debug = debug_logger(tx, &prefix);
 
     // reutilizamos la depthmatrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &prefix) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
@@ -49,7 +53,7 @@ pub fn create_path(
         &matrix,
         &ctx.data.path_parameters,
         tx,
-        &ctx.student.name,
+        &prefix,
     ) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
@@ -77,7 +81,11 @@ pub fn run_simulation(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &ctx.student.name);
+    let prefix = format!(
+        "Estudiante (Id: {}), proyecto (Id: {})",
+        &ctx.student.id, &ctx.project_id
+    );
+    let log_debug = debug_logger(tx, &prefix);
 
     let limit = ctx.project.metadata.attempts_limit;
     if limit != -1 && ctx.student.attempts >= limit {
@@ -93,7 +101,7 @@ pub fn run_simulation(
     };
 
     // reutilizamos la depth matrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &prefix) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
@@ -105,7 +113,7 @@ pub fn run_simulation(
         &matrix,
         &ctx.data.path_parameters,
         tx,
-        &ctx.student.name,
+        &prefix,
     ) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),
@@ -271,14 +279,18 @@ pub fn create_coverage_image(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &ctx.student.name);
+    let prefix = format!(
+        "Estudiante (Id: {}), proyecto (Id: {})",
+        &ctx.student.id, &ctx.project_id
+    );
+    let log_debug = debug_logger(tx, &prefix);
 
     let echo_parameters = match ctx.data.echo_parameters {
         Some(params) => params,
         None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
     };
 
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &prefix) {
         Ok(m) => m,
         Err(err) => return generic::server_error(err),
     };
@@ -289,7 +301,7 @@ pub fn create_coverage_image(
         &matrix,
         &ctx.data.path_parameters,
         tx,
-        &ctx.student.name,
+        &prefix,
     ) {
         Ok(p) => p,
         Err(err) => return generic::server_error(err),

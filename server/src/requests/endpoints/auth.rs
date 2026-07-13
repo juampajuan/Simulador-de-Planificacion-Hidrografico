@@ -250,7 +250,7 @@ pub fn close_all(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        "Se esta intentando cerrar todas las sesiones.".to_string(),
+        "Se intenta cerrar todas las sesiones.".to_string(),
         LogType::Debug,
     );
 
@@ -283,7 +283,7 @@ pub fn close_session(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        "Se esta intentando cerrar la sesion.".to_string(),
+        "Se intenta cerrar la sesion.".to_string(),
         LogType::Debug,
     );
 
@@ -295,12 +295,15 @@ pub fn close_session(
     };
 
     if auth::delete_token_locked(&db, &auth_token).is_err() {
-        return server_error("Internal error.".to_string());
+        return server_error("Error borrando el token de la DB.".to_string());
     }
 
     send_message_to_logger(
         tx,
-        format!("Sesión cerrada por el usuario {}.", auth_token),
+        format!(
+            "Sesión cerrada por el usuario con el token {}, ahora inválido.",
+            auth_token
+        ),
         LogType::Info,
     );
 
