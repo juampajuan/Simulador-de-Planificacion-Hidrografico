@@ -27,7 +27,7 @@ enum ActiveTab {
 
 #[function_component(StudentPage)]
 pub fn student_page() -> Html {
-    let mensaje = use_state(|| "Seleccione parametros para el recorrido".to_string());
+    let mensaje = use_state(|| "Seleccione parametros para la simulacion".to_string());
     let image_url = use_state(|| None::<String>);
     let loading = use_state(|| true);
 
@@ -131,12 +131,20 @@ pub fn student_page() -> Html {
 
     let set_tab_parametros = {
         let active_tab = active_tab.clone();
-        Callback::from(move |_| active_tab.set(ActiveTab::Parametros))
+        let mensaje_handle = mensaje.clone();
+        Callback::from(move |_| {
+            active_tab.set(ActiveTab::Parametros);
+            mensaje_handle.set("Seleccione parametros para la simulacion".to_string());
+        })
     };
 
     let set_tab_historial = {
         let active_tab = active_tab.clone();
-        Callback::from(move |_| active_tab.set(ActiveTab::Historial))
+        let mensaje_handle = mensaje.clone();
+        Callback::from(move |_| {
+            active_tab.set(ActiveTab::Historial);
+            mensaje_handle.set("Seleccione un intento del historial para revisar".to_string());
+        })
     };
 
     let base_btn = "py-2 text-xs font-semibold rounded-sm transition-all cursor-pointer text-center flex justify-center items-center gap-2 h-9";
@@ -199,7 +207,8 @@ pub fn student_page() -> Html {
     {
         let ui_state = ui_state.clone();
         let active = active_layers_sim.clone();
-        use_effect_with(active_layers_sim.clone(), move |_| {
+        let tab = active_tab.clone();
+        use_effect_with((active_layers_sim.clone(), active_tab.clone()), move |_| {
             ui_state.image_url.set(None);
             ui_state.show_legend.set(false);
             ui_state.simulation_image_path.set(None);
@@ -211,9 +220,19 @@ pub fn student_page() -> Html {
                 ui_state.max_depth.set(sim.data.result_max_depth);
                 ui_state.mensaje.set(String::new());
             } else {
-                ui_state
+                if *tab == ActiveTab::Historial {
+                    ui_state
                     .mensaje
                     .set("Seleccione un intento del historial para revisar".to_string());
+                } else if *tab == ActiveTab::Parametros {
+                    ui_state
+                    .mensaje
+                    .set("Seleccione parametros para la simulacion".to_string());
+                } else {
+                    ui_state
+                    .mensaje
+                    .set(String::new())
+                }
             }
             || ()
         });
