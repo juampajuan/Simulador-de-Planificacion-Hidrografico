@@ -127,7 +127,7 @@ pub fn info_params(props: &InfoProps) -> Html {
                             </div>
                             <div class="flex flex-col gap-1 col-span-2">
                                 <span class="text-xs font-semibold text-white/40 ml-1">{"Rango Profundidad GeoTIFF"}</span>
-                                <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}m a {}m", p.metadata.geotiff_min_depth, p.metadata.geotiff_max_depth)} />
+                                <input type="text" readonly=true disabled=true class={input_cls} value={format!("{:.2}m a {:.2}m", p.metadata.geotiff_min_depth, p.metadata.geotiff_max_depth)} />
                             </div>
                         </div>
                     }
