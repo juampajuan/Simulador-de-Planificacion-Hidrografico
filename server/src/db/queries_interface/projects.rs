@@ -1,6 +1,6 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries::proyects;
-use crate::db::queries::proyects::AdminProjectView;
+use common::{AdminProjectView, ProjectMetadata};
 use std::sync::{Arc, Mutex};
 
 /// Toma el lock de la DB y trae un proyecto por su id, si existe.
@@ -25,7 +25,7 @@ pub fn get_project_by_id_locked(
 pub fn get_all_by_professor_id_locked(
     db: &Arc<Mutex<DBEngine>>,
     professor_id: i64,
-) -> Result<Vec<proyects::AdminProjectView>, sqlite::Error> {
+) -> Result<Vec<AdminProjectView>, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
@@ -63,7 +63,7 @@ pub fn update_project_locked(
     db: &Arc<Mutex<DBEngine>>,
     id: i64,
     professor_id: i64,
-    metadata: &proyects::ProjectMetadata,
+    metadata: &ProjectMetadata,
 ) -> Result<bool, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
@@ -83,7 +83,7 @@ pub fn create_project_locked(
     db: &Arc<Mutex<DBEngine>>,
     filename: &str,
     professor_id: i64,
-    metadata: &proyects::ProjectMetadata,
+    metadata: &ProjectMetadata,
 ) -> Result<usize, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,

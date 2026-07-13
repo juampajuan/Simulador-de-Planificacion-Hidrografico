@@ -7,31 +7,13 @@ use crate::services::api_client::{
 };
 use crate::services::api_utils::{process_local_login, process_local_logout};
 use crate::structs::limits::ConfigLimits;
-use crate::structs::project::{AdminProjectView, NewProject, Project};
-use crate::structs::state::{
-    CreatePathRequest, EchoState, FullSimulationRequest, PathState, SimulationUiState,
+use crate::structs::project::{NewProject, Project};
+use crate::structs::state::{CreatePathRequest, EchoState, PathState, SimulationUiState};
+use common::{
+    FullSimulationRequest, NewStudent, SimulationResponse, Student, StudentMeasuringParameters,
+    StudentProjectResponse, StudentSimulation,
 };
-use crate::structs::student::{NewStudent, Student};
-use common::{SimulationResponse, StudentMeasuringParameters, StudentSimulation};
 use yew::prelude::UseStateHandle;
-
-#[derive(serde::Deserialize, Clone, PartialEq, Debug)]
-pub struct StudentProjectResponse {
-    #[serde(flatten)]
-    pub project: AdminProjectView, // toda la info de proyecto
-    pub attempts_spent: i64,
-    pub coordinates: GeoCorners,
-    pub maptiler_api_key: String,
-}
-
-#[derive(serde::Deserialize, Debug, Clone, PartialEq)]
-pub struct GeoCorners {
-    pub sup_izq: (f64, f64),
-    pub sup_der: (f64, f64),
-    pub inf_izq: (f64, f64),
-    pub inf_der: (f64, f64),
-    pub centro: (f64, f64),
-}
 
 /// Obtiene el historial de simulaciones/intentos.
 /// Si `target_student_id` es `Some(id)`, se concatena como query string (usado por docentes).
@@ -430,10 +412,10 @@ pub fn run_simulation(
     ui.loading.set(true);
 
     let simulation_params = FullSimulationRequest {
-        echo_parameters: StudentMeasuringParameters {
+        echo_parameters: Some(StudentMeasuringParameters {
             transport_parameters: transport_params,
             echo_sounder_parameters: echo_params,
-        },
+        }),
         path_parameters: path_params,
     };
     let request_body = serde_json::to_string(&simulation_params).unwrap_or_default();
@@ -544,10 +526,10 @@ pub fn run_coverage(
     ui.loading.set(true);
 
     let simulation_params = FullSimulationRequest {
-        echo_parameters: StudentMeasuringParameters {
+        echo_parameters: Some(StudentMeasuringParameters {
             transport_parameters: transport_params,
             echo_sounder_parameters: echo_params,
-        },
+        }),
         path_parameters: path_params,
     };
 

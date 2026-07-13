@@ -1,5 +1,5 @@
 use crate::UseStateHandle;
-use common::{EcosondaMode, PathParameters, StudentMeasuringParameters, Transport};
+use common::{EcosondaMode, PathParameters, Transport};
 use serde::Serialize;
 
 // Structs de states para simulación.
@@ -47,12 +47,6 @@ impl EchoState {
             mode: EcosondaMode::Monohaz,
         }
     }
-}
-
-#[derive(Serialize)]
-pub struct FullSimulationRequest {
-    pub echo_parameters: StudentMeasuringParameters,
-    pub path_parameters: PathParameters,
 }
 
 #[derive(Serialize)]

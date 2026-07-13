@@ -1,5 +1,6 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries::student;
+use common::Student;
 use std::sync::{Arc, Mutex};
 
 /// Toma el lock de la DB y valida el código de acceso de un alumno (login).
@@ -64,7 +65,7 @@ pub fn delete_student_locked(
 pub fn get_students_for_professor_locked(
     db: &Arc<Mutex<DBEngine>>,
     professor_id: i64,
-) -> Result<Vec<student::Student>, sqlite::Error> {
+) -> Result<Vec<Student>, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {
@@ -103,7 +104,7 @@ pub fn create_student_locked(
 pub fn get_student_by_id_locked(
     db: &Arc<Mutex<DBEngine>>,
     student_id: i64,
-) -> Result<Option<student::Student>, sqlite::Error> {
+) -> Result<Option<Student>, sqlite::Error> {
     let db_connection = match db.lock() {
         Ok(db) => db,
         Err(_) => {

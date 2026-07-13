@@ -1,5 +1,4 @@
-use crate::services::requests::GeoCorners;
-use crate::services::requests::StudentProjectResponse;
+use common::{GeoCorners, StudentProjectResponse};
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::{JsCast, closure::Closure};
 use yew::prelude::*;

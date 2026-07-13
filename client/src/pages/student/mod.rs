@@ -11,13 +11,12 @@ use self::components::measure_params::{AttemptsState, MeasuresParams};
 use self::components::parameters_cont::ParamCont;
 use self::components::path_params::PathParams;
 use crate::services::requests::{
-    StudentProjectResponse, get_student_project, get_student_simulations_history, get_system_limits,
+    get_student_project, get_student_simulations_history, get_system_limits,
 };
 use crate::structs::limits::ConfigLimits;
-use crate::structs::project::AdminProjectView;
 use crate::structs::state::PathState;
 use crate::structs::state::SimulationUiState;
-use common::StudentSimulation;
+use common::{AdminProjectView, StudentProjectResponse, StudentSimulation};
 
 #[derive(PartialEq, Clone, Copy)]
 enum ActiveTab {
@@ -193,7 +192,7 @@ pub fn student_page() -> Html {
     };
 
     let (current_sim_min, current_sim_max) = match &*active_layers_sim {
-        Some(sim) => (sim.result_min_depth, sim.result_max_depth),
+        Some(sim) => (sim.data.result_min_depth, sim.data.result_max_depth),
         None => (*ui_state.min_depth, *ui_state.max_depth),
     };
 
@@ -208,8 +207,8 @@ pub fn student_page() -> Html {
             ui_state.difference_image_path.set(None);
 
             if let Some(sim) = &*active {
-                ui_state.min_depth.set(sim.result_min_depth);
-                ui_state.max_depth.set(sim.result_max_depth);
+                ui_state.min_depth.set(sim.data.result_min_depth);
+                ui_state.max_depth.set(sim.data.result_max_depth);
                 ui_state.mensaje.set(String::new());
             } else {
                 ui_state

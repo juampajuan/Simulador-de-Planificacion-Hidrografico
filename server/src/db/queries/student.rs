@@ -1,22 +1,6 @@
 use crate::db::engine::DBEngine;
-use serde::{Deserialize, Serialize};
+use common::Student;
 use sqlite::State;
-
-// Esto se podria mover a los structs. Y va a haber para cada tipo
-#[derive(Serialize, Clone)] // Agregamos Clone por comodidad
-pub struct Student {
-    pub code: String,
-    pub name: String,
-    pub id: i64,
-    pub project_id: i64,
-    pub attempts: i64,
-}
-
-#[derive(Deserialize)]
-pub struct NewStudent {
-    pub name: String,
-    pub project_id: i64,
-}
 
 /// Inserta un alumno nuevo con su código de acceso, nombre, proyecto asignado y profesor dueño.
 pub(crate) fn create_student(

@@ -109,9 +109,6 @@ pub fn handle_request(
         None if request.url().starts_with("/images/") => {
             files::get_file_from_storage(&request, settings)
         }
-        None if request.url().starts_with("/simulations/") => {
-            files::get_file_from_storage(&request, settings)
-        }
         _ => files::get_page_file(&request),
     };
 

@@ -110,13 +110,13 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                 "flex items-center justify-center gap-2 w-full h-[28px] rounded text-xs font-bold transition-all bg-zinc-800 text-white/50 border border-white/5 hover:bg-zinc-700/50 hover:text-white shrink-0"
                             };
 
-                            let gnss_str = match sim.path_parameters.gnss_type {
+                            let gnss_str = match sim.data.path_parameters.gnss_type {
                                 GnssType::NoCorrection => "Sin Corrección",
                                 GnssType::DGPSCorrection => "Con corrección DGPS",
                                 GnssType::PhaseCorrection => "Con correccion por fase",
                             };
 
-                            let echosounder_mode_str = match sim.echosounder_parameters.mode {
+                            let echosounder_mode_str = match sim.data.echosounder_parameters.mode {
                                 EcosondaMode::Monohaz => "Monohaz",
                                 EcosondaMode::Multihaz => "Multihaz",
                             };
@@ -126,7 +126,7 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                     <div onclick={toggle_expand} class="flex flex-col gap-2 cursor-pointer select-none">
                                         <div class="flex items-center justify-between w-full">
                                             <div class="flex items-center shrink-0">
-                                                <Subtitle text={format!("Intento #{}", sim.attempt_number)} icon={html! { <History size={16} /> }} />
+                                                <Subtitle text={format!("Intento #{}", sim.data.attempt_number)} icon={html! { <History size={16} /> }} />
                                             </div>
                                             <div class="flex items-center gap-2">
                                                 {
@@ -137,9 +137,9 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                     } else {
                                                         html!{
                                                             <div class="text-[11px] font-mono text-white/60 bg-zinc-800/40 px-2 py-0.5 rounded border border-white/5 flex gap-2 whitespace-nowrap">
-                                                                <div>{"Mín: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_min_depth)}</span></div>
+                                                                <div>{"Mín: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.data.result_min_depth)}</span></div>
                                                                 <div class="text-white/25">{"|"}</div>
-                                                                <div>{"Máx: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.result_max_depth)}</span></div>
+                                                                <div>{"Máx: "}<span class="text-white font-semibold">{format!("{:.2}m", sim.data.result_max_depth)}</span></div>
                                                             </div>
                                                         }
                                                     }
@@ -157,11 +157,11 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mb-0.5">{"Parámetros de Recorrido"}</div>
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Separación"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m", sim.path_parameters.separacion)} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m", sim.data.path_parameters.separacion)} />
                                                 </div>
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Azimut"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}°", sim.path_parameters.azimut)} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}°", sim.data.path_parameters.azimut)} />
                                                 </div>
 
                                                 <div class="flex flex-col gap-1 col-span-2">
@@ -172,21 +172,21 @@ pub fn history_params(props: &HistoryProps) -> Html {
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-2 mb-0.5">{"Parámetros de Transporte"}</div>
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Velocidad"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m/s", sim.transport_parameters.speed)} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m/s", sim.data.transport_parameters.speed)} />
                                                 </div>
 
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-1 mb-0.5">{"Sensores Activos"}</div>
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Mareógrafo"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.transport_parameters.uses_mareograph { "Sí" } else { "No" }} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.data.transport_parameters.uses_mareograph { "Sí" } else { "No" }} />
                                                 </div>
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Perfilador de sonido"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.transport_parameters.uses_sound_profiler { "Sí" } else { "No" }} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.data.transport_parameters.uses_sound_profiler { "Sí" } else { "No" }} />
                                                 </div>
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Sensor Inercial"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.transport_parameters.uses_inertial_sensor { "Sí" } else { "No" }} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.data.transport_parameters.uses_inertial_sensor { "Sí" } else { "No" }} />
                                                 </div>
 
                                                 <div class="col-span-2 text-xs font-bold text-white/40 uppercase tracking-wider mt-2 mb-0.5">{"Configuración de Ecosonda"}</div>
@@ -198,27 +198,27 @@ pub fn history_params(props: &HistoryProps) -> Html {
 
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Frecuencia"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.echosounder_parameters.uses_high_frecuency { "Alta" } else { "Baja" }} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={if sim.data.echosounder_parameters.uses_high_frecuency { "Alta" } else { "Baja" }} />
                                                 </div>
 
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Ganancia"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} dB", sim.echosounder_parameters.gain)} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} dB", sim.data.echosounder_parameters.gain)} />
                                                 </div>
 
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Umbral"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={sim.echosounder_parameters.threshold.to_string()} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={sim.data.echosounder_parameters.threshold.to_string()} />
                                                 </div>
 
                                                 <div class="flex flex-col gap-1">
                                                     <span class={label_cls}>{"Velocidad del Sonido"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m/s", sim.echosounder_parameters.sound_speed)} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{} m/s", sim.data.echosounder_parameters.sound_speed)} />
                                                 </div>
 
                                                 <div class="flex flex-col gap-1 col-span-2">
                                                     <span class={label_cls}>{"Límites (Mín/Máx)"}</span>
-                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}m a {}m", sim.echosounder_parameters.min_limit, sim.echosounder_parameters.max_limit)} />
+                                                    <input type="text" readonly=true disabled=true class={input_cls} value={format!("{}m a {}m", sim.data.echosounder_parameters.min_limit, sim.data.echosounder_parameters.max_limit)} />
                                                 </div>
 
                                                 <div class="col-span-2">

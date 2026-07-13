@@ -5,7 +5,7 @@ use crate::services::requests::{
     create_student, delete_student, get_all_projects, get_all_students,
 };
 use crate::structs::project::Project;
-use crate::structs::student::Student;
+use common::Student;
 use lucide_yew::{Check, ClipboardCopy, Plus, Search, Users};
 use wasm_bindgen::JsCast;
 use web_sys::window;

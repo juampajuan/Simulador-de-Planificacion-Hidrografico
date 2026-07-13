@@ -1,28 +1,5 @@
 use crate::db::engine::DBEngine;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ProjectMetadata {
-    pub name: String,
-    pub description: Option<String>,
-    pub attempts_limit: i64,
-    pub exam_mode: bool,
-    pub due_date: Option<String>,
-    pub weather: String,
-    pub seabed_hardness: String,
-    pub budget: f64,
-    pub geotiff_min_depth: f64,
-    pub geotiff_max_depth: f64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct AdminProjectView {
-    pub id: usize,
-    pub filename: String,
-    pub professor_id: i64,
-    #[serde(flatten)]
-    pub metadata: ProjectMetadata,
-}
+use common::{AdminProjectView, ProjectMetadata};
 
 /// Inserta un proyecto nuevo con su archivo geotiff, su dueño (professor_id) y toda la metadata.
 /// Devuelve el id generado por la base.

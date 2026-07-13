@@ -80,8 +80,8 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
 
             if let Some(sim) = &**active {
                 // Seteamos los datos de profundidad del nuevo intento, pero la pantalla sigue vacía
-                ui_state.min_depth.set(sim.result_min_depth);
-                ui_state.max_depth.set(sim.result_max_depth);
+                ui_state.min_depth.set(sim.data.result_min_depth);
+                ui_state.max_depth.set(sim.data.result_max_depth);
                 ui_state.mensaje.set(String::new());
             } else {
                 ui_state
@@ -100,7 +100,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
 
     let filtered_history = (*history_state)
         .iter()
-        .filter(|sim| sim.project_id == props.project.id)
+        .filter(|sim| sim.data.project_id == props.project.id)
         .cloned()
         .collect::<Vec<StudentSimulation>>();
 
@@ -113,7 +113,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
         use_effect_with(history_state.clone(), move |_| {
             let filtered = (*history_state_raw)
                 .iter()
-                .filter(|sim| sim.project_id == project_id)
+                .filter(|sim| sim.data.project_id == project_id)
                 .cloned()
                 .collect::<Vec<StudentSimulation>>();
             filtered_history_handle.set(filtered);
@@ -125,7 +125,7 @@ pub fn attempts_modal(props: &AttemptsModalProps) -> Html {
     let geo_max = props.project.geotiff_max_depth;
 
     let (current_sim_min, current_sim_max) = match &*active_layers_sim {
-        Some(sim) => (sim.result_min_depth, sim.result_max_depth),
+        Some(sim) => (sim.data.result_min_depth, sim.data.result_max_depth),
         None => (*ui_state.min_depth, *ui_state.max_depth),
     };
 
