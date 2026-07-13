@@ -24,10 +24,8 @@ pub fn logger_handler(rx: Receiver<ThreadMessage>, settings: Arc<Settings>) {
     {
         Ok(file) => file,
         Err(_) => {
-            eprintln!("\x1b[91m[LOGGER]: No se pudo abrir el archivo.\x1b[0m");
-            eprintln!(
-                "\x1b[93m[LOGGER]: El servidor funcionará con regularidad, pero no se almacenarán los LOG en el archivo.\x1b[0m"
-            );
+            eprintln!("\x1b[91m[LOGGER]: No se pudo abrir el archivo para almacenarlos.\x1b[0m");
+            eprintln!("\x1b[91m[LOGGER]: El servidor operará con normalidad, pero no se guardaran Logs.\x1b[0m");
             return;
         }
     };
@@ -61,45 +59,51 @@ pub fn logging_writter_loop(
 
         if let Ok(Some(msg)) = result {
             let now = Local::now();
-            let timestamp = now.format("%H:%M:%S %d:%M").to_string();
+            let timestamp = now.format("%H:%M:%S %d:%m").to_string();
 
-            if !simplified {
-                let color: &str = match msg.1 {
-                    LogType::Debug => PURPLE,
-                    LogType::Info => CYAN,
-                    LogType::Warn => YELLOW,
-                    LogType::Error => RED,
-                };
-
-                println!(
-                    "[{}] [{}{}{}]: {}",
-                    timestamp,
-                    color,
-                    msg.1.to_string(),
-                    RESET,
-                    msg.0
-                );
-            }
+            log_message_on_terminal(&msg.0, &msg.1, simplified, &timestamp);
 
             if let Err(e) = writeln!(file, "[{}] [{}]: {}", timestamp, msg.1.to_string(), msg.0) {
-                eprintln!(
-                    "\x1b[91m[LOGGER]: No se pudo escribir en el archivo ({:?}).\x1b[0m",
-                    e
-                );
-                eprintln!(
-                    "\x1b[93m[LOGGER]: El servidor funcionará con regularidad, pero no se almacenarán los LOG en el archivo.\x1b[0m"
-                );
+                eprintln!("\x1b[91m[LOGGER]: No se pudo escribir el archivo para almacenarlos.\x1b[0m");
             };
         };
     }
 }
 
-pub fn send_message_to_logger(tx: &Sender<ThreadMessage>, msg: String, log_type: LogType) {
-    if tx.send(ThreadMessage { msg, log_type }).is_err() {
-        eprintln!("\x1b[91m[LOGGER]: No se pudo enviar el LOG al hilo correspondiente.\x1b[0m");
-        eprintln!(
-            "\x1b[93m[LOGGER]: El servidor funcionará con regularidad, pero no se almacenarán los LOG en el archivo.\x1b[0m"
+
+fn log_message_on_terminal(message: &str, log_type: &LogType, simplified: bool, timestamp: &str) {
+
+    if !simplified {
+        
+        let color = match *log_type {
+            LogType::Debug => PURPLE,
+            LogType::Info => CYAN,
+            LogType::Warn => YELLOW,
+            LogType::Error => RED,
+        };
+
+        println!(
+            "[{}] [{}{}{}]: {}",
+            timestamp,
+            color,
+            log_type.to_string(),
+            RESET,
+            message
         );
+
+    }
+}
+
+fn log_message_on_terminal_timestamp_wrap(message: &str, log_type: LogType){
+    let now = Local::now();
+    let timestamp = now.format("%H:%M:%S %d:%m").to_string();
+    log_message_on_terminal(message, &log_type, false, &timestamp);
+}
+
+pub fn send_message_to_logger(tx: &Sender<ThreadMessage>, msg: String, log_type: LogType) {
+    if let Err(err) = tx.send(ThreadMessage { msg, log_type }) {
+        eprintln!("\x1b[91m[LOGGER]: No se pudo enviar el Log al hilo correspondiente. Se procede a mostrar todos por terminal, ya que no se almacenarán.\x1b[0m");
+        log_message_on_terminal_timestamp_wrap(&err.0.msg, err.0.log_type);
     }
 }
 
