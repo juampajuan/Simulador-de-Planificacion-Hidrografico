@@ -29,21 +29,35 @@ pub fn get_my_simulations(
     );
 
     let mut target_student_id: Option<i64> = None;
-    let mut queried_by_professor = false;
 
     // Intentamos validar si es un Alumno
     if let Ok(Some(student_id)) = check_student_auth(request, &db) {
         target_student_id = Some(student_id);
+        send_message_to_logger(
+            tx,
+            format!(
+                "Alumno (Id:{}) consultó su historial de simulaciones.",
+                student_id
+            ),
+            LogType::Debug,
+        );
     }
     // Si no es alumno, nos fijamos si es un Docente
-    else if let Ok(Some(_professor_id)) = check_profesor_auth(request, &db) {
-        queried_by_professor = true;
+    else if let Ok(Some(professor_id)) = check_profesor_auth(request, &db) {
         // Al ser docente, buscamos el id del alumno que quiere corregir desde la URL
         // Ejemplo de URL: /api/v1/exams/my_simulations?student_id=14
         if let Some(pos) = request.url().find("student_id=") {
             let id_str = &request.url()[pos + 11..];
             if let Ok(parsed_id) = id_str.parse::<i64>() {
                 target_student_id = Some(parsed_id);
+                send_message_to_logger(
+                    tx,
+                    format!(
+                        "Docente (Id:{}) consultó el historial de simulaciones del estudiante/grupo {}.",
+                        professor_id, parsed_id
+                    ),
+                    LogType::Debug,
+                );
             }
         }
 
@@ -60,17 +74,6 @@ pub fn get_my_simulations(
         Some(id) => id,
         None => return http_utils::string_response("Sin autorizar".to_string(), 401),
     };
-
-    if queried_by_professor {
-        send_message_to_logger(
-            tx,
-            format!(
-                "Un docente consultó el historial de simulaciones del estudiante/grupo {}.",
-                student_id
-            ),
-            LogType::Debug,
-        );
-    }
 
     // Ejecutamos la query con el ID definitivo
     match student_simulations::get_student_simulations_locked(&db, student_id) {

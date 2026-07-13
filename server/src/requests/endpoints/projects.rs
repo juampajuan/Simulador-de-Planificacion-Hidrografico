@@ -205,7 +205,7 @@ pub fn create(
 
     send_message_to_logger(
         tx,
-        format!("Proyecto para profesor con ID: {} creado.", professor_id),
+        format!("Proyecto para profesor con Id: {} creado.", professor_id),
         LogType::Debug,
     );
 
@@ -221,7 +221,7 @@ pub fn get_projects(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        ("Intentando obtener un proyecto").to_string(),
+        ("Intentando obtener los proyectos de un docente.").to_string(),
         LogType::Debug,
     );
 
@@ -230,6 +230,15 @@ pub fn get_projects(
         Ok(None) => return string_response("Sin autorizar".to_string(), 401),
         Err(err) => return server_error(err),
     };
+
+    send_message_to_logger(
+        tx,
+        format!(
+            "Obteniendo los proyectos del docente (Id: {})",
+            professor_id
+        ),
+        LogType::Debug,
+    );
 
     let projects = match projects::get_all_by_professor_id_locked(&db, professor_id) {
         Ok(projects) => projects,
@@ -279,7 +288,7 @@ pub fn get_student_project(
     send_message_to_logger(
         tx,
         format!(
-            "Intentando obtener el proyecto del grupo/estudiante {}.",
+            "Obteniendo el proyecto del grupo/estudiante (Id: {}).",
             student.name
         ),
         LogType::Debug,

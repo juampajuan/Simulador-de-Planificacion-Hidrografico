@@ -37,7 +37,7 @@ pub fn create_new_student(
     send_message_to_logger(
         tx,
         format!(
-            "creando estudiante/grupo para el profesor (ID:{})",
+            "creando estudiante/grupo para el profesor (Id: {})",
             professor_id
         ),
         LogType::Debug,
@@ -60,7 +60,7 @@ pub fn create_new_student(
         send_message_to_logger(
             tx,
             format!(
-                "Profesor (ID:{}) intentó crear un estudiante/grupo en un proyecto ({}) que no le pertenece.",
+                "Profesor (Id: {}) intentó crear un estudiante/grupo en un proyecto ({}) que no le pertenece.",
                 professor_id, data.project_id
             ),
             LogType::Warn,
@@ -79,7 +79,7 @@ pub fn create_new_student(
             send_message_to_logger(
                 tx,
                 format!(
-                    "estudiante/grupo '{}' creado con el proyecto (ID:{}).",
+                    "estudiante/grupo '{}' creado con el proyecto (Id: {}).",
                     data.name, data.project_id
                 ),
                 LogType::Info,
@@ -113,7 +113,7 @@ pub fn get_all_students(
 
     let Ok(students) = student::get_students_for_professor_locked(&db, professor_id) else {
         return http_utils::server_error(format!(
-            "Error al obtener los estudiantes/grupos del profesor (ID:{})",
+            "Error al obtener los estudiantes/grupos del profesor (Id: {})",
             { professor_id }
         ));
     };
@@ -122,7 +122,7 @@ pub fn get_all_students(
         Ok(json) => json,
         Err(e) => {
             return http_utils::server_error(format!(
-                "Error al obtener los estudiantes/grupos del profesor (ID:{}): {}",
+                "Error al obtener los estudiantes/grupos del profesor (Id: {}): {}",
                 professor_id, e
             ));
         }
@@ -131,7 +131,7 @@ pub fn get_all_students(
     send_message_to_logger(
         tx,
         format!(
-            "Obteniendo todos los estudiantes/grupos para el profesor (ID:{})",
+            "Obteniendo todos los estudiantes/grupos para el profesor (Id: {})",
             professor_id
         ),
         LogType::Debug,
