@@ -62,7 +62,7 @@ impl FileCache {
         let now = self.get_now();
         let debug_log = debug_logger(&self.tx, "CACHE");
         debug_log(&format!(
-            "Se solicita actualizar o agregar un DepthMatrix (Name: {}).",
+            "Se solicita actualizar o agregar un DepthMatrix (Path: {}).",
             &geotiff_path
         ));
 
@@ -73,14 +73,14 @@ impl FileCache {
             .position(|(it, _)| it.geotiff_path == geotiff_path)
         {
             debug_log(&format!(
-                "Fue encontrado en la posición {}, actualizamos su fecha de acceso. (Name: {})",
+                "Fue encontrado en la posición {}, actualizamos su fecha de acceso. (Path: {})",
                 pos, &geotiff_path
             ));
             self.maps[pos].0.matrix = matrix;
             self.maps[pos].1 = now;
         } else {
             debug_log(&format!(
-                "No se encontró en el cache, lo agregamos. (Name: {})",
+                "No se encontró en el cache, lo agregamos. (Path: {})",
                 &geotiff_path
             ));
             // Si la caché de mapas se llenó, desalojamos el mapa más viejo en desuso
@@ -108,7 +108,7 @@ impl FileCache {
         let now = self.get_now();
         let debug_log = debug_logger(&self.tx, "CACHE");
         debug_log(&format!(
-            "Se solicita buscar el DepthMatrix (Name: {}).",
+            "Se solicita buscar el DepthMatrix (Path: {}).",
             &geotiff_path
         ));
 
@@ -118,13 +118,13 @@ impl FileCache {
             .position(|(it, _)| it.geotiff_path == geotiff_path)
         {
             debug_log(&format!(
-                "Se encontró la DepthMatrix (index: {}), actualizamos su fecha de acceso, antes de retornarlo. (Name: {})",
+                "Se encontró la DepthMatrix (index: {}), actualizamos su fecha de acceso, antes de retornarlo. (Path: {})",
                 pos, &geotiff_path
             ));
             self.maps[pos].1 = now; // Actualiza último acceso global
             return Some(&self.maps[pos].0.matrix);
         }
-        debug_log(&format!("No fue encontrado. (Name: {})", &geotiff_path));
+        debug_log(&format!("No fue encontrado. (Path: {})", &geotiff_path));
         None
     }
 

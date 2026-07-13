@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod exams;
 pub mod files;
-pub mod generic;
 pub mod limits;
 pub mod projects;
 pub mod simulation;

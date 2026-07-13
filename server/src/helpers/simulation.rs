@@ -4,8 +4,8 @@ use crate::db::queries_interface::student;
 use crate::helpers::{auth::check_student_auth, utils::random_letters};
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic;
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils;
+use crate::requests::http_utils::parse_json_body;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, RequestContext};
 use crate::structs::settings::Settings;
@@ -39,20 +39,25 @@ pub fn extract_request_context(
 ) -> Result<RequestContext, HandlerResult> {
     let student_id = match check_student_auth(request, db) {
         Ok(Some(id)) => id,
-        Ok(None) => return Err(generic::string_response("Sin autorizar".to_string(), 401)),
-        Err(err) => return Err(generic::server_error(err)),
+        Ok(None) => {
+            return Err(http_utils::string_response(
+                "Sin autorizar".to_string(),
+                401,
+            ));
+        }
+        Err(err) => return Err(http_utils::server_error(err)),
     };
 
     let student = match student::get_student_by_id_locked(db, student_id) {
         Ok(Some(s)) => s,
         Ok(None) => {
-            return Err(generic::string_response(
+            return Err(http_utils::string_response(
                 "Estudiante no encontrado".to_string(),
                 404,
             ));
         }
         Err(_) => {
-            return Err(generic::server_error(
+            return Err(http_utils::server_error(
                 "Error al obtener datos del estudiante".to_string(),
             ));
         }
@@ -61,13 +66,13 @@ pub fn extract_request_context(
     let project_id = match projects::get_project_id_by_student_locked(db, student_id) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            return Err(generic::string_response(
+            return Err(http_utils::string_response(
                 "Proyecto no encontrado".to_string(),
                 404,
             ));
         }
         Err(_) => {
-            return Err(generic::server_error(
+            return Err(http_utils::server_error(
                 "Error al obtener el proyecto del estudiante".to_string(),
             ));
         }
@@ -76,13 +81,13 @@ pub fn extract_request_context(
     let project = match projects::get_project_by_id_locked(db, project_id) {
         Ok(Some(project)) => project,
         Ok(None) => {
-            return Err(generic::string_response(
+            return Err(http_utils::string_response(
                 "Proyecto no encontrado".to_string(),
                 404,
             ));
         }
         Err(_) => {
-            return Err(generic::server_error(
+            return Err(http_utils::server_error(
                 "Error al obtener el proyecto".to_string(),
             ));
         }
@@ -92,7 +97,7 @@ pub fn extract_request_context(
 
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return Err(generic::server_error(format!("Bad Request: {}", err))),
+        Err(err) => return Err(http_utils::server_error(format!("Bad Request: {}", err))),
     };
 
     Ok(RequestContext {

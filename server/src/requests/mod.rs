@@ -1,3 +1,3 @@
 pub mod endpoints;
 pub mod handler;
-pub mod http_helper;
+pub mod http_utils;

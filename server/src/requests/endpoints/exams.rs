@@ -3,8 +3,8 @@ use crate::db::queries_interface::student_simulations;
 use crate::helpers::auth::{check_profesor_auth, check_student_auth};
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic;
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils;
+use crate::requests::http_utils::parse_json_body;
 use crate::structs::request::HandlerResult;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -48,7 +48,7 @@ pub fn get_my_simulations(
         }
 
         if target_student_id.is_none() {
-            return generic::string_response(
+            return http_utils::string_response(
                 "Bad Request: Se requiere el parámetro 'student_id' para el docente.".to_string(),
                 400,
             );
@@ -58,7 +58,7 @@ pub fn get_my_simulations(
     // Si no es ninguno de los dos, rebota con 401
     let student_id = match target_student_id {
         Some(id) => id,
-        None => return generic::string_response("Sin autorizar".to_string(), 401),
+        None => return http_utils::string_response("Sin autorizar".to_string(), 401),
     };
 
     if queried_by_professor {
@@ -78,14 +78,14 @@ pub fn get_my_simulations(
             let json_payload = match serde_json::to_string(&sims) {
                 Ok(json) => json,
                 Err(_) => {
-                    return generic::server_error(
+                    return http_utils::server_error(
                         "Error al serializar las simulaciones".to_string(),
                     );
                 }
             };
-            generic::string_response(json_payload, 200)
+            http_utils::string_response(json_payload, 200)
         }
-        Err(e) => generic::server_error(format!("Error en la base de datos: {}", e)),
+        Err(e) => http_utils::server_error(format!("Error en la base de datos: {}", e)),
     }
 }
 
@@ -98,14 +98,14 @@ pub fn select_exam_simulation(
     // Validamos autenticación del alumno
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
-        Ok(None) => return generic::string_response("Sin autorizar".to_string(), 401),
-        Err(err) => return generic::server_error(err),
+        Ok(None) => return http_utils::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return http_utils::server_error(err),
     };
 
     // Parseamos el JSON body
     let payload: SelectSimulationPayload = match parse_json_body(request) {
         Ok(data) => data,
-        Err(err) => return generic::string_response(format!("Bad Request: {}", err), 400),
+        Err(err) => return http_utils::string_response(format!("Bad Request: {}", err), 400),
     };
 
     // Pasamos los 3 argumentos requeridos: db, student_id, y el Option<i64>
@@ -123,8 +123,8 @@ pub fn select_exam_simulation(
                 ),
                 LogType::Info,
             );
-            generic::string_response("Estado de entrega actualizado con éxito".to_string(), 200)
+            http_utils::string_response("Estado de entrega actualizado con éxito".to_string(), 200)
         }
-        Err(e) => generic::server_error(format!("Error al actualizar la base de datos: {}", e)),
+        Err(e) => http_utils::server_error(format!("Error al actualizar la base de datos: {}", e)),
     }
 }

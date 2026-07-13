@@ -5,8 +5,8 @@ use crate::helpers::auth::{check_profesor_auth, check_student_auth};
 use crate::helpers::files;
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic::{server_error, string_response};
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils::parse_json_body;
+use crate::requests::http_utils::{server_error, string_response};
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use common::{GeoCorners, ProjectMetadata, StudentProjectResponse};
@@ -286,7 +286,7 @@ pub fn get_student_project(
     );
 
     // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let prefix = format!("Estudiante {} (Id: {})", student.name, student.id);
+    let prefix = format!("Estudiante (Id: {})", student.id);
     let log_debug = debug_logger(tx, &prefix);
 
     let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {

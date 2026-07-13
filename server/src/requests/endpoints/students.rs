@@ -5,8 +5,8 @@ use crate::helpers::files;
 use crate::helpers::utils::generate_code;
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic::{server_error, string_response};
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils;
+use crate::requests::http_utils::parse_json_body;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
 use common::NewStudent;
@@ -30,8 +30,8 @@ pub fn create_new_student(
 
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
-        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
-        Err(err) => return server_error(err),
+        Ok(None) => return http_utils::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return http_utils::server_error(err),
     };
 
     send_message_to_logger(
@@ -45,15 +45,15 @@ pub fn create_new_student(
 
     let data: NewStudent = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
+        Err(err) => return http_utils::string_response(format!("Bad Request: {}", err), 400),
     };
 
     let Ok(projects) = projects::get_project_by_id_locked(&db, data.project_id) else {
-        return server_error("Error al obtener los proyectos".to_string());
+        return http_utils::server_error("Error al obtener los proyectos".to_string());
     };
 
     let Some(project) = projects else {
-        return string_response("Proyecto no encontrado".to_string(), 404);
+        return http_utils::string_response("Proyecto no encontrado".to_string(), 404);
     };
 
     if project.professor_id != professor_id {
@@ -65,7 +65,7 @@ pub fn create_new_student(
             ),
             LogType::Warn,
         );
-        return string_response("No te pertenece el proyecto".to_string(), 400);
+        return http_utils::string_response("No te pertenece el proyecto".to_string(), 400);
     }
 
     match student::create_student_locked(
@@ -84,9 +84,9 @@ pub fn create_new_student(
                 ),
                 LogType::Info,
             );
-            string_response("Estudiante creado".into(), 200)
+            http_utils::string_response("Estudiante creado".into(), 200)
         }
-        Err(e) => server_error(format!(
+        Err(e) => http_utils::server_error(format!(
             "Error interno al crear el estudiante/grupo '{}': {}",
             data.name, e
         )),
@@ -107,12 +107,12 @@ pub fn get_all_students(
 
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
-        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
-        Err(err) => return server_error(err),
+        Ok(None) => return http_utils::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return http_utils::server_error(err),
     };
 
     let Ok(students) = student::get_students_for_professor_locked(&db, professor_id) else {
-        return server_error(format!(
+        return http_utils::server_error(format!(
             "Error al obtener los estudiantes/grupos del profesor (ID:{})",
             { professor_id }
         ));
@@ -121,7 +121,7 @@ pub fn get_all_students(
     let response = match serde_json::to_string(&students) {
         Ok(json) => json,
         Err(e) => {
-            return server_error(format!(
+            return http_utils::server_error(format!(
                 "Error al obtener los estudiantes/grupos del profesor (ID:{}): {}",
                 professor_id, e
             ));
@@ -136,7 +136,7 @@ pub fn get_all_students(
         ),
         LogType::Debug,
     );
-    string_response(response, 200)
+    http_utils::string_response(response, 200)
 }
 
 /// Borra a un alumno dado, presente en la DB, para el profesor autenticado.
@@ -155,17 +155,17 @@ pub fn delete_a_student(
     );
 
     let Some(id_str) = request.url().rsplit('/').next() else {
-        return string_response("Bad Request".to_string(), 400);
+        return http_utils::string_response("Bad Request".to_string(), 400);
     };
 
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
-        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
-        Err(err) => return server_error(err),
+        Ok(None) => return http_utils::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return http_utils::server_error(err),
     };
 
     let Ok(id) = id_str.parse::<i64>() else {
-        return string_response("ID inválido".to_string(), 400);
+        return http_utils::string_response("ID inválido".to_string(), 400);
     };
 
     let result = student::delete_student_locked(&db, id, professor_id);
@@ -191,10 +191,10 @@ pub fn delete_a_student(
                 ),
                 LogType::Info,
             );
-            string_response("Estudiante eliminado".to_string(), 200)
+            http_utils::string_response("Estudiante eliminado".to_string(), 200)
         }
-        Ok(false) => string_response("Estudiante no encontrado.".to_string(), 404),
-        Err(e) => server_error(format!("Error al eliminar al alumno {}: {}", id, e)),
+        Ok(false) => http_utils::string_response("Estudiante no encontrado.".to_string(), 404),
+        Err(e) => http_utils::server_error(format!("Error al eliminar al alumno {}: {}", id, e)),
     }
 }
 
@@ -213,23 +213,23 @@ pub fn update_an_student(
 
     let id_str = match request.url().rsplit('/').next() {
         Some(id) => id,
-        None => return string_response("Bad Request".to_string(), 400),
+        None => return http_utils::string_response("Bad Request".to_string(), 400),
     };
 
     let professor_id = match check_profesor_auth(request, &db) {
         Ok(Some(id)) => id,
-        Ok(None) => return string_response("Sin autorizar".to_string(), 401),
-        Err(err) => return server_error(err),
+        Ok(None) => return http_utils::string_response("Sin autorizar".to_string(), 401),
+        Err(err) => return http_utils::server_error(err),
     };
 
     let id = match id_str.parse::<i64>() {
         Ok(id) => id,
-        Err(_) => return string_response("ID inválido".to_string(), 400),
+        Err(_) => return http_utils::string_response("ID inválido".to_string(), 400),
     };
 
     let data: NewStudent = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
+        Err(err) => return http_utils::string_response(format!("Bad Request: {}", err), 400),
     };
 
     match student::update_student_locked(&db, id, &data.name, data.project_id, professor_id) {
@@ -242,9 +242,9 @@ pub fn update_an_student(
                 ),
                 LogType::Info,
             );
-            string_response("Estudiante actualizado".to_string(), 200)
+            http_utils::string_response("Estudiante actualizado".to_string(), 200)
         }
-        Ok(false) => string_response("Estudiante no encontrado.".to_string(), 404),
-        Err(e) => server_error(format!("Error al actualizar al alumno {}: {}", id, e)),
+        Ok(false) => http_utils::string_response("Estudiante no encontrado.".to_string(), 404),
+        Err(e) => http_utils::server_error(format!("Error al actualizar al alumno {}: {}", id, e)),
     }
 }

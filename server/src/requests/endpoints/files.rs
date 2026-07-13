@@ -1,11 +1,10 @@
-use super::generic::{not_found, server_error};
 use crate::db::engine::DBEngine;
 use crate::helpers::auth::is_admin_request;
 use crate::helpers::files;
 use crate::helpers::files::{get_relative_path, serve_file};
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic::string_response;
+use crate::requests::http_utils;
 use crate::structs::{request::HandlerResult, settings::Settings};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -21,7 +20,7 @@ use tiny_http::Request;
 pub fn get_file_from_storage(request: &Request, settings: Arc<Settings>) -> HandlerResult {
     let relative = match get_relative_path(request.url()) {
         Some(path) => path,
-        None => return not_found(),
+        None => return http_utils::not_found(),
     };
 
     serve_file(PathBuf::from(&settings.storage_path).join(relative))
@@ -36,7 +35,7 @@ pub fn get_page_file(request: &Request) -> HandlerResult {
 
     let relative = match get_relative_path(url) {
         Some(path) => path,
-        None => return not_found(),
+        None => return http_utils::not_found(),
     };
 
     let path = if url == "/" || relative.extension().is_none() {
@@ -70,9 +69,12 @@ pub fn clean_temp_files(
                 "Intento de limpieza de imágenes sin permisos de administrador.".to_string(),
                 LogType::Warn,
             );
-            return string_response("Solo permitido para administradores.".to_string(), 403);
+            return http_utils::string_response(
+                "Solo permitido para administradores.".to_string(),
+                403,
+            );
         }
-        Err(_err) => return server_error("Error autenticando".into()),
+        Err(_err) => return http_utils::server_error("Error autenticando".into()),
     }
 
     match files::clean_unused_images(&db, settings, tx) {
@@ -82,8 +84,8 @@ pub fn clean_temp_files(
                 "Se limpiaron las imágenes temporales correctamente.".to_string(),
                 LogType::Info,
             );
-            string_response("Imagenes borradas correctamente".into(), 200)
+            http_utils::string_response("Imagenes borradas correctamente".into(), 200)
         }
-        Err(_) => server_error("No se pudo borrar las imagenes".to_string()),
+        Err(_) => http_utils::server_error("No se pudo borrar las imagenes".to_string()),
     }
 }
