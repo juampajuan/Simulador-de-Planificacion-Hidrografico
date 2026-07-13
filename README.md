@@ -67,6 +67,11 @@ Para realizar interactuar con el `CLI`, hay 2 opciones.
     sudo apt install libgdal-dev gdal-bin
     ```
 
+> [!warning]
+> Fue testeado con la version `3.10.3`, versiones más antiguas, **pueden generar problemas en la interpolación**.
+>
+> *Algunas distribuciones de linux, pueden instalar versiones muy antiguas.* (Se recomienda ejecutar bajo Docker.)
+
 * Por ultimos se instalan dependencias para compilar el front `wasm`.
 
     ```bash
@@ -159,6 +164,9 @@ npm install
 ## Makefile
 
 Se ofrece un `Makefile` para facilitar la compilación y la ejecución.
+
+> [!note]
+> Se espera tener instalado `rustc 1.96.0` y al menos la version `3.10 de Gdal`.
 
 El mismo posee los siguientes comandos:
 
