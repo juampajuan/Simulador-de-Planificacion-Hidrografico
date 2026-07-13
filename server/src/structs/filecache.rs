@@ -60,7 +60,7 @@ impl FileCache {
     /// Almacena una DepthMatrix indexándola estrictamente por su ruta de archivo.
     pub fn update_map(&mut self, geotiff_path: String, matrix: DepthMatrix) {
         let now = self.get_now();
-        let debug_log = debug_logger(&self.tx, "LOGGER");
+        let debug_log = debug_logger(&self.tx, "CACHE");
         debug_log(&format!(
             "Se solicita actualizar o agregar un DepthMatrix (Name: {}).",
             &geotiff_path
@@ -106,7 +106,7 @@ impl FileCache {
     /// Obtiene la matriz compartida usando únicamente la ruta física del GeoTIFF.
     pub fn get_map(&mut self, geotiff_path: &str) -> Option<&DepthMatrix> {
         let now = self.get_now();
-        let debug_log = debug_logger(&self.tx, "LOGGER");
+        let debug_log = debug_logger(&self.tx, "CACHE");
         debug_log(&format!(
             "Se solicita buscar el DepthMatrix (Name: {}).",
             &geotiff_path
@@ -141,7 +141,7 @@ impl FileCache {
             parameters: params,
         };
 
-        let debug_log = debug_logger(&self.tx, "LOGGER");
+        let debug_log = debug_logger(&self.tx, "CACHE");
         debug_log(&format!(
             "Se intenta agregar o actualizar un path para alumno (Id: {}) con parametros {:?}",
             student_key, &path_data.parameters
@@ -194,7 +194,7 @@ impl FileCache {
         current_params: &PathParameters,
     ) -> Option<Vec<(usize, usize)>> {
         let now = self.get_now();
-        let debug_log = debug_logger(&self.tx, "LOGGER");
+        let debug_log = debug_logger(&self.tx, "CACHE");
         debug_log(&format!(
             "Se solicita buscar un path para alumno (Id: {}) con parametros {:?}",
             student_key, current_params

@@ -244,7 +244,10 @@ pub fn run_simulation(
 
     send_message_to_logger(
         tx,
-        "Simulación completada con éxito.".to_string(),
+        format!(
+            "Estudiante (Id: {}), proyecto (Id: {}): Simulación completada con éxito.",
+            &ctx.student.id, &ctx.project_id
+        ),
         LogType::Info,
     );
     if let Err(e) = crate::db::queries_interface::student::increment_student_attempts_locked(

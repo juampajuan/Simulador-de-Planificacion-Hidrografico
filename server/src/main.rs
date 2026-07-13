@@ -33,7 +33,7 @@ fn main() {
     // Genero el thread que se encarga de loggear.
     let (tx, rx) = mpsc::channel::<ThreadMessage>();
     threads.push(create_logger_thread(rx, Arc::clone(&settings)));
-    let err_logger = error_logger(&tx, "On main");
+    let err_logger = error_logger(&tx, "MAIN");
 
     // Creamos el directorio donde se van a subir los archivo .tif
     if create_dirs(&settings.storage_path).is_none() {
@@ -72,7 +72,7 @@ fn main() {
     };
 
     {
-        let info_log = info_logger(&tx, "On main");
+        let info_log = info_logger(&tx, "MAIN");
         info_log(&format!("Server iniciado en puerto: {}", settings.port));
     }
 

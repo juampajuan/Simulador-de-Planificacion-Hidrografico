@@ -192,11 +192,7 @@ pub fn lock_get_or_create_matrix(
 
     // La nueva estructura busca mapas globalmente usando el file_path
     if let Some(m) = lock.get_map(file_path) {
-        send_message_to_logger(
-            tx,
-            "Re-utilizando depth matrix del cache...".to_string(),
-            LogType::Debug,
-        );
+        log_debug("Re-utilizando depth matrix del cache...");
         return Ok(m.clone());
     }
 
@@ -238,11 +234,7 @@ pub fn lock_get_or_create_path(
     };
 
     if let Some(path_coor) = lock.get_path_if_valid(cache_key, path_params) {
-        send_message_to_logger(
-            tx,
-            "Re-utilizando path del cache...".to_string(),
-            LogType::Debug,
-        );
+        log_debug("Re-utilizando path del cache...");
         Ok(path_coor)
     } else {
         drop(lock);

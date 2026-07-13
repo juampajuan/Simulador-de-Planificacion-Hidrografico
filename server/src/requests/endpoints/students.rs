@@ -112,7 +112,10 @@ pub fn get_all_students(
     };
 
     let Ok(students) = student::get_students_for_professor_locked(&db, professor_id) else {
-        return server_error("Error al obtener los estudiantes/grupos".to_string());
+        return server_error(format!(
+            "Error al obtener los estudiantes/grupos del profesor (ID:{})",
+            { professor_id }
+        ));
     };
 
     let response = match serde_json::to_string(&students) {
