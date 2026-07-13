@@ -59,7 +59,7 @@ fn main() {
     let db_mutex = Arc::new(Mutex::new(db));
 
     // Generamos el struct para hacer de cache con los geotiffs cargados.
-    let file_cache = FileCache::new(settings.cache_amount);
+    let file_cache = FileCache::new(settings.cache_amount, tx.clone());
     let cache = Arc::new(Mutex::new(file_cache));
 
     // Levantamos Listener HTTP

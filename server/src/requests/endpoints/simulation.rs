@@ -320,11 +320,7 @@ pub fn create_coverage_image(
     );
     let response = create_png_response(image);
 
-    send_message_to_logger(
-        tx,
-        "Imagen de cobertura generada.".to_string(),
-        LogType::Debug,
-    );
+    log_debug("Imagen de cobertura generada.");
 
     (response.boxed(), 200, None)
 }
