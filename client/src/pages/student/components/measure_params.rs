@@ -84,7 +84,9 @@ pub fn measures_params(props: &MeasuresProps) -> Html {
                     let mut final_min = *ui_state_handle.min_depth;
                     let mut final_max = *ui_state_handle.max_depth;
 
-                    if let Some(latest) = history_handle.iter().max_by_key(|s| s.data.attempt_number) {
+                    if let Some(latest) =
+                        history_handle.iter().max_by_key(|s| s.data.attempt_number)
+                    {
                         final_min = latest.data.result_min_depth;
                         final_max = latest.data.result_max_depth;
                         ui_state_handle.min_depth.set(latest.data.result_min_depth);

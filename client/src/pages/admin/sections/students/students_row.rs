@@ -134,11 +134,11 @@ pub fn student_row(props: &StudentRowProps) -> Html {
     html! {
         <tr class={classes!(
             "text-sm", "rounded-lg", "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]",
-            if *is_editing { "bg-slate-600" } else { "bg-slate-800" }
+            if *is_editing { "bg-slate-700" } else { "bg-slate-800" }
         )}>
             <td class="px-4 py-3 rounded-l-lg font-medium">
                 if *is_editing {
-                    <div class="w-full">
+                    <div class="w-full pt-1 pb-1.5">
                         <input
                             type="text"
                             disabled={*row_loading}

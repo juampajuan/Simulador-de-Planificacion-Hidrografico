@@ -1,13 +1,13 @@
-use super::generic::{server_error, string_response};
 use crate::db::encrypt::hash_password;
 use crate::db::engine::DBEngine;
 use crate::db::queries::auth::TokenOwner;
 use crate::db::queries_interface::{auth, professor, student};
+use crate::helpers::utils::{check_password, get_cookie};
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils;
+use crate::requests::http_utils::parse_json_body;
 use crate::structs::request::HandlerResult;
-use crate::utils::helpers::{check_password, get_cookie};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use tiny_http::{Request, Response};
@@ -50,18 +50,21 @@ pub fn create_professor(
                 "Intento de creación de profesor sin permisos de administrador.".to_string(),
                 LogType::Warn,
             );
-            return string_response("Solo permitido para administradores.".to_string(), 403);
+            return http_utils::string_response(
+                "Solo permitido para administradores.".to_string(),
+                403,
+            );
         }
-        Err(_err) => return server_error("Error autenticando".into()),
+        Err(_err) => return http_utils::server_error("Error autenticando".into()),
     }
 
     let data: ProfessorAuthData = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
+        Err(err) => return http_utils::string_response(format!("Bad Request: {}", err), 400),
     };
 
     if !check_password(&data.pass) {
-        return string_response(
+        return http_utils::string_response(
             "La contraseña debe contener 8 caracteres y al menos 1 numero y una mayuscula."
                 .to_string(),
             400,
@@ -70,7 +73,7 @@ pub fn create_professor(
 
     let password_hash = match hash_password(&data.pass) {
         Ok(hash) => hash,
-        Err(_) => return server_error("No se pudo hashear la contraseña.".to_string()),
+        Err(_) => return http_utils::server_error("No se pudo hashear la contraseña.".to_string()),
     };
 
     let _ = match professor::create_professor_locked(&db, &data.user, &password_hash) {
@@ -84,12 +87,15 @@ pub fn create_professor(
                 ),
                 LogType::Warn,
             );
-            return server_error(
+            return http_utils::server_error(
                 "Error interno: no se pudo acceder a la base de datos.".to_string(),
             );
         }
         Err(_) => {
-            return string_response("Ya existe un profesor con ese username.".to_string(), 409);
+            return http_utils::string_response(
+                "Ya existe un profesor con ese username.".to_string(),
+                409,
+            );
         }
     };
 
@@ -98,7 +104,7 @@ pub fn create_professor(
         format!("Profesor '{}' creado correctamente.", data.user),
         LogType::Info,
     );
-    string_response("Usuario creado correctamente".to_string(), 200)
+    http_utils::string_response("Usuario creado correctamente".to_string(), 200)
 }
 
 /// Endpoint para el cambio de contrasena de un usuario de profesor.
@@ -122,14 +128,17 @@ pub fn change_pass(
                 "Intento de cambio de contraseña sin permisos de administrador.".to_string(),
                 LogType::Warn,
             );
-            return string_response("Solo permitido para administradores.".to_string(), 403);
+            return http_utils::string_response(
+                "Solo permitido para administradores.".to_string(),
+                403,
+            );
         }
-        Err(_err) => return server_error("Error autenticando".into()),
+        Err(_err) => return http_utils::server_error("Error autenticando".into()),
     }
 
     let data: ProfessorAuthData = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return server_error(format!("Bad Request: {}", err)),
+        Err(err) => return http_utils::server_error(format!("Bad Request: {}", err)),
     };
 
     send_message_to_logger(
@@ -139,7 +148,7 @@ pub fn change_pass(
     );
 
     if !check_password(&data.pass) {
-        return string_response(
+        return http_utils::string_response(
             "La contraseña debe contener 8 caracteres y al menos 1 numero y una mayuscula."
                 .to_string(),
             400,
@@ -148,7 +157,7 @@ pub fn change_pass(
 
     let password_hash = match hash_password(&data.pass) {
         Ok(hash) => hash,
-        Err(_) => return server_error("No se pudo hashear la contraseña.".to_string()),
+        Err(_) => return http_utils::server_error("No se pudo hashear la contraseña.".to_string()),
     };
 
     match professor::change_password_by_username_locked(&db, &data.user, &password_hash) {
@@ -158,9 +167,9 @@ pub fn change_pass(
                 format!("Contraseña de '{}' actualizada.", data.user),
                 LogType::Info,
             );
-            string_response("Contraseña cambiada correctamente".to_string(), 200)
+            http_utils::string_response("Contraseña cambiada correctamente".to_string(), 200)
         }
-        Err(_) => server_error("No se pudo cambiar la contraseña.".to_string()),
+        Err(_) => http_utils::server_error("No se pudo cambiar la contraseña.".to_string()),
     }
 }
 
@@ -179,13 +188,13 @@ pub fn login(
 
     let data: Value = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return string_response(format!("Bad Request: {}", err), 400),
+        Err(err) => return http_utils::string_response(format!("Bad Request: {}", err), 400),
     };
 
     let (owner, username) = if data.get("code").is_some() {
         let data: StudentAuthData = match serde_json::from_value(data) {
             Ok(d) => d,
-            Err(_) => return string_response("Bad Request".to_string(), 400),
+            Err(_) => return http_utils::string_response("Bad Request".to_string(), 400),
         };
 
         let (student_id, student_name) = match student::verify_code_locked(&db, &data.code) {
@@ -196,16 +205,16 @@ pub fn login(
                     "Intento de login fallido de alumno (código incorrecto).".to_string(),
                     LogType::Warn,
                 );
-                return string_response("Datos incorrectos.".to_string(), 401);
+                return http_utils::string_response("Datos incorrectos.".to_string(), 401);
             }
-            Err(_) => return server_error("Internal error.".to_string()),
+            Err(_) => return http_utils::server_error("Internal error.".to_string()),
         };
 
         (TokenOwner::Student(student_id), student_name)
     } else {
         let data: ProfessorAuthData = match serde_json::from_value(data) {
             Ok(d) => d,
-            Err(_) => return string_response("Bad Request".to_string(), 400),
+            Err(_) => return http_utils::string_response("Bad Request".to_string(), 400),
         };
 
         let professor_id =
@@ -217,9 +226,9 @@ pub fn login(
                         format!("Intento de login fallido para el usuario '{}'.", data.user),
                         LogType::Warn,
                     );
-                    return string_response("Datos incorrectos.".to_string(), 401);
+                    return http_utils::string_response("Datos incorrectos.".to_string(), 401);
                 }
-                Err(_) => return server_error("Internal error.".to_string()),
+                Err(_) => return http_utils::server_error("Internal error.".to_string()),
             };
 
         (TokenOwner::Professor(professor_id), data.user)
@@ -228,12 +237,12 @@ pub fn login(
     let token = generate_token();
 
     if auth::create_token_locked(&db, owner, &token, 7).is_err() {
-        return server_error("Internal error.".to_string());
+        return http_utils::server_error("Internal error.".to_string());
     }
 
     let cookie = match create_auth_cookie(&token) {
         Ok(cookie) => cookie,
-        Err(_) => return server_error("Internal error.".to_string()),
+        Err(_) => return http_utils::server_error("Internal error.".to_string()),
     };
 
     send_message_to_logger(tx, format!("Login exitoso: '{}'.", username), LogType::Info);
@@ -250,7 +259,7 @@ pub fn close_all(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        "Se esta intentando cerrar todas las sesiones.".to_string(),
+        "Se intenta cerrar todas las sesiones.".to_string(),
         LogType::Debug,
     );
 
@@ -262,16 +271,19 @@ pub fn close_all(
                 "Intento de cierre masivo de sesiones sin permisos de administrador.".to_string(),
                 LogType::Warn,
             );
-            return string_response("Solo permitido para administradores.".to_string(), 403);
+            return http_utils::string_response(
+                "Solo permitido para administradores.".to_string(),
+                403,
+            );
         }
-        Err(_err) => return server_error("Error autenticando".into()),
+        Err(_err) => return http_utils::server_error("Error autenticando".into()),
     }
 
     if auth::delete_all_tokens_locked(&db).is_err() {
-        return server_error("Internal error.".to_string());
+        return http_utils::server_error("Internal error.".to_string());
     }
 
-    string_response("Todos las sesiones fueron cerradas.".to_string(), 200)
+    http_utils::string_response("Todos las sesiones fueron cerradas.".to_string(), 200)
 }
 
 /// Cierra la sesion de un solo usuario, sea alumno o profesor.
@@ -283,33 +295,36 @@ pub fn close_session(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        "Se esta intentando cerrar la sesion.".to_string(),
+        "Se intenta cerrar la sesion.".to_string(),
         LogType::Debug,
     );
 
     let auth_token = match get_cookie(request, "auth_token") {
         Some(token) => token,
         None => {
-            return string_response("No hay sesión activa.".to_string(), 401);
+            return http_utils::string_response("No hay sesión activa.".to_string(), 401);
         }
     };
 
     if auth::delete_token_locked(&db, &auth_token).is_err() {
-        return server_error("Internal error.".to_string());
+        return http_utils::server_error("Error borrando el token de la DB.".to_string());
     }
 
     send_message_to_logger(
         tx,
-        format!("Sesión cerrada por el usuario {}.", auth_token),
+        format!(
+            "Sesión cerrada por el usuario con el token {}, ahora inválido.",
+            auth_token
+        ),
         LogType::Info,
     );
 
-    let mut response = string_response("Sesión cerrada.".to_string(), 200);
+    let mut response = http_utils::string_response("Sesión cerrada.".to_string(), 200);
     let cookie_killer = "Set-Cookie: auth_token=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; SameSite=Lax";
     if let Ok(header) = tiny_http::Header::from_str(cookie_killer) {
         response.0.add_header(header);
     } else {
-        return server_error("Internal error.".to_string());
+        return http_utils::server_error("Internal error.".to_string());
     }
 
     response

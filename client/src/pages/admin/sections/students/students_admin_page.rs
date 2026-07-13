@@ -210,7 +210,7 @@ pub fn admin_students() -> Html {
                                     input_name_setter.set(input.value());
                                 })}
                                 placeholder="Grupo 4"
-                                class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white"
+                                class="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white"
                             />
                         </div>
 
@@ -224,7 +224,7 @@ pub fn admin_students() -> Html {
                                         input_project_setter.set(val);
                                     }
                                 })}
-                                class="w-full bg-slate-800 border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer"
+                                class="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 text-white cursor-pointer"
                             >
                                 <option value="0" selected={*input_project_id == 0} disabled=true hidden=true>
                                     {"-- Elegir Proyecto Disponible --"}

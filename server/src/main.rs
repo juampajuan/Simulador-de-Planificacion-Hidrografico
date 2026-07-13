@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread::JoinHandle;
 
-mod utils;
-use utils::{config_loader::load_settings, helpers::create_dirs};
 mod requests;
 use requests::handler::create_server;
 mod threads;
@@ -12,6 +10,7 @@ use structs::filecache::FileCache;
 mod db;
 use db::{engine::DBEngine, queries::professor};
 mod helpers;
+use helpers::{config_loader::load_settings, utils::create_dirs};
 mod logging;
 use crate::logging::logger::info_logger;
 use crate::logging::{logger::error_logger, structs::ThreadMessage};
@@ -34,7 +33,7 @@ fn main() {
     // Genero el thread que se encarga de loggear.
     let (tx, rx) = mpsc::channel::<ThreadMessage>();
     threads.push(create_logger_thread(rx, Arc::clone(&settings)));
-    let err_logger = error_logger(&tx, "On main");
+    let err_logger = error_logger(&tx, "MAIN");
 
     // Creamos el directorio donde se van a subir los archivo .tif
     if create_dirs(&settings.storage_path).is_none() {
@@ -60,7 +59,7 @@ fn main() {
     let db_mutex = Arc::new(Mutex::new(db));
 
     // Generamos el struct para hacer de cache con los geotiffs cargados.
-    let file_cache = FileCache::new(settings.cache_amount);
+    let file_cache = FileCache::new(settings.cache_amount, tx.clone());
     let cache = Arc::new(Mutex::new(file_cache));
 
     // Levantamos Listener HTTP
@@ -73,7 +72,7 @@ fn main() {
     };
 
     {
-        let info_log = info_logger(&tx, "On main");
+        let info_log = info_logger(&tx, "MAIN");
         info_log(&format!("Server iniciado en puerto: {}", settings.port));
     }
 

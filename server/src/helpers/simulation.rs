@@ -1,15 +1,14 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
+use crate::helpers::{auth::check_student_auth, utils::random_letters};
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic;
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils;
+use crate::requests::http_utils::parse_json_body;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, RequestContext};
 use crate::structs::settings::Settings;
-use crate::utils::helpers::random_letters;
-use crate::utils::helpers_endpoints::check_student_auth;
 use chrono::Local;
 use common::{FullSimulationRequest, PathParameters, StudentMeasuringParameters};
 use simulations::structs::depth_matrix::DepthMatrix;
@@ -40,20 +39,25 @@ pub fn extract_request_context(
 ) -> Result<RequestContext, HandlerResult> {
     let student_id = match check_student_auth(request, db) {
         Ok(Some(id)) => id,
-        Ok(None) => return Err(generic::string_response("Sin autorizar".to_string(), 401)),
-        Err(err) => return Err(generic::server_error(err)),
+        Ok(None) => {
+            return Err(http_utils::string_response(
+                "Sin autorizar".to_string(),
+                401,
+            ));
+        }
+        Err(err) => return Err(http_utils::server_error(err)),
     };
 
     let student = match student::get_student_by_id_locked(db, student_id) {
         Ok(Some(s)) => s,
         Ok(None) => {
-            return Err(generic::string_response(
+            return Err(http_utils::string_response(
                 "Estudiante no encontrado".to_string(),
                 404,
             ));
         }
         Err(_) => {
-            return Err(generic::server_error(
+            return Err(http_utils::server_error(
                 "Error al obtener datos del estudiante".to_string(),
             ));
         }
@@ -62,13 +66,13 @@ pub fn extract_request_context(
     let project_id = match projects::get_project_id_by_student_locked(db, student_id) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            return Err(generic::string_response(
+            return Err(http_utils::string_response(
                 "Proyecto no encontrado".to_string(),
                 404,
             ));
         }
         Err(_) => {
-            return Err(generic::server_error(
+            return Err(http_utils::server_error(
                 "Error al obtener el proyecto del estudiante".to_string(),
             ));
         }
@@ -77,13 +81,13 @@ pub fn extract_request_context(
     let project = match projects::get_project_by_id_locked(db, project_id) {
         Ok(Some(project)) => project,
         Ok(None) => {
-            return Err(generic::string_response(
+            return Err(http_utils::string_response(
                 "Proyecto no encontrado".to_string(),
                 404,
             ));
         }
         Err(_) => {
-            return Err(generic::server_error(
+            return Err(http_utils::server_error(
                 "Error al obtener el proyecto".to_string(),
             ));
         }
@@ -93,7 +97,7 @@ pub fn extract_request_context(
 
     let data: FullSimulationRequest = match parse_json_body(request) {
         Ok(d) => d,
-        Err(err) => return Err(generic::server_error(format!("Bad Request: {}", err))),
+        Err(err) => return Err(http_utils::server_error(format!("Bad Request: {}", err))),
     };
 
     Ok(RequestContext {
@@ -181,7 +185,7 @@ pub fn lock_get_or_create_matrix(
     cache: &Arc<Mutex<FileCache>>,
     file_path: &str,
     tx: &Sender<ThreadMessage>,
-    student_name: &str,
+    prefix: &str,
 ) -> Result<DepthMatrix, String> {
     let mut lock = match cache.lock() {
         Ok(l) => l,
@@ -189,15 +193,11 @@ pub fn lock_get_or_create_matrix(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, student_name);
+    let log_debug = debug_logger(tx, prefix);
 
     // La nueva estructura busca mapas globalmente usando el file_path
     if let Some(m) = lock.get_map(file_path) {
-        send_message_to_logger(
-            tx,
-            "Re-utilizando depth matrix del cache...".to_string(),
-            LogType::Debug,
-        );
+        log_debug("Re-utilizando depth matrix del cache...");
         return Ok(m.clone());
     }
 
@@ -228,10 +228,10 @@ pub fn lock_get_or_create_path(
     matrix: &DepthMatrix,
     path_params: &PathParameters,
     tx: &Sender<ThreadMessage>,
-    student_name: &str,
+    prefix: &str,
 ) -> Result<Vec<(usize, usize)>, String> {
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, student_name);
+    let log_debug = debug_logger(tx, prefix);
 
     let mut lock = match cache.lock() {
         Ok(l) => l,
@@ -239,11 +239,7 @@ pub fn lock_get_or_create_path(
     };
 
     if let Some(path_coor) = lock.get_path_if_valid(cache_key, path_params) {
-        send_message_to_logger(
-            tx,
-            "Re-utilizando path del cache...".to_string(),
-            LogType::Debug,
-        );
+        log_debug("Re-utilizando path del cache...");
         Ok(path_coor)
     } else {
         drop(lock);

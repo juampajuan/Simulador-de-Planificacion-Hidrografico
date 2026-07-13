@@ -15,7 +15,7 @@ use crate::{
 
 use crate::logging::logger::send_message_to_logger;
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic::{not_found, server_error};
+use crate::requests::http_utils;
 use crate::structs::request::HandlerResult;
 use std::fs::File;
 use std::sync::mpsc::Sender;
@@ -46,7 +46,7 @@ pub fn serve_file(path: PathBuf) -> HandlerResult {
 
             let header = match Header::from_bytes(&b"Content-Type"[..], mime.as_bytes()) {
                 Ok(header) => header,
-                Err(_) => return server_error("Internal Error".to_string()),
+                Err(_) => return http_utils::server_error("Internal Error".to_string()),
             };
 
             let response = Response::from_file(file).with_header(header).boxed();
@@ -54,7 +54,7 @@ pub fn serve_file(path: PathBuf) -> HandlerResult {
             (response, 200, None)
         }
 
-        Err(_) => not_found(),
+        Err(_) => http_utils::not_found(),
     }
 }
 

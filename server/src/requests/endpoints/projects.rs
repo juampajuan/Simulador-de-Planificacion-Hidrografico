@@ -1,14 +1,14 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
+use crate::helpers::auth::{check_profesor_auth, check_student_auth};
 use crate::helpers::files;
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic::{server_error, string_response};
-use crate::requests::http_helper::parse_json_body;
+use crate::requests::http_utils::parse_json_body;
+use crate::requests::http_utils::{server_error, string_response};
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
-use crate::utils::helpers_endpoints::{check_profesor_auth, check_student_auth};
 use common::{GeoCorners, ProjectMetadata, StudentProjectResponse};
 use multipart::server::Multipart;
 use serde_json;
@@ -205,7 +205,7 @@ pub fn create(
 
     send_message_to_logger(
         tx,
-        format!("Proyecto para profesor con ID: {} creado.", professor_id),
+        format!("Proyecto para profesor con Id: {} creado.", professor_id),
         LogType::Debug,
     );
 
@@ -221,7 +221,7 @@ pub fn get_projects(
 ) -> HandlerResult {
     send_message_to_logger(
         tx,
-        ("Intentando obtener un proyecto").to_string(),
+        ("Intentando obtener los proyectos de un docente.").to_string(),
         LogType::Debug,
     );
 
@@ -230,6 +230,15 @@ pub fn get_projects(
         Ok(None) => return string_response("Sin autorizar".to_string(), 401),
         Err(err) => return server_error(err),
     };
+
+    send_message_to_logger(
+        tx,
+        format!(
+            "Obteniendo los proyectos del docente (Id: {})",
+            professor_id
+        ),
+        LogType::Debug,
+    );
 
     let projects = match projects::get_all_by_professor_id_locked(&db, professor_id) {
         Ok(projects) => projects,
@@ -279,14 +288,15 @@ pub fn get_student_project(
     send_message_to_logger(
         tx,
         format!(
-            "Intentando obtener el proyecto del grupo/estudiante {}.",
+            "Obteniendo el proyecto del grupo/estudiante (Id: {}).",
             student.name
         ),
         LogType::Debug,
     );
 
     // Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &student.name);
+    let prefix = format!("Estudiante (Id: {})", student.id);
+    let log_debug = debug_logger(tx, &prefix);
 
     let project_id_opt = match projects::get_project_id_by_student_locked(&db, student_id) {
         Ok(id_opt) => id_opt,
@@ -378,6 +388,15 @@ pub fn delete_project(
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
+    send_message_to_logger(
+        tx,
+        format!(
+            "Iniciando el borrado del proyecto: {} por parte del profesor {}.",
+            project.metadata.name, professor_id
+        ),
+        LogType::Debug,
+    );
+
     let filename = project.filename;
     let result = projects::delete_project_by_id_locked(&db, id, professor_id);
 
@@ -391,15 +410,6 @@ pub fn delete_project(
             LogType::Error,
         );
     }
-
-    send_message_to_logger(
-        tx,
-        format!(
-            "Iniciando el borrado del proyecto: {} por parte del profesor {}.",
-            project.metadata.name, professor_id
-        ),
-        LogType::Info,
-    );
 
     match result {
         Ok(true) => {
@@ -448,6 +458,15 @@ pub fn update_a_project(
         Err(_) => return string_response("ID inválido".to_string(), 400),
     };
 
+    send_message_to_logger(
+        tx,
+        format!(
+            "Docente (Id: {}) intenta actualizar el proyecto (Id: {}).",
+            professor_id, id
+        ),
+        LogType::Debug,
+    );
+
     let meta: ProjectMetadata = match parse_json_body(request) {
         Ok(d) => d,
         Err(err) => return server_error(format!("Bad Request: {}", err)),
@@ -458,7 +477,7 @@ pub fn update_a_project(
             send_message_to_logger(
                 tx,
                 format!(
-                    "Proyecto {} actualizado por el profesor {}.",
+                    "Proyecto (Id: {}) actualizado por el profesor (Id: {}).",
                     id, professor_id
                 ),
                 LogType::Info,

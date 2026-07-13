@@ -1,8 +1,7 @@
 use crate::db::engine::DBEngine;
 use crate::logging::structs::ThreadMessage;
-use crate::requests::endpoints::{
-    auth, exams, files, generic, limits, projects, simulation, students,
-};
+use crate::requests::endpoints::{auth, exams, files, limits, projects, simulation, students};
+use crate::requests::http_utils;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, RequestLog};
 use crate::structs::settings::Settings;
@@ -102,7 +101,7 @@ pub fn handle_request(
                     files::clean_temp_files(&mut request, db, &settings, tx)
                 }
 
-                _ => generic::not_found(),
+                _ => http_utils::not_found(),
             }
         }
 

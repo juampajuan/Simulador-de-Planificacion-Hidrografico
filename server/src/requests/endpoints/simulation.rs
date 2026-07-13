@@ -7,9 +7,8 @@ use crate::helpers::simulation::{
 };
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
-use crate::requests::endpoints::generic;
-use crate::requests::endpoints::generic::string_response;
-use crate::requests::http_helper::create_png_response;
+use crate::requests::http_utils;
+use crate::requests::http_utils::create_png_response;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::HandlerResult;
 use crate::structs::settings::Settings;
@@ -34,12 +33,16 @@ pub fn create_path(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &ctx.student.name);
+    let prefix = format!(
+        "Estudiante (Id: {}), proyecto (Id: {})",
+        &ctx.student.id, &ctx.project_id
+    );
+    let log_debug = debug_logger(tx, &prefix);
 
     // reutilizamos la depthmatrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &prefix) {
         Ok(m) => m,
-        Err(err) => return generic::server_error(err),
+        Err(err) => return http_utils::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
@@ -49,14 +52,20 @@ pub fn create_path(
         &matrix,
         &ctx.data.path_parameters,
         tx,
-        &ctx.student.name,
+        &prefix,
     ) {
         Ok(p) => p,
-        Err(err) => return generic::server_error(err),
+        Err(err) => return http_utils::server_error(err),
     };
 
     let image = simulations::create_path_image(&matrix, &path, &log_debug);
     let response = create_png_response(image);
+
+    send_message_to_logger(
+        tx,
+        format!("{} : Generó un nuevo recorrido.", prefix),
+        LogType::Info,
+    );
 
     (response.boxed(), 200, None)
 }
@@ -77,11 +86,15 @@ pub fn run_simulation(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &ctx.student.name);
+    let prefix = format!(
+        "Estudiante (Id: {}), proyecto (Id: {})",
+        &ctx.student.id, &ctx.project_id
+    );
+    let log_debug = debug_logger(tx, &prefix);
 
     let limit = ctx.project.metadata.attempts_limit;
     if limit != -1 && ctx.student.attempts >= limit {
-        return generic::string_response(
+        return http_utils::string_response(
             "Has alcanzado el límite máximo de intentos permitidos para este proyecto.".to_string(),
             403,
         );
@@ -89,13 +102,13 @@ pub fn run_simulation(
 
     let echo_parameters = match ctx.data.echo_parameters {
         Some(params) => params,
-        None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
+        None => return http_utils::server_error("Faltan parámetros de ecosonda".to_string()),
     };
 
     // reutilizamos la depth matrix o la creamos
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &prefix) {
         Ok(m) => m,
-        Err(err) => return generic::server_error(err),
+        Err(err) => return http_utils::server_error(err),
     };
 
     // reutilizamos el path o lo creamos
@@ -105,14 +118,14 @@ pub fn run_simulation(
         &matrix,
         &ctx.data.path_parameters,
         tx,
-        &ctx.student.name,
+        &prefix,
     ) {
         Ok(p) => p,
-        Err(err) => return generic::server_error(err),
+        Err(err) => return http_utils::server_error(err),
     };
 
     if path.is_empty() {
-        return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
+        return http_utils::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
 
     let interpolation = match simulations::run_simulation(
@@ -123,7 +136,7 @@ pub fn run_simulation(
         &log_debug,
     ) {
         Ok(interp) => interp,
-        Err(e) => return generic::server_error(e),
+        Err(e) => return http_utils::server_error(e),
     };
 
     // Generamos las imágenes de la simulación
@@ -150,7 +163,7 @@ pub fn run_simulation(
             ),
             LogType::Error,
         );
-        return generic::server_error(
+        return http_utils::server_error(
             "Error interno al actualizar parámetros del proyecto".to_string(),
         );
     }
@@ -170,7 +183,7 @@ pub fn run_simulation(
                 LogType::Error,
             );
 
-            return generic::server_error("No se pudo obtener el número de intento".to_string());
+            return http_utils::server_error("No se pudo obtener el número de intento".to_string());
         }
     };
 
@@ -212,7 +225,7 @@ pub fn run_simulation(
             LogType::Error,
         );
 
-        return generic::server_error("Error al guardar el intento de simulación".to_string());
+        return http_utils::server_error("Error al guardar el intento de simulación".to_string());
     }
 
     let response_data = SimulationResponse {
@@ -228,7 +241,7 @@ pub fn run_simulation(
     let json_payload = match serde_json::to_string(&response_data) {
         Ok(json) => json,
         Err(_) => {
-            return generic::server_error(
+            return http_utils::server_error(
                 "Error al serializar la respuesta de la simulación".to_string(),
             );
         }
@@ -236,7 +249,10 @@ pub fn run_simulation(
 
     send_message_to_logger(
         tx,
-        "Simulación completada con éxito.".to_string(),
+        format!(
+            "Estudiante (Id: {}), proyecto (Id: {}): Simulación completada con éxito.",
+            &ctx.student.id, &ctx.project_id
+        ),
         LogType::Info,
     );
     if let Err(e) = crate::db::queries_interface::student::increment_student_attempts_locked(
@@ -251,9 +267,9 @@ pub fn run_simulation(
             ),
             LogType::Error,
         );
-        return generic::server_error("Error interno al registrar el intento".to_string());
+        return http_utils::server_error("Error interno al registrar el intento".to_string());
     }
-    string_response(json_payload, 200)
+    http_utils::string_response(json_payload, 200)
 }
 
 /// Genera la imagen de cubrimiento del recorrido con los parametros actuales.
@@ -271,16 +287,20 @@ pub fn create_coverage_image(
     };
 
     //Closure para el DEBUG del logger, que se pasa a los metodos de simulacion para loggear desde alli.
-    let log_debug = debug_logger(tx, &ctx.student.name);
+    let prefix = format!(
+        "Estudiante (Id: {}), proyecto (Id: {})",
+        &ctx.student.id, &ctx.project_id
+    );
+    let log_debug = debug_logger(tx, &prefix);
 
     let echo_parameters = match ctx.data.echo_parameters {
         Some(params) => params,
-        None => return generic::server_error("Faltan parámetros de ecosonda".to_string()),
+        None => return http_utils::server_error("Faltan parámetros de ecosonda".to_string()),
     };
 
-    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &ctx.student.name) {
+    let matrix = match lock_get_or_create_matrix(&cache, &ctx.file_path, tx, &prefix) {
         Ok(m) => m,
-        Err(err) => return generic::server_error(err),
+        Err(err) => return http_utils::server_error(err),
     };
 
     let path = match lock_get_or_create_path(
@@ -289,14 +309,14 @@ pub fn create_coverage_image(
         &matrix,
         &ctx.data.path_parameters,
         tx,
-        &ctx.student.name,
+        &prefix,
     ) {
         Ok(p) => p,
-        Err(err) => return generic::server_error(err),
+        Err(err) => return http_utils::server_error(err),
     };
 
     if path.is_empty() {
-        return generic::server_error("Error: El Recorrido (Path) está vacío.".to_string());
+        return http_utils::server_error("Error: El Recorrido (Path) está vacío.".to_string());
     }
 
     let image = simulations::create_path_with_coverage(
@@ -310,8 +330,8 @@ pub fn create_coverage_image(
 
     send_message_to_logger(
         tx,
-        "Imagen de cobertura generada.".to_string(),
-        LogType::Debug,
+        format!("{} : Imagen de cobertura generada.", prefix),
+        LogType::Info,
     );
 
     (response.boxed(), 200, None)

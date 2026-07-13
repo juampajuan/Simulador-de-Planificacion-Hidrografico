@@ -85,7 +85,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
             <tr
                 class={classes!(
                     "text-sm",
-                    if *is_editing { "bg-slate-600" } else { "bg-slate-800" },
+                    if *is_editing { "bg-slate-700" } else { "bg-slate-800" },
                     "rounded-lg",
                     "shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1),inset_0_0_0_1px_rgba(255,255,255,0.1)]"
                 )}
@@ -141,7 +141,7 @@ pub fn project_row(props: &ProjectRowProps) -> Html {
 
             if *is_editing {
                 <tr class="text-sm">
-                    <td colspan="6" class="p-4 bg-slate-600 rounded-lg border border-white/20">
+                    <td colspan="6" class="p-4 bg-slate-700 rounded-lg border border-white/20">
                         <ProjectEdit
                             project_state={props.project.clone()}
                             projects_state={props.projects_state.clone()}
