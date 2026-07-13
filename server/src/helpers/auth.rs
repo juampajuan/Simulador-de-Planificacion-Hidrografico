@@ -2,7 +2,7 @@ use crate::db::{
     engine::DBEngine, queries::auth::TokenOwner, queries_interface::auth,
     queries_interface::professor,
 };
-use crate::utils::helpers::get_cookie;
+use crate::helpers::utils::get_cookie;
 use rand::Rng;
 use std::sync::{Arc, Mutex};
 use tiny_http::{Header, Request};

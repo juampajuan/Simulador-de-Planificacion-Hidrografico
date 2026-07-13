@@ -1,7 +1,7 @@
 use crate::db::engine::DBEngine;
 use crate::db::queries_interface::projects;
 use crate::db::queries_interface::student;
-use crate::helpers::auth::check_student_auth;
+use crate::helpers::{auth::check_student_auth, utils::random_letters};
 use crate::logging::logger::{debug_logger, send_message_to_logger};
 use crate::logging::structs::{LogType, ThreadMessage};
 use crate::requests::endpoints::generic;
@@ -9,7 +9,6 @@ use crate::requests::http_helper::parse_json_body;
 use crate::structs::filecache::FileCache;
 use crate::structs::request::{HandlerResult, RequestContext};
 use crate::structs::settings::Settings;
-use crate::utils::helpers::random_letters;
 use chrono::Local;
 use common::{FullSimulationRequest, PathParameters, StudentMeasuringParameters};
 use simulations::structs::depth_matrix::DepthMatrix;

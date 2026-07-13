@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread::JoinHandle;
 
-mod utils;
-use utils::{config_loader::load_settings, helpers::create_dirs};
 mod requests;
 use requests::handler::create_server;
 mod threads;
@@ -12,6 +10,7 @@ use structs::filecache::FileCache;
 mod db;
 use db::{engine::DBEngine, queries::professor};
 mod helpers;
+use helpers::{config_loader::load_settings, utils::create_dirs};
 mod logging;
 use crate::logging::logger::info_logger;
 use crate::logging::{logger::error_logger, structs::ThreadMessage};
