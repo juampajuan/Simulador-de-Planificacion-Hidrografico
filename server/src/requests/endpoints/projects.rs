@@ -388,6 +388,15 @@ pub fn delete_project(
         return string_response("Proyecto no encontrado".to_string(), 404);
     };
 
+    send_message_to_logger(
+        tx,
+        format!(
+            "Iniciando el borrado del proyecto: {} por parte del profesor {}.",
+            project.metadata.name, professor_id
+        ),
+        LogType::Debug,
+    );
+
     let filename = project.filename;
     let result = projects::delete_project_by_id_locked(&db, id, professor_id);
 
@@ -401,15 +410,6 @@ pub fn delete_project(
             LogType::Error,
         );
     }
-
-    send_message_to_logger(
-        tx,
-        format!(
-            "Iniciando el borrado del proyecto: {} por parte del profesor {}.",
-            project.metadata.name, professor_id
-        ),
-        LogType::Info,
-    );
 
     match result {
         Ok(true) => {
@@ -458,6 +458,15 @@ pub fn update_a_project(
         Err(_) => return string_response("ID inválido".to_string(), 400),
     };
 
+    send_message_to_logger(
+        tx,
+        format!(
+            "Docente (Id: {}) intenta actualizar el proyecto (Id: {}).",
+            professor_id, id
+        ),
+        LogType::Debug,
+    );
+
     let meta: ProjectMetadata = match parse_json_body(request) {
         Ok(d) => d,
         Err(err) => return server_error(format!("Bad Request: {}", err)),
@@ -468,7 +477,7 @@ pub fn update_a_project(
             send_message_to_logger(
                 tx,
                 format!(
-                    "Proyecto {} actualizado por el profesor {}.",
+                    "Proyecto (Id: {}) actualizado por el profesor (Id: {}).",
                     id, professor_id
                 ),
                 LogType::Info,

@@ -60,7 +60,7 @@ pub fn create_new_student(
         send_message_to_logger(
             tx,
             format!(
-                "Profesor (Id: {}) intentó crear un estudiante/grupo en un proyecto ({}) que no le pertenece.",
+                "Docente (Id: {}) intentó crear un estudiante/grupo en un proyecto ({}) que no le pertenece.",
                 professor_id, data.project_id
             ),
             LogType::Warn,
@@ -79,7 +79,7 @@ pub fn create_new_student(
             send_message_to_logger(
                 tx,
                 format!(
-                    "estudiante/grupo '{}' creado con el proyecto (Id: {}).",
+                    "Estudiante/grupo '{}' creado con el proyecto (Id: {}).",
                     data.name, data.project_id
                 ),
                 LogType::Info,
@@ -136,6 +136,7 @@ pub fn get_all_students(
         ),
         LogType::Debug,
     );
+
     http_utils::string_response(response, 200)
 }
 
@@ -167,6 +168,15 @@ pub fn delete_a_student(
     let Ok(id) = id_str.parse::<i64>() else {
         return http_utils::string_response("ID inválido".to_string(), 400);
     };
+
+    send_message_to_logger(
+        tx,
+        format!(
+            "Docente (Id: {}) intenta eliminar el estudiante/grupo (Id: {}).",
+            professor_id, id
+        ),
+        LogType::Debug,
+    );
 
     let result = student::delete_student_locked(&db, id, professor_id);
 
@@ -226,6 +236,15 @@ pub fn update_an_student(
         Ok(id) => id,
         Err(_) => return http_utils::string_response("ID inválido".to_string(), 400),
     };
+
+    send_message_to_logger(
+        tx,
+        format!(
+            "Docente (Id: {}) intenta actualizar el estudiante/grupo (Id: {}).",
+            professor_id, id
+        ),
+        LogType::Debug,
+    );
 
     let data: NewStudent = match parse_json_body(request) {
         Ok(d) => d,

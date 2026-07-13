@@ -98,6 +98,12 @@ pub fn select_exam_simulation(
     db: Arc<Mutex<DBEngine>>,
     tx: &Sender<ThreadMessage>,
 ) -> HandlerResult {
+    send_message_to_logger(
+        tx,
+        ("Estudiante intenta marcar intento de simulacion como entrega.").to_string(),
+        LogType::Debug,
+    );
+
     // Validamos autenticación del alumno
     let student_id = match check_student_auth(request, &db) {
         Ok(Some(id)) => id,
@@ -111,6 +117,15 @@ pub fn select_exam_simulation(
         Err(err) => return http_utils::string_response(format!("Bad Request: {}", err), 400),
     };
 
+    send_message_to_logger(
+        tx,
+        format!(
+            "Estudiante (Id: {}) entrega intento (Id: {:?}) de simulacion.",
+            student_id, payload.simulation_id
+        ),
+        LogType::Debug,
+    );
+
     // Pasamos los 3 argumentos requeridos: db, student_id, y el Option<i64>
     match student_simulations::select_student_simulation_locked(
         &db,
@@ -121,7 +136,7 @@ pub fn select_exam_simulation(
             send_message_to_logger(
                 tx,
                 format!(
-                    "estudiante/grupo {} marcó la simulación {:?} como su entrega.",
+                    "estudiante/grupo (Id: {}) marcó la simulación (Id: {:?}) como su entrega.",
                     student_id, payload.simulation_id
                 ),
                 LogType::Info,
