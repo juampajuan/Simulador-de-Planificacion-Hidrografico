@@ -61,6 +61,12 @@ pub fn create_path(
     let image = simulations::create_path_image(&matrix, &path, &log_debug);
     let response = create_png_response(image);
 
+    send_message_to_logger(
+        tx,
+        format!("{} : Generó un nuevo recorrido.", prefix),
+        LogType::Info,
+    );
+
     (response.boxed(), 200, None)
 }
 
@@ -322,7 +328,11 @@ pub fn create_coverage_image(
     );
     let response = create_png_response(image);
 
-    log_debug("Imagen de cobertura generada.");
+    send_message_to_logger(
+        tx,
+        format!("{} : Imagen de cobertura generada.", prefix),
+        LogType::Info,
+    );
 
     (response.boxed(), 200, None)
 }
