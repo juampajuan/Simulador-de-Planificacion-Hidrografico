@@ -136,7 +136,7 @@ pub fn select_exam_simulation(
             send_message_to_logger(
                 tx,
                 format!(
-                    "estudiante/grupo (Id: {}) marcó la simulación (Id: {:?}) como su entrega.",
+                    "Estudiante/grupo (Id: {}) marcó la simulación (Id: {:?}) como su entrega.",
                     student_id, payload.simulation_id
                 ),
                 LogType::Info,
