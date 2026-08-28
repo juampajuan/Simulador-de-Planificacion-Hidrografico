@@ -1,3 +1,8 @@
+#  **⚠️ Nota**
+Este repositorio es una copia del proyecto original, entregado por la cátedra de la materia. El repositorio original quedó configurado como privado, por lo que no podía compartir ese link directamente en mi currículum, de ahí esta copia pública.
+
+El trabajo fue realizado en grupo, junto a 3 compañeros más. No busco atribuirme el crédito completo: fue un desarrollo colaborativo en el que todos participamos por igual.
+
 # Taller de Programacion 5
 
 ### Integrantes
